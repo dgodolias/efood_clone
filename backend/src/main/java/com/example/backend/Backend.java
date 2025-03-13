@@ -82,8 +82,7 @@ public class Backend {
         return stats;
     }
 
-    // Λήψη όλων των καταστημάτων (για το frontend)
-    public List<Store> getAllStores() {
-        return new ArrayList<>(stores);
+    public List<Store> getStores() {
+        return stores;
     }
 }

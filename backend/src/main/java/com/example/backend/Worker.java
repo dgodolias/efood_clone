@@ -21,25 +21,31 @@ public class Worker extends Thread {
         ) {
             String request;
             while ((request = in.readLine()) != null) {
-                // Παράδειγμα επεξεργασίας αιτήματος
                 if (request.startsWith("GET_FOOD_STATS")) {
                     String foodCategory = request.split(" ")[1];
                     Map<String, Integer> stats = backend.getFoodCategoryStats(foodCategory);
-                    out.println(stats.toString());
-                } else if (request.startsWith("GET_PRODUCT_STATS")) {
-                    String productType = request.split(" ")[1];
-                    Map<String, Integer> stats = backend.getProductCategoryStats(productType);
-                    out.println(stats.toString());
+                    out.println(stats.toString()); // Send response back to client
+                } else if (request.startsWith("BUY")) {
+                    String[] parts = request.split(" ");
+                    String storeName = parts[1];
+                    String productName = parts[2];
+                    int quantity = Integer.parseInt(parts[3]);
+                    for (Store store : backend.getStores()) {
+                        if (store.getStoreName().equals(storeName)) {
+                            for (Product product : store.getProducts()) {
+                                if (product.getProductName().equals(productName)) {
+                                    product.setAvailableAmount(product.getAvailableAmount() - quantity);
+                                    out.println("Purchase successful");
+                                    break;
+                                }
+                            }
+                            break;
+                        }
+                    }
                 }
             }
         } catch (IOException e) {
             e.printStackTrace();
-        } finally {
-            try {
-                socket.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
         }
     }
 }
