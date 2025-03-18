@@ -1,6 +1,9 @@
 package com.example.backend;
 
 import org.junit.Test;
+
+import com.example.frontend.ManagerConsoleApp;
+
 import java.io.*;
 
 import static org.junit.Assert.*;

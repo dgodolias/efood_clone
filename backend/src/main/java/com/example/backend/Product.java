@@ -6,7 +6,6 @@ public class Product {
     private int availableAmount;
     private double price;
 
-    // Constructor
     public Product(String productName, String productType, int availableAmount, double price) {
         this.productName = productName;
         this.productType = productType;
@@ -14,7 +13,6 @@ public class Product {
         this.price = price;
     }
 
-    // Getters και Setters
     public String getProductName() { return productName; }
     public void setProductName(String productName) { this.productName = productName; }
     public String getProductType() { return productType; }

@@ -1,4 +1,4 @@
-package com.example.backend;
+package com.example.frontend;
 
 import java.io.BufferedReader;
 import java.io.IOException;

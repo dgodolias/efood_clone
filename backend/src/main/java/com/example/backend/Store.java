@@ -1,4 +1,5 @@
 package com.example.backend;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,7 +13,6 @@ public class Store {
     private String storeLogo;
     private List<Product> products;
 
-    // Constructor
     public Store(String storeName, double latitude, double longitude, String foodCategory,
                  int stars, int noOfVotes, String storeLogo) {
         this.storeName = storeName;
@@ -25,7 +25,19 @@ public class Store {
         this.products = new ArrayList<>();
     }
 
-    // Getters και Setters
+    public synchronized void addProduct(Product product) {
+        products.add(product);
+    }
+
+    public synchronized void removeProduct(String productName) {
+        products.removeIf(p -> p.getProductName().equals(productName));
+    }
+
+    public synchronized List<Product> getProducts() {
+        return new ArrayList<>(products); // Return a copy for safety
+    }
+
+    // Getters and Setters
     public String getStoreName() { return storeName; }
     public void setStoreName(String storeName) { this.storeName = storeName; }
     public double getLatitude() { return latitude; }
@@ -40,9 +52,4 @@ public class Store {
     public void setNoOfVotes(int noOfVotes) { this.noOfVotes = noOfVotes; }
     public String getStoreLogo() { return storeLogo; }
     public void setStoreLogo(String storeLogo) { this.storeLogo = storeLogo; }
-    public List<Product> getProducts() { return products; }
-    public void addProduct(Product product) { this.products.add(product); }
-    public void removeProduct(String productName) {
-        this.products.removeIf(p -> p.getProductName().equals(productName));
-    }
 }

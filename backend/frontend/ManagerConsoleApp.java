@@ -1,6 +1,9 @@
-package com.example.backend;
+package com.example.frontend;
 
 import java.util.Scanner;
+
+import com.example.backend.Backend;
+import com.example.backend.Store;
 
 public class ManagerConsoleApp {
     private Backend backend;
@@ -23,7 +26,17 @@ public class ManagerConsoleApp {
                 case 1:
                     System.out.println("Enter store name:");
                     String storeName = scanner.nextLine();
-                    // Add more input prompts for other store details
+                    System.out.println("Enter store latitude:");
+                    float latitude = scanner.nextFloat();
+                    System.out.println("Enter store longitude:");
+                    float longitude = scanner.nextFloat();
+                    scanner.nextLine(); // Consume newline
+                    System.out.println("Enter food category:");
+                    String foodCategory = scanner.nextLine();
+                    System.out.println("Enter stars:");
+                    int stars = scanner.nextInt();
+                    System.out.println("Enter number of reviews:");
+
                     Store store = new Store(storeName, 0, 0, "", 0, 0, "");
                     backend.addStore(store);
                     break;
