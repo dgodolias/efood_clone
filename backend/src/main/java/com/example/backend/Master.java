@@ -7,21 +7,40 @@ import java.util.*;
 public class Master {
     private static final int PORT = 8080;
     private List<WorkerConnection> workers;
+    private List<Process> workerProcesses; // To track spawned Worker processes
 
-    public Master(String[] workerArgs) {
+    public Master(int workerCount, int startPort) throws IOException {
         workers = new ArrayList<>();
-        if (workerArgs.length == 0) {
-            System.out.println("Warning: No workers specified. Master will run but cannot process requests requiring workers.");
-        } else {
-            for (String arg : workerArgs) {
-                String[] parts = arg.split(":");
-                try {
-                    workers.add(new WorkerConnection(parts[0], Integer.parseInt(parts[1])));
-                    System.out.println("Connected to worker at " + arg);
-                } catch (IOException e) {
-                    System.err.println("Failed to connect to worker at " + arg + ": " + e.getMessage());
-                }
-            }
+        workerProcesses = new ArrayList<>();
+
+        // Dynamically start workers
+        for (int i = 0; i < workerCount; i++) {
+            int workerPort = startPort + i;
+            spawnWorker(workerPort);
+            workers.add(new WorkerConnection("localhost", workerPort));
+            System.out.println("Started and connected to worker at localhost:" + workerPort);
+        }
+    }
+
+    private void spawnWorker(int port) throws IOException {
+        // Command to launch a new Worker instance
+        String javaHome = System.getProperty("java.home");
+        String javaBin = javaHome + File.separator + "bin" + File.separator + "java";
+        String classpath = System.getProperty("java.class.path");
+        String className = Worker.class.getName();
+
+        ProcessBuilder pb = new ProcessBuilder(
+                javaBin, "-cp", classpath, className, String.valueOf(port)
+        );
+        pb.inheritIO(); // Workers share console output for simplicity; adjust as needed
+        Process process = pb.start();
+        workerProcesses.add(process);
+
+        // Brief delay to ensure worker starts before connection attempt
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -35,15 +54,37 @@ public class Master {
             }
         } catch (IOException e) {
             System.err.println("Master server failed: " + e.getMessage());
+        } finally {
+            shutdownWorkers();
+        }
+    }
+
+    private void shutdownWorkers() {
+        for (Process p : workerProcesses) {
+            p.destroy();
+        }
+        for (WorkerConnection wc : workers) {
+            try {
+                wc.close();
+            } catch (IOException e) {
+                System.err.println("Error closing worker connection: " + e.getMessage());
+            }
         }
     }
 
     public static void main(String[] args) {
-        Master master = new Master(args);
-        master.start();
+        try {
+            int workerCount = args.length > 0 ? Integer.parseInt(args[0]) : 2; // Default to 2 workers
+            int startPort = 8081; // Starting port for workers
+            Master master = new Master(workerCount, startPort);
+            master.start();
+        } catch (IOException e) {
+            System.err.println("Failed to initialize Master: " + e.getMessage());
+        }
     }
 }
 
+// MasterThread and WorkerConnection classes remain unchanged
 class MasterThread extends Thread {
     private Socket socket;
     private List<WorkerConnection> workers;
@@ -104,7 +145,6 @@ class MasterThread extends Thread {
     }
 
     private String extractStoreName(String data) {
-        // Simplified: assumes data is "storeName" for now; in practice, parse JSON
         return data.split(" ")[0];
     }
 
@@ -137,9 +177,8 @@ class WorkerConnection {
     public String sendRequest(String request) throws IOException {
         try {
             out.println(request);
-            return in.readLine(); // Adjust for multi-line responses if needed
+            return in.readLine();
         } catch (IOException e) {
-            // Reconnect on failure
             connect();
             out.println(request);
             return in.readLine();
