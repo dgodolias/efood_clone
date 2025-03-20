@@ -17,7 +17,7 @@ public class ManagerConsoleApp {
              Scanner scanner = new Scanner(System.in)) {
             System.out.println("Connected to Master at " + MASTER_HOST + ":" + MASTER_PORT);
             while (true) {
-                System.out.println("Enter command (ADD_STORE, ADD_PRODUCT, GET_FOOD_STATS, EXIT):");
+                System.out.println("Enter command (ADD_STORE, ADD_PRODUCT, REMOVE_PRODUCT, GET_SALES_STATS, EXIT):");
                 String command = scanner.nextLine();
                 if (command.equalsIgnoreCase("EXIT")) break;
                 String data = "";
@@ -36,11 +36,18 @@ public class ManagerConsoleApp {
                         System.out.println("Enter store name, product name, type, amount, price (space-separated):");
                         data = scanner.nextLine();
                         break;
-                    case "GET_FOOD_STATS":
-                        System.out.println("Enter food category:");
+                    case "REMOVE_PRODUCT":
+                        System.out.println("Enter store name and product name (space-separated):");
                         data = scanner.nextLine();
                         break;
+                    case "GET_SALES_STATS":
+                        // No additional data needed
+                        break;
+                    default:
+                        System.out.println("Unknown command: " + command);
+                        continue;
                 }
+                System.out.println("Sending command: " + command + " with data: " + data);
                 out.println(command + " " + data);
                 String response = in.readLine();
                 System.out.println("Response: " + response);

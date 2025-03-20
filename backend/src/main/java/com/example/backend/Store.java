@@ -2,6 +2,8 @@ package com.example.backend;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Store {
     private String storeName;
@@ -12,6 +14,7 @@ public class Store {
     private int noOfVotes;
     private String storeLogo;
     private List<Product> products;
+    private Map<String, Integer> sales;
 
     public Store(String storeName, double latitude, double longitude, String foodCategory,
                  int stars, int noOfVotes, String storeLogo) {
@@ -23,6 +26,7 @@ public class Store {
         this.noOfVotes = noOfVotes;
         this.storeLogo = storeLogo;
         this.products = new ArrayList<>();
+        this.sales = new ConcurrentHashMap<>();
     }
 
     public synchronized void addProduct(Product product) {
@@ -34,22 +38,19 @@ public class Store {
     }
 
     public synchronized List<Product> getProducts() {
-        return new ArrayList<>(products); // Return a copy for safety
+        return new ArrayList<>(products);
+    }
+
+    public synchronized void recordSale(String productName, int quantity) {
+        sales.put(productName, sales.getOrDefault(productName, 0) + quantity);
+        System.out.println("Recorded sale: " + quantity + " units of " + productName + " in store " + storeName);
+    }
+
+    public synchronized Map<String, Integer> getSales() {
+        return new ConcurrentHashMap<>(sales);
     }
 
     // Getters and Setters
     public String getStoreName() { return storeName; }
-    public void setStoreName(String storeName) { this.storeName = storeName; }
-    public double getLatitude() { return latitude; }
-    public void setLatitude(double latitude) { this.latitude = latitude; }
-    public double getLongitude() { return longitude; }
-    public void setLongitude(double longitude) { this.longitude = longitude; }
     public String getFoodCategory() { return foodCategory; }
-    public void setFoodCategory(String foodCategory) { this.foodCategory = foodCategory; }
-    public int getStars() { return stars; }
-    public void setStars(int stars) { this.stars = stars; }
-    public int getNoOfVotes() { return noOfVotes; }
-    public void setNoOfVotes(int noOfVotes) { this.noOfVotes = noOfVotes; }
-    public String getStoreLogo() { return storeLogo; }
-    public void setStoreLogo(String storeLogo) { this.storeLogo = storeLogo; }
 }

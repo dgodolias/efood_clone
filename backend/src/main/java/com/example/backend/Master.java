@@ -214,6 +214,7 @@ class MasterThread extends Thread {
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
             String request;
             while ((request = in.readLine()) != null) {
+                System.out.println("Received command: " + request);
                 if (workers.isEmpty()) {
                     out.println("No workers available to process request: " + request);
                     continue;
@@ -230,7 +231,24 @@ class MasterThread extends Thread {
                         }
                         WorkerConnection worker = getWorkerForStore(storeName);
                         String response = worker.sendRequest(request);
+                        System.out.println("Worker at port " + worker.getPort() + " responded: " + response);
                         out.println(response);
+                        break;
+                    case "ADD_PRODUCT":
+                        String[] productParts = data.split(" ");
+                        String storeNameProd = productParts[0];
+                        WorkerConnection prodWorker = getWorkerForStore(storeNameProd);
+                        String prodResponse = prodWorker.sendRequest(request);
+                        System.out.println("Worker at port " + prodWorker.getPort() + " responded: " + prodResponse);
+                        out.println(prodResponse);
+                        break;
+                    case "REMOVE_PRODUCT":
+                        String[] removeParts = data.split(" ");
+                        String removeStoreName = removeParts[0];
+                        WorkerConnection removeWorker = getWorkerForStore(removeStoreName);
+                        String removeResponse = removeWorker.sendRequest(request);
+                        System.out.println("Worker at port " + removeWorker.getPort() + " responded: " + removeResponse);
+                        out.println(removeResponse);
                         break;
                     case "SEARCH":
                         List<String> results = new ArrayList<>();
@@ -245,16 +263,32 @@ class MasterThread extends Thread {
                         String buyStoreName = buyParts[0];
                         WorkerConnection buyWorker = getWorkerForStore(buyStoreName);
                         String buyResponse = buyWorker.sendRequest(request);
+                        System.out.println("Worker at port " + buyWorker.getPort() + " responded: " + buyResponse);
                         out.println(buyResponse);
                         break;
-                    case "ADD_PRODUCT":
                     case "GET_FOOD_STATS":
-                        String targetName = data.split(" ")[0];
-                        WorkerConnection targetWorker = command.equals("GET_FOOD_STATS")
-                                ? workers.get(0)
-                                : getWorkerForStore(targetName);
-                        String workerResponse = targetWorker.sendRequest(request);
-                        out.println(workerResponse);
+                        String targetCategory = data;
+                        WorkerConnection statsWorker = workers.get(0); // First worker for simplicity
+                        String statsResponse = statsWorker.sendRequest(request);
+                        System.out.println("Worker at port " + statsWorker.getPort() + " responded: " + statsResponse);
+                        out.println(statsResponse);
+                        break;
+                    case "GET_SALES_STATS":
+                        Map<String, Integer> totalSales = new HashMap<>();
+                        for (WorkerConnection w : workers) {
+                            String workerResponse = w.sendRequest("GET_SALES_STATS");
+                            System.out.println("Worker at port " + w.getPort() + " returned sales: " + workerResponse);
+                            String[] sales = workerResponse.split(" ");
+                            for (String sale : sales) {
+                                String[] saleParts = sale.split(":");
+                                if (saleParts.length == 2) {
+                                    totalSales.put(saleParts[0], totalSales.getOrDefault(saleParts[0], 0) + Integer.parseInt(saleParts[1]));
+                                }
+                            }
+                        }
+                        String salesResult = totalSales.toString();
+                        System.out.println("Aggregated sales stats: " + salesResult);
+                        out.println(salesResult);
                         break;
                     default:
                         out.println("Unknown command: " + command);
