@@ -60,6 +60,7 @@ public class Master {
 
         List<String> storeJsons = parseStoreJsons(jsonContent);
         for (String storeJson : storeJsons) {
+            System.out.println("Parsed store JSON: " + storeJson); // Debugging line
             String storeName = extractField(storeJson, "StoreName");
             if (storeName.isEmpty()) {
                 System.err.println("Failed to extract StoreName from: " + storeJson);
@@ -72,25 +73,32 @@ public class Master {
 
     private List<String> parseStoreJsons(String jsonContent) {
         List<String> stores = new ArrayList<>();
-        jsonContent = jsonContent.substring(1, jsonContent.length() - 1).trim(); // Remove [ and ]
+        // Remove outer square brackets
+        jsonContent = jsonContent.substring(1, jsonContent.length() - 1).trim();
         if (jsonContent.isEmpty()) return stores;
 
         int braceCount = 0;
-        int start = 0;
+        int start = -1;
+
         for (int i = 0; i < jsonContent.length(); i++) {
             char c = jsonContent.charAt(i);
-            if (c == '{') braceCount++;
-            else if (c == '}') braceCount--;
 
-            if (braceCount == 0 && i > start) {
-                String storeJson = jsonContent.substring(start, i + 1).trim();
-                if (storeJson.endsWith(",")) storeJson = storeJson.substring(0, storeJson.length() - 1);
-                stores.add(storeJson);
-                start = i + 1;
-                while (start < jsonContent.length() && jsonContent.charAt(start) == ',') start++;
-                i = start - 1; // Reset i to continue from new start
+            if (c == '{') {
+                if (braceCount == 0) {
+                    start = i; // Mark the start of a JSON object
+                }
+                braceCount++;
+            } else if (c == '}') {
+                braceCount--;
+                if (braceCount == 0 && start != -1) {
+                    // We've found a complete JSON object
+                    String storeJson = jsonContent.substring(start, i + 1).trim();
+                    stores.add(storeJson);
+                    start = -1; // Reset start for the next object
+                }
             }
         }
+
         return stores;
     }
 
