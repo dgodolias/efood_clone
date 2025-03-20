@@ -12,7 +12,32 @@ public class Worker {
         this.stores = new HashMap<>();
         this.tempDir = "data/temp_workers_data/worker_" + port;
         new File(tempDir).mkdirs();
-        new File(tempDir + "/stores.txt").delete();
+        initializeStoresFile();
+    }
+
+    private void initializeStoresFile() {
+        try {
+            new File(tempDir).mkdirs();
+            try (PrintWriter writer = new PrintWriter(new FileWriter(tempDir + "/stores.txt"))) {
+                // Just create an empty file for now
+            }
+            System.out.println("Created initial stores file at " + tempDir + "/stores.txt");
+        } catch (IOException e) {
+            System.err.println("Error creating stores file: " + e.getMessage());
+        }
+    }
+
+    public void writeStoreListToFile() {
+        synchronized (stores) {
+            try (PrintWriter writer = new PrintWriter(new FileWriter(tempDir + "/stores.txt"))) {
+                for (String storeName : stores.keySet()) {
+                    writer.println(storeName);
+                }
+                System.out.println("Worker stores file updated with " + stores.size() + " stores");
+            } catch (IOException e) {
+                System.err.println("Error writing stores file: " + e.getMessage());
+            }
+        }
     }
 
     public void start(int port) {
@@ -198,12 +223,14 @@ class WorkerThread extends Thread {
         return productList.toArray(new String[0]);
     }
 
+
     private void updateStoresFile() throws IOException {
         try (PrintWriter writer = new PrintWriter(new FileWriter(tempDir + "/stores.txt"))) {
             for (String storeName : stores.keySet()) {
                 writer.println(storeName);
             }
         }
+        System.out.println("Updated stores file at " + tempDir + "/stores.txt with " + stores.size() + " stores");
     }
 
     private String extractField(String json, String field) {

@@ -67,6 +67,7 @@ public class Master {
                 continue;
             }
             WorkerConnection worker = getWorkerForStore(storeName);
+            System.out.println("Sending ADD_STORE request to worker: " + worker.host + ":" + worker.port);
             worker.sendRequest("ADD_STORE " + storeJson);
         }
     }
@@ -290,8 +291,8 @@ class MasterThread extends Thread {
 }
 
 class WorkerConnection {
-    private String host;
-    private int port;
+    String host;
+    int port;
     private Socket socket;
     private PrintWriter out;
     private BufferedReader in;
