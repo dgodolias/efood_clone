@@ -2,9 +2,9 @@ package com.example.efood.frontend;
 
 import java.io.*;
 import java.net.*;
-import java.util.Scanner;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Scanner;
 
 public class ManagerConsoleApp {
     private static final String MASTER_HOST = "localhost";
@@ -20,31 +20,28 @@ public class ManagerConsoleApp {
                 System.out.println("Enter command (ADD_STORE, ADD_PRODUCT, GET_FOOD_STATS, EXIT):");
                 String command = scanner.nextLine();
                 if (command.equalsIgnoreCase("EXIT")) break;
+                String data = "";
                 switch (command) {
                     case "ADD_STORE":
-                        System.out.println("Enter path to store JSON file (e.g., data/to_be_inserted/store.json):");
-                        String filePath = scanner.nextLine();
+                        System.out.println("Enter the filename of the store JSON (e.g., store.json):");
+                        String filename = scanner.nextLine();
                         try {
-                            String jsonData = new String(Files.readAllBytes(Paths.get(filePath)));
-                            out.println("ADD_STORE " + jsonData);
+                            data = new String(Files.readAllBytes(Paths.get("data/to_be_inserted/" + filename)));
                         } catch (IOException e) {
                             System.err.println("Error reading file: " + e.getMessage());
+                            continue;
                         }
                         break;
                     case "ADD_PRODUCT":
                         System.out.println("Enter store name, product name, type, amount, price (space-separated):");
-                        String productData = scanner.nextLine();
-                        out.println("ADD_PRODUCT " + productData);
+                        data = scanner.nextLine();
                         break;
                     case "GET_FOOD_STATS":
                         System.out.println("Enter food category:");
-                        String category = scanner.nextLine();
-                        out.println("GET_FOOD_STATS " + category);
+                        data = scanner.nextLine();
                         break;
-                    default:
-                        System.out.println("Unknown command");
-                        continue;
                 }
+                out.println(command + " " + data);
                 String response = in.readLine();
                 System.out.println("Response: " + response);
             }

@@ -2,28 +2,120 @@ package com.example.backend;
 
 import java.io.*;
 import java.net.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 
 public class Master {
     private static final int PORT = 8080;
     private List<WorkerConnection> workers;
-    private List<Process> workerProcesses; // To track spawned Worker processes
+    private List<Process> workerProcesses;
 
     public Master(int workerCount, int startPort) throws IOException {
         workers = new ArrayList<>();
         workerProcesses = new ArrayList<>();
 
-        // Dynamically start workers
+        // Διαγραφή του φακέλου temp_workers_data κατά την εκκίνηση
+        deleteDirectory(new File("data/temp_workers_data"));
+
+        // Εκκίνηση workers
         for (int i = 0; i < workerCount; i++) {
             int workerPort = startPort + i;
             spawnWorker(workerPort);
             workers.add(new WorkerConnection("localhost", workerPort));
             System.out.println("Started and connected to worker at localhost:" + workerPort);
         }
+
+        // Φόρτωση αρχικών καταστημάτων από stores.json
+        loadInitialStores();
+    }
+
+    private void deleteDirectory(File directory) {
+        if (directory.exists()) {
+            File[] files = directory.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    if (file.isDirectory()) {
+                        deleteDirectory(file);
+                    } else {
+                        file.delete();
+                    }
+                }
+            }
+            directory.delete();
+        }
+    }
+
+    private void loadInitialStores() throws IOException {
+        File storesFile = new File("data/stores.json");
+        if (!storesFile.exists()) {
+            System.out.println("No initial stores found in data/stores.json");
+            return;
+        }
+        String jsonContent = new String(Files.readAllBytes(Paths.get("data/stores.json"))).trim();
+        if (!jsonContent.startsWith("[") || !jsonContent.endsWith("]")) {
+            System.err.println("Invalid JSON format in stores.json");
+            return;
+        }
+
+        List<String> storeJsons = parseStoreJsons(jsonContent);
+        for (String storeJson : storeJsons) {
+            String storeName = extractField(storeJson, "StoreName");
+            if (storeName.isEmpty()) {
+                System.err.println("Failed to extract StoreName from: " + storeJson);
+                continue;
+            }
+            WorkerConnection worker = getWorkerForStore(storeName);
+            worker.sendRequest("ADD_STORE " + storeJson);
+        }
+    }
+
+    private List<String> parseStoreJsons(String jsonContent) {
+        List<String> stores = new ArrayList<>();
+        jsonContent = jsonContent.substring(1, jsonContent.length() - 1).trim(); // Remove [ and ]
+        if (jsonContent.isEmpty()) return stores;
+
+        int braceCount = 0;
+        int start = 0;
+        for (int i = 0; i < jsonContent.length(); i++) {
+            char c = jsonContent.charAt(i);
+            if (c == '{') braceCount++;
+            else if (c == '}') braceCount--;
+
+            if (braceCount == 0 && i > start) {
+                String storeJson = jsonContent.substring(start, i + 1).trim();
+                if (storeJson.endsWith(",")) storeJson = storeJson.substring(0, storeJson.length() - 1);
+                stores.add(storeJson);
+                start = i + 1;
+                while (start < jsonContent.length() && jsonContent.charAt(start) == ',') start++;
+                i = start - 1; // Reset i to continue from new start
+            }
+        }
+        return stores;
+    }
+
+    private String extractField(String json, String field) {
+        String search = "\"" + field + "\":";
+        int start = json.indexOf(search);
+        if (start == -1) return "";
+        start += search.length();
+        if (start >= json.length()) return "";
+
+        char firstChar = json.charAt(start);
+        if (firstChar == '"') {
+            start++;
+            int end = json.indexOf("\"", start);
+            if (end == -1) return "";
+            return json.substring(start, end);
+        } else {
+            int end = json.indexOf(",", start);
+            if (end == -1) end = json.indexOf("}", start);
+            if (end == -1 || end > json.length()) return "";
+            return json.substring(start, end).trim();
+        }
     }
 
     private void spawnWorker(int port) throws IOException {
-        // Command to launch a new Worker instance
         String javaHome = System.getProperty("java.home");
         String javaBin = javaHome + File.separator + "bin" + File.separator + "java";
         String classpath = System.getProperty("java.class.path");
@@ -32,11 +124,10 @@ public class Master {
         ProcessBuilder pb = new ProcessBuilder(
                 javaBin, "-cp", classpath, className, String.valueOf(port)
         );
-        pb.inheritIO(); // Workers share console output for simplicity; adjust as needed
+        pb.inheritIO();
         Process process = pb.start();
         workerProcesses.add(process);
 
-        // Brief delay to ensure worker starts before connection attempt
         try {
             Thread.sleep(500);
         } catch (InterruptedException e) {
@@ -74,17 +165,22 @@ public class Master {
 
     public static void main(String[] args) {
         try {
-            int workerCount = args.length > 0 ? Integer.parseInt(args[0]) : 2; // Default to 2 workers
-            int startPort = 8081; // Starting port for workers
+            int workerCount = args.length > 0 ? Integer.parseInt(args[0]) : 2;
+            int startPort = 8081;
             Master master = new Master(workerCount, startPort);
             master.start();
         } catch (IOException e) {
             System.err.println("Failed to initialize Master: " + e.getMessage());
         }
     }
+
+    private WorkerConnection getWorkerForStore(String storeName) {
+        int hash = storeName.hashCode();
+        int workerIndex = Math.abs(hash) % workers.size();
+        return workers.get(workerIndex);
+    }
 }
 
-// MasterThread and WorkerConnection classes remain unchanged
 class MasterThread extends Thread {
     private Socket socket;
     private List<WorkerConnection> workers;
@@ -109,7 +205,11 @@ class MasterThread extends Thread {
                 String data = parts.length > 1 ? parts[1] : "";
                 switch (command) {
                     case "ADD_STORE":
-                        String storeName = extractStoreName(data);
+                        String storeName = extractField(data, "StoreName");
+                        if (storeName.isEmpty()) {
+                            out.println("Error: Invalid store JSON");
+                            continue;
+                        }
                         WorkerConnection worker = getWorkerForStore(storeName);
                         String response = worker.sendRequest(request);
                         out.println(response);
@@ -129,6 +229,15 @@ class MasterThread extends Thread {
                         String buyResponse = buyWorker.sendRequest(request);
                         out.println(buyResponse);
                         break;
+                    case "ADD_PRODUCT":
+                    case "GET_FOOD_STATS":
+                        String targetName = data.split(" ")[0];
+                        WorkerConnection targetWorker = command.equals("GET_FOOD_STATS")
+                                ? workers.get(0)
+                                : getWorkerForStore(targetName);
+                        String workerResponse = targetWorker.sendRequest(request);
+                        out.println(workerResponse);
+                        break;
                     default:
                         out.println("Unknown command: " + command);
                 }
@@ -144,8 +253,25 @@ class MasterThread extends Thread {
         }
     }
 
-    private String extractStoreName(String data) {
-        return data.split(" ")[0];
+    private String extractField(String json, String field) {
+        String search = "\"" + field + "\":";
+        int start = json.indexOf(search);
+        if (start == -1) return "";
+        start += search.length();
+        if (start >= json.length()) return "";
+
+        char firstChar = json.charAt(start);
+        if (firstChar == '"') {
+            start++;
+            int end = json.indexOf("\"", start);
+            if (end == -1) return "";
+            return json.substring(start, end);
+        } else {
+            int end = json.indexOf(",", start);
+            if (end == -1) end = json.indexOf("}", start);
+            if (end == -1 || end > json.length()) return "";
+            return json.substring(start, end).trim();
+        }
     }
 
     private WorkerConnection getWorkerForStore(String storeName) {
