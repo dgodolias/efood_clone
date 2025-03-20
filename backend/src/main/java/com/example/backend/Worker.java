@@ -90,34 +90,61 @@ class WorkerThread extends Thread {
                 synchronized (stores) {
                     switch (command) {
                         case "ADD_STORE":
-                            String storeName = extractField(data, "StoreName");
-                            if (storeName.isEmpty()) {
-                                out.println("Error: Invalid store JSON - missing StoreName");
+                                String storeName = extractField(data, "StoreName");
+                                if (storeName.isEmpty()) {
+                                    out.println("Error: Invalid store JSON - missing StoreName");
+                                    System.err.println("Failed to extract StoreName from: " + data);
+                                    break;
+                                }
+
+                                // Remove any surrounding quotes from store name
+                                storeName = storeName.replaceAll("^\"|\"$", "");
+                                System.out.println("Worker on port " + socket.getLocalPort() + " received store: " + storeName);
+
+                                try {
+                                    // Parse numeric fields
+                                    double latitude = Double.parseDouble(extractField(data, "Latitude"));
+                                    double longitude = Double.parseDouble(extractField(data, "Longitude"));
+                                    String foodCategory = extractField(data, "FoodCategory");
+                                    int stars = Integer.parseInt(extractField(data, "Stars"));
+                                    int noOfVotes = Integer.parseInt(extractField(data, "NoOfVotes"));
+                                    String storeLogo = extractField(data, "StoreLogo");
+
+                                    // Create store object
+                                    Store store = new Store(storeName, latitude, longitude, foodCategory, stars, noOfVotes, storeLogo);
+
+                                    // Parse and add products
+                                    String productsJson = extractProductsJson(data);
+                                    List<Product> products = parseProducts(productsJson);
+                                    for (Product p : products) {
+                                        store.addProduct(p);
+                                    }
+
+                                    // Add store to the map and update file
+                                    stores.put(storeName, store);
+                                    System.out.println("Worker on port " + socket.getLocalPort() + " added store: " + storeName);
+
+                                    // Write store names to file
+                                    try (PrintWriter writer = new PrintWriter(new FileWriter(tempDir + "/stores.txt"))) {
+                                        for (String name : stores.keySet()) {
+                                            writer.println(name);
+                                        }
+                                        System.out.println("Updated stores file at " + tempDir + "/stores.txt with " + stores.size() + " stores");
+                                    } catch (IOException e) {
+                                        System.err.println("Error writing stores file: " + e.getMessage());
+                                    }
+
+                                    out.println("Store added: " + storeName);
+                                } catch (NumberFormatException e) {
+                                    System.err.println("Error parsing numeric field: " + e.getMessage());
+                                    e.printStackTrace();
+                                    out.println("Error: Failed to parse store data - " + e.getMessage());
+                                } catch (Exception e) {
+                                    System.err.println("Error processing store data: " + e.getMessage());
+                                    e.printStackTrace();
+                                    out.println("Error: Failed to process store data - " + e.getMessage());
+                                }
                                 break;
-                            }
-                            System.out.println("Worker on port " + socket.getLocalPort() + " received store: " + storeName);
-
-                            double latitude = Double.parseDouble(extractField(data, "Latitude"));
-                            double longitude = Double.parseDouble(extractField(data, "Longitude"));
-                            String foodCategory = extractField(data, "FoodCategory");
-                            int stars = Integer.parseInt(extractField(data, "Stars"));
-                            int noOfVotes = Integer.parseInt(extractField(data, "NoOfVotes"));
-                            String storeLogo = extractField(data, "StoreLogo");
-                            Store store = new Store(storeName, latitude, longitude, foodCategory, stars, noOfVotes, storeLogo);
-
-                            String productsJson = extractProductsJson(data);
-                            List<Product> products = parseProducts(productsJson);
-                            for (Product p : products) {
-                                store.addProduct(p);
-                            }
-
-                            System.out.println("Worker on port " + socket.getLocalPort() + " processing store data for: " + storeName);
-                            stores.put(storeName, store);
-                            System.out.println("Worker on port " + socket.getLocalPort() + " saved store '" + storeName + "' to internal map");
-                            updateStoresFile();
-                            out.println("Store added: " + storeName);
-
-                            break;
                         case "FILTER":
                             String filterCategory = data;
                             List<String> results = new ArrayList<>();
@@ -192,23 +219,57 @@ class WorkerThread extends Thread {
         return json.substring(start, end);
     }
 
-    private List<Product> parseProducts(String productsJson) {
-        List<Product> products = new ArrayList<>();
-        if (productsJson.equals("[]")) return products;
-
-        productsJson = productsJson.substring(1, productsJson.length() - 1).trim();
-        if (productsJson.isEmpty()) return products;
-
-        String[] productJsons = splitProducts(productsJson);
-        for (String productJson : productJsons) {
-            String productName = extractField(productJson, "ProductName");
-            String productType = extractField(productJson, "ProductType");
-            int availableAmount = Integer.parseInt(extractField(productJson, "Available Amount"));
-            double price = Double.parseDouble(extractField(productJson, "Price"));
-            products.add(new Product(productName, productType, availableAmount, price));
-        }
-        return products;
+private List<Product> parseProducts(String productsJson) {
+    List<Product> products = new ArrayList<>();
+    // Trim any surrounding brackets if present
+    productsJson = productsJson.trim();
+    if (productsJson.startsWith("[")) {
+        productsJson = productsJson.substring(1);
     }
+    if (productsJson.endsWith("]")) {
+        productsJson = productsJson.substring(0, productsJson.length() - 1);
+    }
+
+    // Split by product objects
+    int braceCount = 0;
+    StringBuilder currentProduct = new StringBuilder();
+    for (int i = 0; i < productsJson.length(); i++) {
+        char c = productsJson.charAt(i);
+        if (c == '{') {
+            braceCount++;
+        } else if (c == '}') {
+            braceCount--;
+        }
+        currentProduct.append(c);
+
+        if (braceCount == 0 && currentProduct.length() > 0) {
+            String productJson = currentProduct.toString().trim();
+            if (!productJson.isEmpty() && productJson.startsWith("{") && productJson.endsWith("}")) {
+                String name = extractField(productJson, "ProductName");
+                String type = extractField(productJson, "ProductType");
+                String amountStr = extractField(productJson, "Available Amount");
+                String priceStr = extractField(productJson, "Price");
+
+                // Remove any surrounding quotes
+                name = name.replaceAll("^\"|\"$", "");
+                type = type.replaceAll("^\"|\"$", "");
+
+                try {
+                    int amount = Integer.parseInt(amountStr.trim());
+                    double price = Double.parseDouble(priceStr.trim());
+                    products.add(new Product(name, type, amount, price));
+                } catch (NumberFormatException e) {
+                    System.err.println("Error parsing product values: " + e.getMessage() +
+                                       " for product: " + productJson);
+                    throw e; // Re-throw to handle in calling method
+                }
+            }
+            currentProduct = new StringBuilder();
+        }
+    }
+
+    return products;
+}
 
     private String[] splitProducts(String productsJson) {
         List<String> productList = new ArrayList<>();
