@@ -46,31 +46,40 @@ public class Master {
         }
     }
 
-    private void loadInitialStores() throws IOException {
-        File storesFile = new File("data/stores.json");
-        if (!storesFile.exists()) {
-            System.out.println("No initial stores found in data/stores.json");
-            return;
-        }
-        String jsonContent = new String(Files.readAllBytes(Paths.get("data/stores.json"))).trim();
-        if (!jsonContent.startsWith("[") || !jsonContent.endsWith("]")) {
-            System.err.println("Invalid JSON format in stores.json");
-            return;
+private void loadInitialStores() throws IOException {
+    File storesFile = new File("data/stores.json");
+    if (!storesFile.exists()) {
+        System.out.println("No initial stores found in data/stores.json");
+        return;
+    }
+    String jsonContent = new String(Files.readAllBytes(Paths.get("data/stores.json"))).trim();
+    if (!jsonContent.startsWith("[") || !jsonContent.endsWith("]")) {
+        System.err.println("Invalid JSON format in stores.json");
+        return;
+    }
+
+    List<String> storeJsons = parseStoreJsons(jsonContent);
+    for (String storeJson : storeJsons) {
+        System.out.println("Parsed store JSON: " + storeJson);
+        String storeName = extractField(storeJson, "StoreName");
+        if (storeName.isEmpty()) {
+            System.err.println("Failed to extract StoreName from: " + storeJson);
+            continue;
         }
 
-        List<String> storeJsons = parseStoreJsons(jsonContent);
-        for (String storeJson : storeJsons) {
-            System.out.println("Parsed store JSON: " + storeJson); // Debugging line
-            String storeName = extractField(storeJson, "StoreName");
-            if (storeName.isEmpty()) {
-                System.err.println("Failed to extract StoreName from: " + storeJson);
-                continue;
-            }
-            WorkerConnection worker = getWorkerForStore(storeName);
-            System.out.println("Sending ADD_STORE request to worker: " + worker.host + ":" + worker.port);
-            worker.sendRequest("ADD_STORE " + storeJson);
+        WorkerConnection worker = getWorkerForStore(storeName);
+        System.out.println("Assigning store '" + storeName + "' to worker at port " + worker.getPort());
+        System.out.println("Sending ADD_STORE request to worker: " + worker.host + ":" + worker.port);
+
+
+        try {
+            String response = worker.sendRequest("ADD_STORE " + storeJson);
+            System.out.println("Worker response: " + response);
+        } catch (IOException e) {
+            System.err.println("Failed to send store to worker: " + e.getMessage());
         }
     }
+}
 
     private List<String> parseStoreJsons(String jsonContent) {
         List<String> stores = new ArrayList<>();
@@ -309,12 +318,16 @@ class WorkerConnection {
         in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
     }
 
+    // In WorkerConnection class in Master.java, modify the sendRequest method:
     public String sendRequest(String request) throws IOException {
         try {
+            // Replace newlines with spaces to ensure the whole request is sent as one line
+            request = request.replace("\n", " ").replace("\r", "");
             out.println(request);
             return in.readLine();
         } catch (IOException e) {
             connect();
+            request = request.replace("\n", " ").replace("\r", "");
             out.println(request);
             return in.readLine();
         }
@@ -324,5 +337,10 @@ class WorkerConnection {
         if (socket != null) socket.close();
         if (out != null) out.close();
         if (in != null) in.close();
+    }
+
+    // Add this method to the WorkerConnection class in Master.java
+    public int getPort() {
+        return port;
     }
 }

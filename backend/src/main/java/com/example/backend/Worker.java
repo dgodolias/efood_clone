@@ -77,10 +77,13 @@ class WorkerThread extends Thread {
 
     @Override
     public void run() {
+
         try (BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
             String request;
+            System.out.println("Worker on port " + socket.getLocalPort() + " waiting for request...");
             while ((request = in.readLine()) != null) {
+                System.out.println("Worker on port " + socket.getLocalPort() + " received request: " + request);
                 String[] parts = request.split(" ", 2);
                 String command = parts[0];
                 String data = parts.length > 1 ? parts[1] : "";
@@ -92,6 +95,8 @@ class WorkerThread extends Thread {
                                 out.println("Error: Invalid store JSON - missing StoreName");
                                 break;
                             }
+                            System.out.println("Worker on port " + socket.getLocalPort() + " received store: " + storeName);
+
                             double latitude = Double.parseDouble(extractField(data, "Latitude"));
                             double longitude = Double.parseDouble(extractField(data, "Longitude"));
                             String foodCategory = extractField(data, "FoodCategory");
@@ -106,9 +111,12 @@ class WorkerThread extends Thread {
                                 store.addProduct(p);
                             }
 
+                            System.out.println("Worker on port " + socket.getLocalPort() + " processing store data for: " + storeName);
                             stores.put(storeName, store);
+                            System.out.println("Worker on port " + socket.getLocalPort() + " saved store '" + storeName + "' to internal map");
                             updateStoresFile();
                             out.println("Store added: " + storeName);
+
                             break;
                         case "FILTER":
                             String filterCategory = data;
