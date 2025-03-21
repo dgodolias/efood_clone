@@ -56,6 +56,11 @@ public class Store {
     // Getters and Setters
     public String getStoreName() { return storeName; }
     public String getFoodCategory() { return foodCategory; }
+    public int getStars() { return stars; }
+    public int getNoOfVotes() { return noOfVotes; }
+    public String getStoreLogo() { return storeLogo; }
+    public double getLatitude() { return latitude; }
+    public double getLongitude() { return longitude; }
 
     private void addFakeSales(Product product) {
         // Προσθήκη mock πωλήσεων για το νέο προϊόν
