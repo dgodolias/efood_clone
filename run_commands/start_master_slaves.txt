@@ -1,0 +1,3 @@
+cd C:\Users\USER\Desktop\PROJECTS\efood
+gradlew build
+java -cp backend/build/classes/java/main com.example.backend.Master 2

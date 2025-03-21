@@ -31,6 +31,7 @@ public class Master {
     }
 
     private void deleteDirectory(File directory) {
+        System.out.println("Attempting to delete: " + directory.getAbsolutePath());
         if (directory.exists()) {
             File[] files = directory.listFiles();
             if (files != null) {
@@ -38,11 +39,15 @@ public class Master {
                     if (file.isDirectory()) {
                         deleteDirectory(file);
                     } else {
-                        file.delete();
+                        boolean deleted = file.delete();
+                        System.out.println("Deleted file: " + file.getAbsolutePath() + " - " + deleted);
                     }
                 }
             }
-            directory.delete();
+            boolean deleted = directory.delete();
+            System.out.println("Deleted directory: " + directory.getAbsolutePath() + " - " + deleted);
+        } else {
+            System.out.println("Directory does not exist: " + directory.getAbsolutePath());
         }
     }
 

@@ -1,0 +1,3 @@
+cd C:\Users\USER\Desktop\PROJECTS\efood\app\src\main\java\com\example\efood\frontend
+javac ManagerConsoleApp.java
+java ManagerConsoleApp.java

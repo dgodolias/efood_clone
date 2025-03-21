@@ -22,16 +22,59 @@ public class ManagerConsoleApp {
                 if (command.equalsIgnoreCase("EXIT")) break;
                 String data = "";
                 switch (command) {
-                    case "ADD_STORE":
-                        System.out.println("Enter the filename of the store JSON (e.g., store.json):");
-                        String filename = scanner.nextLine();
-                        try {
-                            data = new String(Files.readAllBytes(Paths.get("data/to_be_inserted/" + filename)));
-                        } catch (IOException e) {
-                            System.err.println("Error reading file: " + e.getMessage());
-                            continue;
-                        }
-                        break;
+
+                        case "ADD_STORE":
+                            System.out.println("Enter the filename of the store JSON (e.g., store.json):");
+                            String filename = scanner.nextLine();
+                            try {
+
+                                File currentDir = new File(System.getProperty("user.dir"));
+                                File projectRoot = null;
+
+                                while (currentDir != null) {
+                                    if (new File(currentDir, "data").exists()) {
+                                        projectRoot = currentDir;
+                                        break;
+                                    }
+                                    currentDir = currentDir.getParentFile();
+                                }
+
+                                if (projectRoot == null) {
+                                    throw new IOException("Could not find data directory");
+                                }
+
+                                String filePath = projectRoot.getPath() + "/data/to_be_inserted/" + filename;
+                                System.out.println("Looking for file at: " + filePath);
+                                String fileContent = new String(Files.readAllBytes(Paths.get(filePath)));
+
+
+                                if (fileContent.trim().startsWith("[")) {
+                                    int startObject = fileContent.indexOf('{');
+                                    if (startObject != -1) {
+                                        int braceCount = 1;
+                                        int endObject = startObject + 1;
+                                        while (endObject < fileContent.length() && braceCount > 0) {
+                                            char c = fileContent.charAt(endObject);
+                                            if (c == '{') braceCount++;
+                                            else if (c == '}') braceCount--;
+                                            endObject++;
+                                        }
+                                        data = fileContent.substring(startObject, endObject);
+                                    } else {
+                                        throw new IOException("No valid JSON object found in file");
+                                    }
+                                } else {
+                                    data = fileContent;
+                                }
+
+
+                                data = data.replaceAll("\\s+", " ").trim();
+
+                            } catch (IOException e) {
+                                System.err.println("Error reading file: " + e.getMessage());
+                                continue;
+                            }
+                            break;
                     case "ADD_PRODUCT":
                         System.out.println("Enter store name, product name, type, amount, price (space-separated):");
                         data = scanner.nextLine();

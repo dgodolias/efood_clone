@@ -30,6 +30,9 @@ public class Store {
     }
 
     public synchronized void addProduct(Product product) {
+        // proeretika
+        addFakeSales(product);
+        //
         products.add(product);
     }
 
@@ -53,4 +56,9 @@ public class Store {
     // Getters and Setters
     public String getStoreName() { return storeName; }
     public String getFoodCategory() { return foodCategory; }
+
+    private void addFakeSales(Product product) {
+        // Προσθήκη mock πωλήσεων για το νέο προϊόν
+        sales.put(product.getProductName(), (int) (Math.random() * 100) + 1); // Τυχαίες πωλήσεις από 1-100
+    }
 }
