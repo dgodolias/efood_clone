@@ -1,6 +1,86 @@
-Burger Bonanza
-Pizza Palace
-Kebab Kingdom
-Pasta Place
-Sushi Spot
-Veggie Vibes
+[
+  {
+    "StoreName": "Burger Bonanza",
+    "Latitude": 0.0,
+    "Longitude": 0.0,
+    "FoodCategory": ""burgers"",
+    "Stars": 0,
+    "NoOfVotes": 0,
+    "StoreLogo": "",
+    "Products": [
+      {"ProductName": "Classic Burger", "ProductType": "burger", "Available Amount": 2000, "Price": 7.5},
+      {"ProductName": "Cheeseburger", "ProductType": "burger", "Available Amount": 1500, "Price": 8.5},
+      {"ProductName": "Fries", "ProductType": "side", "Available Amount": 1000, "Price": 3.0}
+    ]
+  },
+  {
+    "StoreName": "Pizza Palace",
+    "Latitude": 0.0,
+    "Longitude": 0.0,
+    "FoodCategory": ""pizzeria"",
+    "Stars": 0,
+    "NoOfVotes": 0,
+    "StoreLogo": "",
+    "Products": [
+      {"ProductName": "Margherita", "ProductType": "pizza", "Available Amount": 5000, "Price": 8.5},
+      {"ProductName": "Pepperoni", "ProductType": "pizza", "Available Amount": 3000, "Price": 10.0},
+      {"ProductName": "Greek Salad", "ProductType": "salad", "Available Amount": 150, "Price": 6.0}
+    ]
+  },
+  {
+    "StoreName": "Kebab Kingdom",
+    "Latitude": 0.0,
+    "Longitude": 0.0,
+    "FoodCategory": ""kebab"",
+    "Stars": 0,
+    "NoOfVotes": 0,
+    "StoreLogo": "",
+    "Products": [
+      {"ProductName": "Lamb Kebab", "ProductType": "kebab", "Available Amount": 1500, "Price": 8.0},
+      {"ProductName": "Chicken Kebab", "ProductType": "kebab", "Available Amount": 1200, "Price": 7.5},
+      {"ProductName": "Hummus", "ProductType": "side", "Available Amount": 200, "Price": 4.0}
+    ]
+  },
+  {
+    "StoreName": "Pasta Place",
+    "Latitude": 0.0,
+    "Longitude": 0.0,
+    "FoodCategory": ""italian"",
+    "Stars": 0,
+    "NoOfVotes": 0,
+    "StoreLogo": "",
+    "Products": [
+      {"ProductName": "Spaghetti Bolognese", "ProductType": "pasta", "Available Amount": 2500, "Price": 11.0},
+      {"ProductName": "Carbonara", "ProductType": "pasta", "Available Amount": 2000, "Price": 12.5},
+      {"ProductName": "Caesar Salad", "ProductType": "salad", "Available Amount": 300, "Price": 7.0}
+    ]
+  },
+  {
+    "StoreName": "Sushi Spot",
+    "Latitude": 0.0,
+    "Longitude": 0.0,
+    "FoodCategory": ""sushi"",
+    "Stars": 0,
+    "NoOfVotes": 0,
+    "StoreLogo": "",
+    "Products": [
+      {"ProductName": "California Roll", "ProductType": "sushi", "Available Amount": 800, "Price": 12.0},
+      {"ProductName": "Spicy Tuna", "ProductType": "sushi", "Available Amount": 600, "Price": 14.0},
+      {"ProductName": "Miso Soup", "ProductType": "soup", "Available Amount": 200, "Price": 4.5}
+    ]
+  },
+  {
+    "StoreName": "Veggie Vibes",
+    "Latitude": 0.0,
+    "Longitude": 0.0,
+    "FoodCategory": ""vegetarian"",
+    "Stars": 0,
+    "NoOfVotes": 0,
+    "StoreLogo": "",
+    "Products": [
+      {"ProductName": "Veggie Burger", "ProductType": "burger", "Available Amount": 1000, "Price": 9.0},
+      {"ProductName": "Falafel Wrap", "ProductType": "wrap", "Available Amount": 800, "Price": 8.5},
+      {"ProductName": "Quinoa Salad", "ProductType": "salad", "Available Amount": 150, "Price": 6.5}
+    ]
+  }
+]

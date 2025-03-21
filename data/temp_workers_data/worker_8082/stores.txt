@@ -1,3 +1,58 @@
-Gyro Grill
-Seafood Shack
-Taco Town
+[
+  {
+    "StoreName": "Gyro Grill",
+    "Latitude": 0.0,
+    "Longitude": 0.0,
+    "FoodCategory": ""greek"",
+    "Stars": 0,
+    "NoOfVotes": 0,
+    "StoreLogo": "",
+    "Products": [
+      {"ProductName": "Chicken Gyro", "ProductType": "gyro", "Available Amount": 4000, "Price": 6.0},
+      {"ProductName": "Pork Gyro", "ProductType": "gyro", "Available Amount": 3500, "Price": 6.5},
+      {"ProductName": "Tzatziki", "ProductType": "side", "Available Amount": 500, "Price": 2.5}
+    ]
+  },
+  {
+    "StoreName": "Seafood Shack",
+    "Latitude": 0.0,
+    "Longitude": 0.0,
+    "FoodCategory": ""seafood"",
+    "Stars": 0,
+    "NoOfVotes": 0,
+    "StoreLogo": "",
+    "Products": [
+      {"ProductName": "Fish and Chips", "ProductType": "seafood", "Available Amount": 2000, "Price": 13.0},
+      {"ProductName": "Shrimp Cocktail", "ProductType": "seafood", "Available Amount": 1000, "Price": 15.0},
+      {"ProductName": "Coleslaw", "ProductType": "side", "Available Amount": 300, "Price": 3.5}
+    ]
+  },
+  {
+    "StoreName": "Dessert Delight",
+    "Latitude": 0.0,
+    "Longitude": 0.0,
+    "FoodCategory": ""desserts"",
+    "Stars": 0,
+    "NoOfVotes": 0,
+    "StoreLogo": "",
+    "Products": [
+      {"ProductName": "Chocolate Cake", "ProductType": "dessert", "Available Amount": 500, "Price": 5.0},
+      {"ProductName": "Cheesecake", "ProductType": "dessert", "Available Amount": 400, "Price": 6.0},
+      {"ProductName": "Ice Cream", "ProductType": "dessert", "Available Amount": 600, "Price": 4.0}
+    ]
+  },
+  {
+    "StoreName": "Taco Town",
+    "Latitude": 0.0,
+    "Longitude": 0.0,
+    "FoodCategory": ""mexican"",
+    "Stars": 0,
+    "NoOfVotes": 0,
+    "StoreLogo": "",
+    "Products": [
+      {"ProductName": "Beef Taco", "ProductType": "taco", "Available Amount": 3000, "Price": 5.5},
+      {"ProductName": "Chicken Taco", "ProductType": "taco", "Available Amount": 2800, "Price": 5.5},
+      {"ProductName": "Guacamole", "ProductType": "side", "Available Amount": 400, "Price": 3.5}
+    ]
+  }
+]

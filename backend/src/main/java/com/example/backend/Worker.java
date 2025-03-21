@@ -28,17 +28,57 @@ public class Worker {
         }
     }
 
+
     public void writeStoreListToFile() {
         synchronized (stores) {
             try (PrintWriter writer = new PrintWriter(new FileWriter(tempDir + "/stores.txt"))) {
-                for (String storeName : stores.keySet()) {
-                    writer.println(storeName);
+                writer.println("[");
+                boolean first = true;
+                for (Store store : stores.values()) {
+                    if (!first) {
+                        writer.println(",");
+                    }
+                    first = false;
+                    writer.print(storeToJson(store));
                 }
+                writer.println("\n]");
                 System.out.println("Worker stores file updated with " + stores.size() + " stores");
             } catch (IOException e) {
                 System.err.println("Error writing stores file: " + e.getMessage());
             }
         }
+    }
+
+    private String storeToJson(Store store) {
+        StringBuilder json = new StringBuilder();
+        json.append("  {\n");
+        json.append("    \"StoreName\": \"").append(store.getStoreName()).append("\",\n");
+        json.append("    \"Latitude\": ").append(0.0).append(",\n"); // Use actual values if accessible
+        json.append("    \"Longitude\": ").append(0.0).append(",\n");
+        json.append("    \"FoodCategory\": \"").append(store.getFoodCategory()).append("\",\n");
+        json.append("    \"Stars\": ").append(0).append(",\n");
+        json.append("    \"NoOfVotes\": ").append(0).append(",\n");
+        json.append("    \"StoreLogo\": \"\",\n");
+        json.append("    \"Products\": [\n");
+
+        List<Product> products = store.getProducts();
+        for (int i = 0; i < products.size(); i++) {
+            Product p = products.get(i);
+            json.append("      {");
+            json.append("\"ProductName\": \"").append(p.getProductName()).append("\", ");
+            json.append("\"ProductType\": \"").append(p.getProductType()).append("\", ");
+            json.append("\"Available Amount\": ").append(p.getAvailableAmount()).append(", ");
+            json.append("\"Price\": ").append(p.getPrice());
+            json.append("}");
+            if (i < products.size() - 1) {
+                json.append(",");
+            }
+            json.append("\n");
+        }
+
+        json.append("    ]\n");
+        json.append("  }");
+        return json.toString();
     }
 
     public void start(int port) {
@@ -143,6 +183,7 @@ class WorkerThread extends Thread {
                             if (storeAdd != null) {
                                 Product newProduct = new Product(productNameAdd, productType, amount, price);
                                 storeAdd.addProduct(newProduct);
+                                updateStoresFile();
                                 System.out.println("Adding product " + productNameAdd + " to store " + storeNameProd);
                                 out.println("Product added to store: " + storeNameProd);
                             } else {
@@ -160,6 +201,7 @@ class WorkerThread extends Thread {
                             Store removeStore = stores.get(removeStoreName);
                             if (removeStore != null) {
                                 removeStore.removeProduct(removeProductName);
+                                updateStoresFile();
                                 System.out.println("Removing product " + removeProductName + " from store " + removeStoreName);
                                 out.println("Product removed from store: " + removeStoreName);
                             } else {
@@ -305,11 +347,50 @@ class WorkerThread extends Thread {
 
     private void updateStoresFile() throws IOException {
         try (PrintWriter writer = new PrintWriter(new FileWriter(tempDir + "/stores.txt"))) {
-            for (String storeName : stores.keySet()) {
-                writer.println(storeName);
+            writer.println("[");
+            boolean first = true;
+            for (Store store : stores.values()) {
+                if (!first) {
+                    writer.println(",");
+                }
+                first = false;
+                writer.print(storeToJson(store));
             }
+            writer.println("\n]");
         }
         System.out.println("Updated stores file at " + tempDir + "/stores.txt with " + stores.size() + " stores");
+    }
+
+    private String storeToJson(Store store) {
+        StringBuilder json = new StringBuilder();
+        json.append("  {\n");
+        json.append("    \"StoreName\": \"").append(store.getStoreName()).append("\",\n");
+        json.append("    \"Latitude\": ").append(0.0).append(",\n"); // Use actual values if accessible
+        json.append("    \"Longitude\": ").append(0.0).append(",\n");
+        json.append("    \"FoodCategory\": \"").append(store.getFoodCategory()).append("\",\n");
+        json.append("    \"Stars\": ").append(0).append(",\n");
+        json.append("    \"NoOfVotes\": ").append(0).append(",\n");
+        json.append("    \"StoreLogo\": \"\",\n");
+        json.append("    \"Products\": [\n");
+
+        List<Product> products = store.getProducts();
+        for (int i = 0; i < products.size(); i++) {
+            Product p = products.get(i);
+            json.append("      {");
+            json.append("\"ProductName\": \"").append(p.getProductName()).append("\", ");
+            json.append("\"ProductType\": \"").append(p.getProductType()).append("\", ");
+            json.append("\"Available Amount\": ").append(p.getAvailableAmount()).append(", ");
+            json.append("\"Price\": ").append(p.getPrice());
+            json.append("}");
+            if (i < products.size() - 1) {
+                json.append(",");
+            }
+            json.append("\n");
+        }
+
+        json.append("    ]\n");
+        json.append("  }");
+        return json.toString();
     }
 
     private String extractField(String json, String field) {
