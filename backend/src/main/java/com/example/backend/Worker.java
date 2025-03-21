@@ -129,16 +129,16 @@ class WorkerThread extends Thread {
                             }
                             break;
                         case "ADD_PRODUCT":
-                            String[] productParts = data.split(" ");
+                            String[] productParts = data.split(",");
                             if (productParts.length < 5) {
                                 out.println("Invalid ADD_PRODUCT format");
                                 continue;
                             }
-                            String storeNameProd = productParts[0];
-                            String productNameAdd = productParts[1];
-                            String productType = productParts[2];
-                            int amount = Integer.parseInt(productParts[3]);
-                            double price = Double.parseDouble(productParts[4]);
+                            String storeNameProd = productParts[0].trim();
+                            String productNameAdd = productParts[1].trim();
+                            String productType = productParts[2].trim();
+                            int amount = Integer.parseInt(productParts[3].trim());
+                            double price = Double.parseDouble(productParts[4].trim());
                             Store storeAdd = stores.get(storeNameProd);
                             if (storeAdd != null) {
                                 Product newProduct = new Product(productNameAdd, productType, amount, price);
@@ -150,13 +150,13 @@ class WorkerThread extends Thread {
                             }
                             break;
                         case "REMOVE_PRODUCT":
-                            String[] removeParts = data.split(" ");
+                            String[] removeParts = data.split(",");
                             if (removeParts.length < 2) {
                                 out.println("Invalid REMOVE_PRODUCT format");
                                 continue;
                             }
-                            String removeStoreName = removeParts[0];
-                            String removeProductName = removeParts[1];
+                            String removeStoreName = removeParts[0].trim();
+                            String removeProductName = removeParts[1].trim();
                             Store removeStore = stores.get(removeStoreName);
                             if (removeStore != null) {
                                 removeStore.removeProduct(removeProductName);

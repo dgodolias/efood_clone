@@ -76,12 +76,21 @@ public class ManagerConsoleApp {
                             }
                             break;
                     case "ADD_PRODUCT":
-                        System.out.println("Enter store name, product name, type, amount, price (space-separated):");
+                        System.out.println("Enter store name, product name, type, amount, price (comma-separated):");
                         data = scanner.nextLine();
+
+                        if (!data.contains(",")) {
+                            System.out.println("Invalid format! Please use commas to separate values.");
+                            continue;
+                        }
                         break;
                     case "REMOVE_PRODUCT":
-                        System.out.println("Enter store name and product name (space-separated):");
+                        System.out.println("Enter store name and product name (comma-separated):");
                         data = scanner.nextLine();
+                        if (!data.contains(",")) {
+                            System.out.println("Invalid format! Please use comma to separate values.");
+                            continue;
+                        }
                         break;
                     case "GET_SALES_STATS":
                         // No additional data needed

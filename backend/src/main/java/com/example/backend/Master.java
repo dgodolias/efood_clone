@@ -240,16 +240,24 @@ class MasterThread extends Thread {
                         out.println(response);
                         break;
                     case "ADD_PRODUCT":
-                        String[] productParts = data.split(" ");
-                        String storeNameProd = productParts[0];
+                        String[] productParts = data.split(",");
+                        if (productParts.length < 5) {
+                            out.println("Invalid ADD_PRODUCT format - need 5 comma-separated values");
+                            continue;
+                        }
+                        String storeNameProd = productParts[0].trim();
                         WorkerConnection prodWorker = getWorkerForStore(storeNameProd);
                         String prodResponse = prodWorker.sendRequest(request);
                         System.out.println("Worker at port " + prodWorker.getPort() + " responded: " + prodResponse);
                         out.println(prodResponse);
                         break;
                     case "REMOVE_PRODUCT":
-                        String[] removeParts = data.split(" ");
-                        String removeStoreName = removeParts[0];
+                        String[] removeParts = data.split(",");
+                        if (removeParts.length < 2) {
+                            out.println("Invalid REMOVE_PRODUCT format - need 2 comma-separated values");
+                            continue;
+                        }
+                        String removeStoreName = removeParts[0].trim();
                         WorkerConnection removeWorker = getWorkerForStore(removeStoreName);
                         String removeResponse = removeWorker.sendRequest(request);
                         System.out.println("Worker at port " + removeWorker.getPort() + " responded: " + removeResponse);
