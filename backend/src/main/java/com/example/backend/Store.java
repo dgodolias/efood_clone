@@ -30,9 +30,7 @@ public class Store {
     }
 
     public synchronized void addProduct(Product product) {
-        // proeretika
-        addFakeSales(product);
-        //
+        addFakeSales(product); // Automatically add fake sales for testing
         products.add(product);
     }
 
@@ -46,14 +44,13 @@ public class Store {
 
     public synchronized void recordSale(String productName, int quantity) {
         sales.put(productName, sales.getOrDefault(productName, 0) + quantity);
-        System.out.println("Recorded sale: " + quantity + " units of " + productName + " in store " + storeName);
     }
 
     public synchronized Map<String, Integer> getSales() {
         return new ConcurrentHashMap<>(sales);
     }
 
-    // Getters and Setters
+    // Getters
     public String getStoreName() { return storeName; }
     public String getFoodCategory() { return foodCategory; }
     public int getStars() { return stars; }
@@ -63,7 +60,7 @@ public class Store {
     public double getLongitude() { return longitude; }
 
     private void addFakeSales(Product product) {
-        // Προσθήκη mock πωλήσεων για το νέο προϊόν
-        sales.put(product.getProductName(), (int) (Math.random() * 100) + 1); // Τυχαίες πωλήσεις από 1-100
+        // Add random sales between 1 and 100 for testing purposes
+        sales.put(product.getProductName(), (int) (Math.random() * 100) + 1);
     }
 }

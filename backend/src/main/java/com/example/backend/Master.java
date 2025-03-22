@@ -5,15 +5,22 @@ import java.net.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class Master {
     private static final int PORT = 8080;
+    private static final int REPLICATION_FACTOR = 2; // Bonus: Replication factor
     private List<WorkerConnection> workers;
     private List<Process> workerProcesses;
+    private Map<String, List<WorkerConnection>> storeToWorkers;
+    private ScheduledExecutorService heartbeatScheduler;
 
     public Master(int workerCount, int startPort) throws IOException {
         workers = new ArrayList<>();
         workerProcesses = new ArrayList<>();
+        storeToWorkers = new HashMap<>();
 
         // Διαγραφή του φακέλου temp_workers_data κατά την εκκίνηση
         deleteDirectory(new File("data/temp_workers_data"));
@@ -22,16 +29,19 @@ public class Master {
         for (int i = 0; i < workerCount; i++) {
             int workerPort = startPort + i;
             spawnWorker(workerPort);
-            workers.add(new WorkerConnection("localhost", workerPort));
+            WorkerConnection wc = new WorkerConnection("localhost", workerPort);
+            workers.add(wc);
             System.out.println("Started and connected to worker at localhost:" + workerPort);
         }
 
         // Φόρτωση αρχικών καταστημάτων από stores.json
         loadInitialStores();
+
+        // Ξεκινάμε τον heartbeat mechanism
+        startHeartbeat();
     }
 
     private void deleteDirectory(File directory) {
-        System.out.println("Attempting to delete: " + directory.getAbsolutePath());
         if (directory.exists()) {
             File[] files = directory.listFiles();
             if (files != null) {
@@ -39,81 +49,64 @@ public class Master {
                     if (file.isDirectory()) {
                         deleteDirectory(file);
                     } else {
-                        boolean deleted = file.delete();
-                        System.out.println("Deleted file: " + file.getAbsolutePath() + " - " + deleted);
+                        file.delete();
                     }
                 }
             }
-            boolean deleted = directory.delete();
-            System.out.println("Deleted directory: " + directory.getAbsolutePath() + " - " + deleted);
-        } else {
-            System.out.println("Directory does not exist: " + directory.getAbsolutePath());
+            directory.delete();
         }
     }
 
-private void loadInitialStores() throws IOException {
-    File storesFile = new File("data/stores.json");
-    if (!storesFile.exists()) {
-        System.out.println("No initial stores found in data/stores.json");
-        return;
-    }
-    String jsonContent = new String(Files.readAllBytes(Paths.get("data/stores.json"))).trim();
-    if (!jsonContent.startsWith("[") || !jsonContent.endsWith("]")) {
-        System.err.println("Invalid JSON format in stores.json");
-        return;
-    }
-
-    List<String> storeJsons = parseStoreJsons(jsonContent);
-    for (String storeJson : storeJsons) {
-        System.out.println("Parsed store JSON: " + storeJson);
-        String storeName = extractField(storeJson, "StoreName");
-        if (storeName.isEmpty()) {
-            System.err.println("Failed to extract StoreName from: " + storeJson);
-            continue;
+    private void loadInitialStores() throws IOException {
+        File storesFile = new File("data/stores.json");
+        if (!storesFile.exists()) {
+            System.out.println("No initial stores found in data/stores.json");
+            return;
+        }
+        String jsonContent = new String(Files.readAllBytes(Paths.get("data/stores.json"))).trim();
+        if (!jsonContent.startsWith("[") || !jsonContent.endsWith("]")) {
+            System.err.println("Invalid JSON format in stores.json");
+            return;
         }
 
-        WorkerConnection worker = getWorkerForStore(storeName);
-        System.out.println("Assigning store '" + storeName + "' to worker at port " + worker.getPort());
-        System.out.println("Sending ADD_STORE request to worker: " + worker.host + ":" + worker.port);
+        List<String> storeJsons = parseStoreJsons(jsonContent);
+        for (String storeJson : storeJsons) {
+            String storeName = extractField(storeJson, "StoreName");
+            if (storeName.isEmpty()) {
+                System.err.println("Failed to extract StoreName from: " + storeJson);
+                continue;
+            }
 
-
-        try {
-            String response = worker.sendRequest("ADD_STORE " + storeJson);
-            System.out.println("Worker response: " + response);
-        } catch (IOException e) {
-            System.err.println("Failed to send store to worker: " + e.getMessage());
+            List<WorkerConnection> assignedWorkers = getWorkersForStore(storeName);
+            for (WorkerConnection worker : assignedWorkers) {
+                try {
+                    worker.sendRequest("ADD_STORE " + storeJson);
+                } catch (IOException e) {
+                    System.err.println("Failed to send store to worker: " + e.getMessage());
+                }
+            }
         }
     }
-}
 
     private List<String> parseStoreJsons(String jsonContent) {
         List<String> stores = new ArrayList<>();
-        // Remove outer square brackets
         jsonContent = jsonContent.substring(1, jsonContent.length() - 1).trim();
-        if (jsonContent.isEmpty()) return stores;
-
         int braceCount = 0;
         int start = -1;
-
         for (int i = 0; i < jsonContent.length(); i++) {
             char c = jsonContent.charAt(i);
-
             if (c == '{') {
-                if (braceCount == 0) {
-                    start = i; // Mark the start of a JSON object
-                }
+                if (braceCount == 0) start = i;
                 braceCount++;
             } else if (c == '}') {
                 braceCount--;
                 if (braceCount == 0 && start != -1) {
-                    // We've found a complete JSON object
                     String storeJson = jsonContent.substring(start, i + 1).trim();
                     stores.add(storeJson);
-                    start = -1; // Reset start for the next object
+                    start = -1;
                 }
             }
         }
-
         return stores;
     }
 
@@ -122,18 +115,13 @@ private void loadInitialStores() throws IOException {
         int start = json.indexOf(search);
         if (start == -1) return "";
         start += search.length();
-        if (start >= json.length()) return "";
-
-        char firstChar = json.charAt(start);
-        if (firstChar == '"') {
+        if (json.charAt(start) == '"') {
             start++;
             int end = json.indexOf("\"", start);
-            if (end == -1) return "";
             return json.substring(start, end);
         } else {
             int end = json.indexOf(",", start);
             if (end == -1) end = json.indexOf("}", start);
-            if (end == -1 || end > json.length()) return "";
             return json.substring(start, end).trim();
         }
     }
@@ -164,7 +152,7 @@ private void loadInitialStores() throws IOException {
             while (true) {
                 Socket socket = serverSocket.accept();
                 System.out.println("New client connected: " + socket.getInetAddress());
-                new MasterThread(socket, workers).start();
+                new MasterThread(socket, workers, storeToWorkers, REPLICATION_FACTOR).start();
             }
         } catch (IOException e) {
             System.err.println("Master server failed: " + e.getMessage());
@@ -184,6 +172,31 @@ private void loadInitialStores() throws IOException {
                 System.err.println("Error closing worker connection: " + e.getMessage());
             }
         }
+        heartbeatScheduler.shutdown();
+    }
+
+    private List<WorkerConnection> getWorkersForStore(String storeName) {
+        int primaryIndex = Math.abs(storeName.hashCode()) % workers.size();
+        List<WorkerConnection> assignedWorkers = new ArrayList<>();
+        for (int i = 0; i < REPLICATION_FACTOR && i < workers.size(); i++) {
+            int index = (primaryIndex + i) % workers.size();
+            assignedWorkers.add(workers.get(index));
+        }
+        storeToWorkers.put(storeName, assignedWorkers);
+        return assignedWorkers;
+    }
+
+    private void startHeartbeat() {
+        heartbeatScheduler = Executors.newScheduledThreadPool(1);
+        heartbeatScheduler.scheduleAtFixedRate(() -> {
+            for (WorkerConnection w : workers) {
+                try {
+                    w.sendRequest("PING");
+                } catch (IOException e) {
+                    System.err.println("Worker at " + w.getPort() + " is down");
+                }
+            }
+        }, 0, 5, TimeUnit.SECONDS);
     }
 
     public static void main(String[] args) {
@@ -196,21 +209,19 @@ private void loadInitialStores() throws IOException {
             System.err.println("Failed to initialize Master: " + e.getMessage());
         }
     }
-
-    private WorkerConnection getWorkerForStore(String storeName) {
-        int hash = storeName.hashCode();
-        int workerIndex = Math.abs(hash) % workers.size();
-        return workers.get(workerIndex);
-    }
 }
 
 class MasterThread extends Thread {
     private Socket socket;
     private List<WorkerConnection> workers;
+    private Map<String, List<WorkerConnection>> storeToWorkers;
+    private final int replicationFactor; // Προσθήκη πεδίου
 
-    public MasterThread(Socket socket, List<WorkerConnection> workers) {
+    public MasterThread(Socket socket, List<WorkerConnection> workers, Map<String, List<WorkerConnection>> storeToWorkers, int replicationFactor) {
         this.socket = socket;
         this.workers = workers;
+        this.storeToWorkers = storeToWorkers;
+        this.replicationFactor = replicationFactor; // Αρχικοποίηση
     }
 
     @Override
@@ -234,74 +245,113 @@ class MasterThread extends Thread {
                             out.println("Error: Invalid store JSON");
                             continue;
                         }
-                        WorkerConnection worker = getWorkerForStore(storeName);
-                        String response = worker.sendRequest(request);
-                        System.out.println("Worker at port " + worker.getPort() + " responded: " + response);
-                        out.println(response);
+                        List<WorkerConnection> assignedWorkers = getWorkersForStore(storeName);
+                        for (WorkerConnection worker : assignedWorkers) {
+                            try {
+                                worker.sendRequest("ADD_STORE " + data);
+                            } catch (IOException e) {
+                                System.err.println("Failed to send store to worker: " + e.getMessage());
+                            }
+                        }
+                        out.println("Store added: " + storeName);
                         break;
                     case "ADD_PRODUCT":
                         String[] productParts = data.split(",");
                         if (productParts.length < 5) {
-                            out.println("Invalid ADD_PRODUCT format - need 5 comma-separated values");
+                            out.println("Invalid ADD_PRODUCT format");
                             continue;
                         }
                         String storeNameProd = productParts[0].trim();
-                        WorkerConnection prodWorker = getWorkerForStore(storeNameProd);
-                        String prodResponse = prodWorker.sendRequest(request);
-                        System.out.println("Worker at port " + prodWorker.getPort() + " responded: " + prodResponse);
-                        out.println(prodResponse);
+                        List<WorkerConnection> prodWorkers = storeToWorkers.get(storeNameProd);
+                        if (prodWorkers == null) {
+                            out.println("Store not found: " + storeNameProd);
+                            continue;
+                        }
+                        for (WorkerConnection worker : prodWorkers) {
+                            try {
+                                worker.sendRequest(request);
+                            } catch (IOException e) {
+                                System.err.println("Failed to add product to worker: " + e.getMessage());
+                            }
+                        }
+                        out.println("Product added to store: " + storeNameProd);
                         break;
                     case "REMOVE_PRODUCT":
                         String[] removeParts = data.split(",");
                         if (removeParts.length < 2) {
-                            out.println("Invalid REMOVE_PRODUCT format - need 2 comma-separated values");
+                            out.println("Invalid REMOVE_PRODUCT format");
                             continue;
                         }
                         String removeStoreName = removeParts[0].trim();
-                        WorkerConnection removeWorker = getWorkerForStore(removeStoreName);
-                        String removeResponse = removeWorker.sendRequest(request);
-                        System.out.println("Worker at port " + removeWorker.getPort() + " responded: " + removeResponse);
-                        out.println(removeResponse);
-                        break;
-                    case "SEARCH":
-                        List<String> results = new ArrayList<>();
-                        for (WorkerConnection w : workers) {
-                            String workerResponse = w.sendRequest("FILTER " + data);
-                            results.addAll(Arrays.asList(workerResponse.split("\n")));
+                        List<WorkerConnection> removeWorkers = storeToWorkers.get(removeStoreName);
+                        if (removeWorkers == null) {
+                            out.println("Store not found: " + removeStoreName);
+                            continue;
                         }
-                        out.println(String.join("\n", results));
-                        break;
-                    case "BUY":
-                        String[] buyParts = data.split(" ");
-                        String buyStoreName = buyParts[0];
-                        WorkerConnection buyWorker = getWorkerForStore(buyStoreName);
-                        String buyResponse = buyWorker.sendRequest(request);
-                        System.out.println("Worker at port " + buyWorker.getPort() + " responded: " + buyResponse);
-                        out.println(buyResponse);
-                        break;
-                    case "GET_FOOD_STATS":
-                        String targetCategory = data;
-                        WorkerConnection statsWorker = workers.get(0); // First worker for simplicity
-                        String statsResponse = statsWorker.sendRequest(request);
-                        System.out.println("Worker at port " + statsWorker.getPort() + " responded: " + statsResponse);
-                        out.println(statsResponse);
-                        break;
-                    case "GET_SALES_STATS":
-                        Map<String, Integer> totalSales = new HashMap<>();
-                        for (WorkerConnection w : workers) {
-                            String workerResponse = w.sendRequest("GET_SALES_STATS");
-                            System.out.println("Worker at port " + w.getPort() + " returned sales: " + workerResponse);
-                            String[] sales = workerResponse.split(" ");
-                            for (String sale : sales) {
-                                String[] saleParts = sale.split(":");
-                                if (saleParts.length == 2) {
-                                    totalSales.put(saleParts[0], totalSales.getOrDefault(saleParts[0], 0) + Integer.parseInt(saleParts[1]));
-                                }
+                        for (WorkerConnection worker : removeWorkers) {
+                            try {
+                                worker.sendRequest(request);
+                            } catch (IOException e) {
+                                System.err.println("Failed to remove product from worker: " + e.getMessage());
                             }
                         }
-                        String salesResult = totalSales.toString();
-                        System.out.println("Aggregated sales stats: " + salesResult);
-                        out.println(salesResult);
+                        out.println("Product removed from store: " + removeStoreName);
+                        break;
+                    case "GET_SALES_BY_FOOD_CATEGORY":
+                        String foodCategory = data;
+                        Map<String, Integer> salesByStore = new HashMap<>();
+                        int total = 0;
+                        for (WorkerConnection worker : workers) {
+                            try {
+                                String response = worker.sendRequest("GET_SALES_BY_FOOD_CATEGORY " + foodCategory);
+                                String[] sales = response.split(" ");
+                                for (String sale : sales) {
+                                    String[] partsSale = sale.split(":");
+                                    if (partsSale.length == 2) {
+                                        String store = partsSale[0];
+                                        int amount = Integer.parseInt(partsSale[1]);
+                                        salesByStore.put(store, salesByStore.getOrDefault(store, 0) + amount);
+                                        total += amount;
+                                    }
+                                }
+                            } catch (IOException e) {
+                                System.err.println("Failed to get sales from worker: " + e.getMessage());
+                            }
+                        }
+                        StringBuilder result = new StringBuilder();
+                        for (Map.Entry<String, Integer> entry : salesByStore.entrySet()) {
+                            result.append("\"").append(entry.getKey()).append("\": ").append(entry.getValue()).append(", ");
+                        }
+                        result.append("\"total\": ").append(total);
+                        out.println(result.toString());
+                        break;
+                    case "GET_SALES_BY_PRODUCT_CATEGORY":
+                        String productCategory = data;
+                        Map<String, Integer> salesByProduct = new HashMap<>();
+                        int totalProduct = 0;
+                        for (WorkerConnection worker : workers) {
+                            try {
+                                String response = worker.sendRequest("GET_SALES_BY_PRODUCT_CATEGORY " + productCategory);
+                                String[] sales = response.split(" ");
+                                for (String sale : sales) {
+                                    String[] partsSale = sale.split(":");
+                                    if (partsSale.length == 2) {
+                                        String product = partsSale[0];
+                                        int amount = Integer.parseInt(partsSale[1]);
+                                        salesByProduct.put(product, salesByProduct.getOrDefault(product, 0) + amount);
+                                        totalProduct += amount;
+                                    }
+                                }
+                            } catch (IOException e) {
+                                System.err.println("Failed to get sales from worker: " + e.getMessage());
+                            }
+                        }
+                        StringBuilder productResult = new StringBuilder();
+                        for (Map.Entry<String, Integer> entry : salesByProduct.entrySet()) {
+                            productResult.append("\"").append(entry.getKey()).append("\": ").append(entry.getValue()).append(", ");
+                        }
+                        productResult.append("\"total\": ").append(totalProduct);
+                        out.println(productResult.toString());
                         break;
                     default:
                         out.println("Unknown command: " + command);
@@ -323,71 +373,26 @@ class MasterThread extends Thread {
         int start = json.indexOf(search);
         if (start == -1) return "";
         start += search.length();
-        if (start >= json.length()) return "";
-
-        char firstChar = json.charAt(start);
-        if (firstChar == '"') {
+        if (json.charAt(start) == '"') {
             start++;
             int end = json.indexOf("\"", start);
-            if (end == -1) return "";
             return json.substring(start, end);
         } else {
             int end = json.indexOf(",", start);
             if (end == -1) end = json.indexOf("}", start);
-            if (end == -1 || end > json.length()) return "";
             return json.substring(start, end).trim();
         }
     }
 
-    private WorkerConnection getWorkerForStore(String storeName) {
-        int hash = storeName.hashCode();
-        int workerIndex = Math.abs(hash) % workers.size();
-        return workers.get(workerIndex);
-    }
-}
-
-class WorkerConnection {
-    String host;
-    int port;
-    private Socket socket;
-    private PrintWriter out;
-    private BufferedReader in;
-
-    public WorkerConnection(String host, int port) throws IOException {
-        this.host = host;
-        this.port = port;
-        connect();
-    }
-
-    private void connect() throws IOException {
-        socket = new Socket(host, port);
-        out = new PrintWriter(socket.getOutputStream(), true);
-        in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-    }
-
-    // In WorkerConnection class in Master.java, modify the sendRequest method:
-    public String sendRequest(String request) throws IOException {
-        try {
-            // Replace newlines with spaces to ensure the whole request is sent as one line
-            request = request.replace("\n", " ").replace("\r", "");
-            out.println(request);
-            return in.readLine();
-        } catch (IOException e) {
-            connect();
-            request = request.replace("\n", " ").replace("\r", "");
-            out.println(request);
-            return in.readLine();
-        }
-    }
-
-    public void close() throws IOException {
-        if (socket != null) socket.close();
-        if (out != null) out.close();
-        if (in != null) in.close();
-    }
-
-    // Add this method to the WorkerConnection class in Master.java
-    public int getPort() {
-        return port;
+    private List<WorkerConnection> getWorkersForStore(String storeName) {
+        return storeToWorkers.computeIfAbsent(storeName, k -> {
+            int primaryIndex = Math.abs(storeName.hashCode()) % workers.size();
+            List<WorkerConnection> assigned = new ArrayList<>();
+            for (int i = 0; i < replicationFactor && i < workers.size(); i++) { // Χρήση του replicationFactor
+                int index = (primaryIndex + i) % workers.size();
+                assigned.add(workers.get(index));
+            }
+            return assigned;
+        });
     }
 }

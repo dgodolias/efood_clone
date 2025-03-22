@@ -20,7 +20,6 @@ public class Worker {
         try {
             new File(tempDir).mkdirs();
             try (PrintWriter writer = new PrintWriter(new FileWriter(tempDir + "/memory.json"))) {
-
                 writer.println("[]");
             }
             System.out.println("Created initial memory file at " + tempDir + "/memory.json");
@@ -69,7 +68,6 @@ class WorkerThread extends Thread {
         try (BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
             String request;
-            System.out.println("Worker on port " + socket.getLocalPort() + " waiting for request...");
             while ((request = in.readLine()) != null) {
                 System.out.println("Worker on port " + socket.getLocalPort() + " received request: " + request);
                 String[] parts = request.split(" ", 2);
@@ -81,40 +79,24 @@ class WorkerThread extends Thread {
                             String storeName = extractField(data, "StoreName");
                             if (storeName.isEmpty()) {
                                 out.println("Error: Invalid store JSON - missing StoreName");
-                                System.err.println("Failed to extract StoreName from: " + data);
                                 break;
                             }
                             storeName = storeName.replaceAll("^\"|\"$", "");
-                            System.out.println("Worker on port " + socket.getLocalPort() + " received store: " + storeName);
-
-                            try {
-                                double latitude = Double.parseDouble(extractField(data, "Latitude"));
-                                double longitude = Double.parseDouble(extractField(data, "Longitude"));
-                                String foodCategory = extractField(data, "FoodCategory");
-                                int stars = Integer.parseInt(extractField(data, "Stars"));
-                                int noOfVotes = Integer.parseInt(extractField(data, "NoOfVotes"));
-                                String storeLogo = extractField(data, "StoreLogo");
-
-                                Store store = new Store(storeName, latitude, longitude, foodCategory, stars, noOfVotes, storeLogo);
-
-                                String productsJson = extractProductsJson(data);
-                                List<Product> products = parseProducts(productsJson);
-                                for (Product p : products) {
-                                    store.addProduct(p);
-                                }
-
-                                stores.put(storeName, store);
-                                System.out.println("Worker on port " + socket.getLocalPort() + " added store: " + storeName);
-
-                                updateStoresFile();
-                                out.println("Store added: " + storeName);
-                            } catch (NumberFormatException e) {
-                                System.err.println("Error parsing numeric field: " + e.getMessage());
-                                out.println("Error: Failed to parse store data - " + e.getMessage());
-                            } catch (Exception e) {
-                                System.err.println("Error processing store data: " + e.getMessage());
-                                out.println("Error: Failed to process store data - " + e.getMessage());
+                            double latitude = Double.parseDouble(extractField(data, "Latitude"));
+                            double longitude = Double.parseDouble(extractField(data, "Longitude"));
+                            String foodCategory = extractField(data, "FoodCategory");
+                            int stars = Integer.parseInt(extractField(data, "Stars"));
+                            int noOfVotes = Integer.parseInt(extractField(data, "NoOfVotes"));
+                            String storeLogo = extractField(data, "StoreLogo");
+                            Store store = new Store(storeName, latitude, longitude, foodCategory, stars, noOfVotes, storeLogo);
+                            String productsJson = extractProductsJson(data);
+                            List<Product> products = parseProducts(productsJson);
+                            for (Product p : products) {
+                                store.addProduct(p);
                             }
+                            stores.put(storeName, store);
+                            updateStoresFile();
+                            out.println("Store added: " + storeName);
                             break;
                         case "ADD_PRODUCT":
                             String[] productParts = data.split(",");
@@ -132,7 +114,6 @@ class WorkerThread extends Thread {
                                 Product newProduct = new Product(productNameAdd, productType, amount, price);
                                 storeAdd.addProduct(newProduct);
                                 updateStoresFile();
-                                System.out.println("Adding product " + productNameAdd + " to store " + storeNameProd);
                                 out.println("Product added to store: " + storeNameProd);
                             } else {
                                 out.println("Store not found: " + storeNameProd);
@@ -150,69 +131,45 @@ class WorkerThread extends Thread {
                             if (removeStore != null) {
                                 removeStore.removeProduct(removeProductName);
                                 updateStoresFile();
-                                System.out.println("Removing product " + removeProductName + " from store " + removeStoreName);
                                 out.println("Product removed from store: " + removeStoreName);
                             } else {
                                 out.println("Store not found: " + removeStoreName);
                             }
                             break;
-                        case "FILTER":
-                            String filterCategory = data;
-                            List<String> results = new ArrayList<>();
-                            for (Store s : stores.values()) {
-                                if (s.getFoodCategory().equals(filterCategory)) {
-                                    results.add(s.getStoreName());
-                                }
-                            }
-                            out.println(String.join("\n", results));
-                            break;
-                        case "BUY":
-                            String[] buyParts = data.split(" ");
-                            String buyStoreName = buyParts[0];
-                            String buyProductName = buyParts[1];
-                            int quantity = Integer.parseInt(buyParts[2]);
-                            Store buyStore = stores.get(buyStoreName);
-                            if (buyStore != null) {
-                                for (Product product : buyStore.getProducts()) {
-                                    if (product.getProductName().equals(buyProductName) && product.getAvailableAmount() >= quantity) {
-                                        product.setAvailableAmount(product.getAvailableAmount() - quantity);
-                                        buyStore.recordSale(buyProductName, quantity);
-                                        out.println("Purchase successful");
-                                        break;
-                                    }
-                                }
-                            } else {
-                                out.println("Store not found");
-                            }
-                            break;
-                        case "GET_FOOD_STATS":
+                        case "GET_SALES_BY_FOOD_CATEGORY":
                             String category = data;
-                            Map<String, Integer> stats = new HashMap<>();
-                            int total = 0;
+                            Map<String, Integer> salesByStore = new HashMap<>();
                             for (Store s : stores.values()) {
                                 if (s.getFoodCategory().equals(category)) {
-                                    int productCount = s.getProducts().size();
-                                    stats.put(s.getStoreName(), productCount);
-                                    total += productCount;
+                                    int totalSales = s.getSales().values().stream().mapToInt(Integer::intValue).sum();
+                                    salesByStore.put(s.getStoreName(), totalSales);
                                 }
                             }
-                            stats.put("total", total);
-                            out.println(stats.toString());
+                            StringBuilder result = new StringBuilder();
+                            for (Map.Entry<String, Integer> entry : salesByStore.entrySet()) {
+                                result.append(entry.getKey()).append(":").append(entry.getValue()).append(" ");
+                            }
+                            out.println(result.toString().trim());
                             break;
-                        case "GET_SALES_STATS":
-                            Map<String, Integer> totalSales = new ConcurrentHashMap<>();
+                        case "GET_SALES_BY_PRODUCT_CATEGORY":
+                            String productCategory = data;
+                            Map<String, Integer> salesByProduct = new HashMap<>();
                             for (Store s : stores.values()) {
-                                for (Map.Entry<String, Integer> entry : s.getSales().entrySet()) {
-                                    totalSales.put(entry.getKey(), totalSales.getOrDefault(entry.getKey(), 0) + entry.getValue());
+                                for (Product p : s.getProducts()) {
+                                    if (p.getProductType().equals(productCategory)) {
+                                        int sales = s.getSales().getOrDefault(p.getProductName(), 0);
+                                        salesByProduct.put(p.getProductName(), sales);
+                                    }
                                 }
                             }
-                            StringBuilder salesResponse = new StringBuilder();
-                            for (Map.Entry<String, Integer> entry : totalSales.entrySet()) {
-                                salesResponse.append(entry.getKey()).append(":").append(entry.getValue()).append(" ");
+                            StringBuilder productResult = new StringBuilder();
+                            for (Map.Entry<String, Integer> entry : salesByProduct.entrySet()) {
+                                productResult.append(entry.getKey()).append(":").append(entry.getValue()).append(" ");
                             }
-                            String salesStr = salesResponse.toString().trim();
-                            System.out.println("Returning sales stats: " + salesStr);
-                            out.println(salesStr);
+                            out.println(productResult.toString().trim());
+                            break;
+                        case "PING":
+                            out.println("PONG");
                             break;
                         default:
                             out.println("Unknown command: " + command);
@@ -249,24 +206,16 @@ class WorkerThread extends Thread {
     private List<Product> parseProducts(String productsJson) {
         List<Product> products = new ArrayList<>();
         productsJson = productsJson.trim();
-        if (productsJson.startsWith("[")) {
-            productsJson = productsJson.substring(1);
-        }
-        if (productsJson.endsWith("]")) {
-            productsJson = productsJson.substring(0, productsJson.length() - 1);
-        }
+        if (productsJson.startsWith("[")) productsJson = productsJson.substring(1);
+        if (productsJson.endsWith("]")) productsJson = productsJson.substring(0, productsJson.length() - 1);
 
         int braceCount = 0;
         StringBuilder currentProduct = new StringBuilder();
         for (int i = 0; i < productsJson.length(); i++) {
             char c = productsJson.charAt(i);
-            if (c == '{') {
-                braceCount++;
-            } else if (c == '}') {
-                braceCount--;
-            }
+            if (c == '{') braceCount++;
+            else if (c == '}') braceCount--;
             currentProduct.append(c);
-
             if (braceCount == 0 && currentProduct.length() > 0) {
                 String productJson = currentProduct.toString().trim();
                 if (!productJson.isEmpty() && productJson.startsWith("{") && productJson.endsWith("}")) {
@@ -274,17 +223,14 @@ class WorkerThread extends Thread {
                     String type = extractField(productJson, "ProductType");
                     String amountStr = extractField(productJson, "Available Amount");
                     String priceStr = extractField(productJson, "Price");
-
                     name = name.replaceAll("^\"|\"$", "");
                     type = type.replaceAll("^\"|\"$", "");
-
                     try {
                         int amount = Integer.parseInt(amountStr.trim());
                         double price = Double.parseDouble(priceStr.trim());
                         products.add(new Product(name, type, amount, price));
                     } catch (NumberFormatException e) {
-                        System.err.println("Error parsing product values: " + e.getMessage() + " for product: " + productJson);
-                        throw e;
+                        System.err.println("Error parsing product values: " + e.getMessage());
                     }
                 }
                 currentProduct = new StringBuilder();
@@ -293,80 +239,59 @@ class WorkerThread extends Thread {
         return products;
     }
 
-    // In Worker.java, modify the updateStoresFile method in WorkerThread class
     private void updateStoresFile() throws IOException {
         try (PrintWriter writer = new PrintWriter(new FileWriter(tempDir + "/memory.json"))) {
             writer.println("[");
             boolean first = true;
             for (Store store : stores.values()) {
-                if (!first) {
-                    writer.println(",");
-                }
+                if (!first) writer.println(",");
                 first = false;
                 writer.print(storeToJson(store));
             }
             writer.println("\n]");
         }
-        System.out.println("Updated memory file at " + tempDir + "/memory.json with " + stores.size() + " stores");
     }
 
-private String storeToJson(Store store) {
-    StringBuilder json = new StringBuilder();
-    json.append("  {\n");
-    json.append("    \"StoreName\": \"").append(store.getStoreName()).append("\",\n");
-
-    // Use actual Store values instead of hardcoded 0.0
-    json.append("    \"Latitude\": ").append(store.getLatitude()).append(",\n");
-    json.append("    \"Longitude\": ").append(store.getLongitude()).append(",\n");
-
-    // Fix the quotes in FoodCategory
-    String category = store.getFoodCategory().replace("\"", "");
-    json.append("    \"FoodCategory\": \"").append(category).append("\",\n");
-
-    // Use actual Store values instead of hardcoded 0
-    json.append("    \"Stars\": ").append(store.getStars()).append(",\n");
-    json.append("    \"NoOfVotes\": ").append(store.getNoOfVotes()).append(",\n");
-    json.append("    \"StoreLogo\": ").append(store.getStoreLogo()).append(",\n");
-
-    json.append("    \"Products\": [\n");
-
-    List<Product> products = store.getProducts();
-    for (int i = 0; i < products.size(); i++) {
-        Product p = products.get(i);
-        json.append("      {");
-        json.append("\"ProductName\": \"").append(p.getProductName()).append("\", ");
-        json.append("\"ProductType\": \"").append(p.getProductType()).append("\", ");
-        json.append("\"Available Amount\": ").append(p.getAvailableAmount()).append(", ");
-        json.append("\"Price\": ").append(p.getPrice());
-        json.append("}");
-        if (i < products.size() - 1) {
-            json.append(",");
+    private String storeToJson(Store store) {
+        StringBuilder json = new StringBuilder();
+        json.append("  {\n");
+        json.append("    \"StoreName\": \"").append(store.getStoreName()).append("\",\n");
+        json.append("    \"Latitude\": ").append(store.getLatitude()).append(",\n");
+        json.append("    \"Longitude\": ").append(store.getLongitude()).append(",\n");
+        json.append("    \"FoodCategory\": \"").append(store.getFoodCategory()).append("\",\n");
+        json.append("    \"Stars\": ").append(store.getStars()).append(",\n");
+        json.append("    \"NoOfVotes\": ").append(store.getNoOfVotes()).append(",\n");
+        json.append("    \"StoreLogo\": \"").append(store.getStoreLogo()).append("\",\n");
+        json.append("    \"Products\": [\n");
+        List<Product> products = store.getProducts();
+        for (int i = 0; i < products.size(); i++) {
+            Product p = products.get(i);
+            json.append("      {");
+            json.append("\"ProductName\": \"").append(p.getProductName()).append("\", ");
+            json.append("\"ProductType\": \"").append(p.getProductType()).append("\", ");
+            json.append("\"Available Amount\": ").append(p.getAvailableAmount()).append(", ");
+            json.append("\"Price\": ").append(p.getPrice());
+            json.append("}");
+            if (i < products.size() - 1) json.append(",");
+            json.append("\n");
         }
-        json.append("\n");
+        json.append("    ]\n");
+        json.append("  }");
+        return json.toString();
     }
-
-    json.append("    ]\n");
-    json.append("  }");
-    return json.toString();
-}
 
     private String extractField(String json, String field) {
         String search = "\"" + field + "\":";
         int start = json.indexOf(search);
         if (start == -1) return "";
         start += search.length();
-        if (start >= json.length()) return "";
-
-        char firstChar = json.charAt(start);
-        if (firstChar == '"') {
+        if (json.charAt(start) == '"') {
             start++;
             int end = json.indexOf("\"", start);
-            if (end == -1) return "";
             return json.substring(start, end);
         } else {
             int end = json.indexOf(",", start);
             if (end == -1) end = json.indexOf("}", start);
-            if (end == -1 || end > json.length()) return "";
             return json.substring(start, end).trim();
         }
     }
