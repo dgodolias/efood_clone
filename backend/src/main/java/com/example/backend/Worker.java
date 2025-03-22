@@ -93,6 +93,7 @@ class WorkerThread extends Thread {
                             List<Product> products = parseProducts(productsJson);
                             for (Product p : products) {
                                 store.addProduct(p);
+                                System.out.println("Product's sales: " + store.getSales());
                             }
                             stores.put(storeName, store);
                             updateStoresFile();
@@ -156,7 +157,8 @@ class WorkerThread extends Thread {
                             Map<String, Integer> salesByProduct = new HashMap<>();
                             for (Store s : stores.values()) {
                                 for (Product p : s.getProducts()) {
-                                    if (p.getProductType().equals(productCategory)) {
+                                    // Check both product type and product name
+                                    if (p.getProductType().equals(productCategory) || p.getProductName().equals(productCategory)) {
                                         int sales = s.getSales().getOrDefault(p.getProductName(), 0);
                                         salesByProduct.put(p.getProductName(), sales);
                                     }
