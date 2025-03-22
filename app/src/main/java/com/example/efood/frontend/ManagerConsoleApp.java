@@ -17,7 +17,7 @@ public class ManagerConsoleApp {
              Scanner scanner = new Scanner(System.in)) {
             System.out.println("Connected to Master at " + MASTER_HOST + ":" + MASTER_PORT);
             while (true) {
-                System.out.println("Enter command (ADD_STORE, ADD_PRODUCT, REMOVE_PRODUCT, GET_SALES_BY_FOOD_CATEGORY, GET_SALES_BY_PRODUCT_CATEGORY, EXIT):");
+                System.out.println("Enter command (ADD_STORE, ADD_PRODUCT, REMOVE_PRODUCT, GET_SALES_BY_STORE_TYPE_CATEGORY, GET_SALES_BY_PRODUCT_CATEGORY, GET_SALES_BY_PRODUCT, EXIT):");
                 String command = scanner.nextLine();
                 if (command.equalsIgnoreCase("EXIT")) break;
                 String data = "";
@@ -33,28 +33,37 @@ public class ManagerConsoleApp {
                             System.err.println("Error reading file: " + e.getMessage());
                             continue;
                         }
+                        out.println("ADD_STORE " + data);
                         break;
                     case "ADD_PRODUCT":
                         System.out.println("Enter store name, product name, type, amount, price (comma-separated):");
                         data = scanner.nextLine();
+                        out.println("ADD_PRODUCT " + data);
                         break;
                     case "REMOVE_PRODUCT":
                         System.out.println("Enter store name and product name (comma-separated):");
                         data = scanner.nextLine();
+                        out.println("REMOVE_PRODUCT " + data);
                         break;
-                    case "GET_SALES_BY_FOOD_CATEGORY":
-                        System.out.println("Enter food category:");
+                    case "GET_SALES_BY_STORE_TYPE_CATEGORY":
+                        System.out.println("Enter store type category (food category):");
                         data = scanner.nextLine();
+                        out.println("GET_SALES_BY_FOOD_CATEGORY " + data);
                         break;
                     case "GET_SALES_BY_PRODUCT_CATEGORY":
                         System.out.println("Enter product category:");
                         data = scanner.nextLine();
+                        out.println("GET_SALES_BY_PRODUCT_CATEGORY " + data);
+                        break;
+                    case "GET_SALES_BY_PRODUCT":
+                        System.out.println("Enter product name:");
+                        data = scanner.nextLine();
+                        out.println("GET_SALES_BY_PRODUCT " + data);
                         break;
                     default:
                         System.out.println("Unknown command: " + command);
                         continue;
                 }
-                out.println(command + " " + data);
                 String response = in.readLine();
                 System.out.println("Response: " + response);
             }

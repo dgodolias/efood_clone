@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit;
 
 public class Master {
     private static final int PORT = 8080;
-    private static final int REPLICATION_FACTOR = 2; // Bonus: Replication factor
+    private static final int REPLICATION_FACTOR = 2;
     private List<WorkerConnection> workers;
     private List<Process> workerProcesses;
     private Map<String, List<WorkerConnection>> storeToWorkers;
@@ -22,10 +22,8 @@ public class Master {
         workerProcesses = new ArrayList<>();
         storeToWorkers = new HashMap<>();
 
-        // Διαγραφή του φακέλου temp_workers_data κατά την εκκίνηση
         deleteDirectory(new File("data/temp_workers_data"));
 
-        // Εκκίνηση workers
         for (int i = 0; i < workerCount; i++) {
             int workerPort = startPort + i;
             spawnWorker(workerPort);
@@ -34,10 +32,7 @@ public class Master {
             System.out.println("Started and connected to worker at localhost:" + workerPort);
         }
 
-        // Φόρτωση αρχικών καταστημάτων από stores.json
         loadInitialStores();
-
-        // Ξεκινάμε τον heartbeat mechanism
         startHeartbeat();
     }
 
@@ -215,13 +210,13 @@ class MasterThread extends Thread {
     private Socket socket;
     private List<WorkerConnection> workers;
     private Map<String, List<WorkerConnection>> storeToWorkers;
-    private final int replicationFactor; // Προσθήκη πεδίου
+    private final int replicationFactor;
 
     public MasterThread(Socket socket, List<WorkerConnection> workers, Map<String, List<WorkerConnection>> storeToWorkers, int replicationFactor) {
         this.socket = socket;
         this.workers = workers;
         this.storeToWorkers = storeToWorkers;
-        this.replicationFactor = replicationFactor; // Αρχικοποίηση
+        this.replicationFactor = replicationFactor;
     }
 
     @Override
@@ -238,6 +233,9 @@ class MasterThread extends Thread {
                 String[] parts = request.split(" ", 2);
                 String command = parts[0];
                 String data = parts.length > 1 ? parts[1] : "";
+
+                Map<String, Integer> salesByStore = new HashMap<>();
+
                 switch (command) {
                     case "ADD_STORE":
                         String storeName = extractField(data, "StoreName");
@@ -299,11 +297,12 @@ class MasterThread extends Thread {
                         break;
                     case "GET_SALES_BY_FOOD_CATEGORY":
                         String foodCategory = data;
-                        Map<String, Integer> salesByStore = new HashMap<>();
+
                         int total = 0;
                         for (WorkerConnection worker : workers) {
                             try {
                                 String response = worker.sendRequest("GET_SALES_BY_FOOD_CATEGORY " + foodCategory);
+                                if (response.isEmpty()) continue;
                                 String[] sales = response.split(" ");
                                 for (String sale : sales) {
                                     String[] partsSale = sale.split(":");
@@ -327,31 +326,45 @@ class MasterThread extends Thread {
                         break;
                     case "GET_SALES_BY_PRODUCT_CATEGORY":
                         String productCategory = data;
-                        Map<String, Integer> salesByProduct = new HashMap<>();
-                        int totalProduct = 0;
+
+                        int totalCategory = 0;
                         for (WorkerConnection worker : workers) {
                             try {
                                 String response = worker.sendRequest("GET_SALES_BY_PRODUCT_CATEGORY " + productCategory);
+                                if (response.isEmpty()) continue;
                                 String[] sales = response.split(" ");
                                 for (String sale : sales) {
                                     String[] partsSale = sale.split(":");
                                     if (partsSale.length == 2) {
-                                        String product = partsSale[0];
+                                        String store = partsSale[0];
                                         int amount = Integer.parseInt(partsSale[1]);
-                                        salesByProduct.put(product, salesByProduct.getOrDefault(product, 0) + amount);
-                                        totalProduct += amount;
+                                        salesByStore.put(store, salesByStore.getOrDefault(store, 0) + amount);
+                                        totalCategory += amount;
                                     }
                                 }
                             } catch (IOException e) {
                                 System.err.println("Failed to get sales from worker: " + e.getMessage());
                             }
                         }
-                        StringBuilder productResult = new StringBuilder();
-                        for (Map.Entry<String, Integer> entry : salesByProduct.entrySet()) {
-                            productResult.append("\"").append(entry.getKey()).append("\": ").append(entry.getValue()).append(", ");
+                        StringBuilder categoryResult = new StringBuilder();
+                        for (Map.Entry<String, Integer> entry : salesByStore.entrySet()) {
+                            categoryResult.append("\"").append(entry.getKey()).append("\": ").append(entry.getValue()).append(", ");
                         }
-                        productResult.append("\"total\": ").append(totalProduct);
-                        out.println(productResult.toString());
+                        categoryResult.append("\"total\": ").append(totalCategory);
+                        out.println(categoryResult.toString());
+                        break;
+                    case "GET_SALES_BY_PRODUCT":
+                        String productName = data;
+                        int totalSales = 0;
+                        for (WorkerConnection worker : workers) {
+                            try {
+                                String response = worker.sendRequest("GET_SALES_BY_PRODUCT " + productName);
+                                totalSales += Integer.parseInt(response);
+                            } catch (IOException e) {
+                                System.err.println("Failed to get sales from worker: " + e.getMessage());
+                            }
+                        }
+                        out.println(totalSales);
                         break;
                     default:
                         out.println("Unknown command: " + command);
@@ -388,7 +401,7 @@ class MasterThread extends Thread {
         return storeToWorkers.computeIfAbsent(storeName, k -> {
             int primaryIndex = Math.abs(storeName.hashCode()) % workers.size();
             List<WorkerConnection> assigned = new ArrayList<>();
-            for (int i = 0; i < replicationFactor && i < workers.size(); i++) { // Χρήση του replicationFactor
+            for (int i = 0; i < replicationFactor && i < workers.size(); i++) {
                 int index = (primaryIndex + i) % workers.size();
                 assigned.add(workers.get(index));
             }

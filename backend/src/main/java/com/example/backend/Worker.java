@@ -74,6 +74,7 @@ class WorkerThread extends Thread {
                 String command = parts[0];
                 String data = parts.length > 1 ? parts[1] : "";
                 synchronized (stores) {
+                    Map<String, Integer> salesByStore = new HashMap<>();
                     switch (command) {
                         case "ADD_STORE":
                             String storeName = extractField(data, "StoreName");
@@ -93,7 +94,6 @@ class WorkerThread extends Thread {
                             List<Product> products = parseProducts(productsJson);
                             for (Product p : products) {
                                 store.addProduct(p);
-                                System.out.println("Product's sales: " + store.getSales());
                             }
                             stores.put(storeName, store);
                             updateStoresFile();
@@ -138,38 +138,47 @@ class WorkerThread extends Thread {
                             }
                             break;
                         case "GET_SALES_BY_FOOD_CATEGORY":
-                                String category = data;
-                                Map<String, Integer> salesByStore = new HashMap<>();
-                                for (Store s : stores.values()) {
-                                    if (s.getFoodCategory().replaceAll("^\"|\"$", "").equalsIgnoreCase(category)) {
-                                        int totalSales = s.getSales().values().stream().mapToInt(Integer::intValue).sum();
-                                        salesByStore.put(s.getStoreName(), totalSales);
-                                    }
+                            String category = data;
+
+                            for (Store s : stores.values()) {
+                                if (s.getFoodCategory().replaceAll("^\"|\"$", "").equalsIgnoreCase(category)) {
+                                    int totalSales = s.getSales().values().stream().mapToInt(Integer::intValue).sum();
+                                    salesByStore.put(s.getStoreName(), totalSales);
                                 }
-                                StringBuilder result = new StringBuilder();
-                                for (Map.Entry<String, Integer> entry : salesByStore.entrySet()) {
-                                    result.append(entry.getKey()).append(":").append(entry.getValue()).append(" ");
-                                }
-                                out.println(result.toString().trim());
-                                break;
+                            }
+                            StringBuilder result = new StringBuilder();
+                            for (Map.Entry<String, Integer> entry : salesByStore.entrySet()) {
+                                result.append(entry.getKey()).append(":").append(entry.getValue()).append(" ");
+                            }
+                            out.println(result.toString().trim());
+                            break;
                         case "GET_SALES_BY_PRODUCT_CATEGORY":
                             String productCategory = data;
-                            Map<String, Integer> salesByProduct = new HashMap<>();
+
                             for (Store s : stores.values()) {
+                                int storeTotal = 0;
                                 for (Product p : s.getProducts()) {
-                                    // Check both product type and product name
-                                    if (p.getProductType().equals(productCategory) || p.getProductName().equals(productCategory)) {
-                                        System.out.println("Store: " + s.getStoreName() + ", Product: " + p.getProductName());
-                                        int sales = s.getSales().getOrDefault(p.getProductName(), 0);
-                                        salesByProduct.put(p.getProductName(), sales);
+                                    if (p.getProductType().equals(productCategory)) {
+                                        storeTotal += s.getSales().getOrDefault(p.getProductName(), 0);
                                     }
                                 }
+                                if (storeTotal > 0) {
+                                    salesByStore.put(s.getStoreName(), storeTotal);
+                                }
                             }
-                            StringBuilder productResult = new StringBuilder();
-                            for (Map.Entry<String, Integer> entry : salesByProduct.entrySet()) {
-                                productResult.append(entry.getKey()).append(":").append(entry.getValue()).append(" ");
+                            StringBuilder categoryResult = new StringBuilder();
+                            for (Map.Entry<String, Integer> entry : salesByStore.entrySet()) {
+                                categoryResult.append(entry.getKey()).append(":").append(entry.getValue()).append(" ");
                             }
-                            out.println(productResult.toString().trim());
+                            out.println(categoryResult.toString().trim());
+                            break;
+                        case "GET_SALES_BY_PRODUCT":
+                            String productName = data;
+                            int totalSales = 0;
+                            for (Store s : stores.values()) {
+                                totalSales += s.getSales().getOrDefault(productName, 0);
+                            }
+                            out.println(totalSales);
                             break;
                         case "PING":
                             out.println("PONG");
@@ -187,6 +196,22 @@ class WorkerThread extends Thread {
             } catch (IOException e) {
                 System.err.println("Error closing socket: " + e.getMessage());
             }
+        }
+    }
+
+    private String extractField(String json, String field) {
+        String search = "\"" + field + "\":";
+        int start = json.indexOf(search);
+        if (start == -1) return "";
+        start += search.length();
+        if (json.charAt(start) == '"') {
+            start++;
+            int end = json.indexOf("\"", start);
+            return json.substring(start, end);
+        } else {
+            int end = json.indexOf(",", start);
+            if (end == -1) end = json.indexOf("}", start);
+            return json.substring(start, end).trim();
         }
     }
 
@@ -281,21 +306,5 @@ class WorkerThread extends Thread {
         json.append("    ]\n");
         json.append("  }");
         return json.toString();
-    }
-
-    private String extractField(String json, String field) {
-        String search = "\"" + field + "\":";
-        int start = json.indexOf(search);
-        if (start == -1) return "";
-        start += search.length();
-        if (json.charAt(start) == '"') {
-            start++;
-            int end = json.indexOf("\"", start);
-            return json.substring(start, end);
-        } else {
-            int end = json.indexOf(",", start);
-            if (end == -1) end = json.indexOf("}", start);
-            return json.substring(start, end).trim();
-        }
     }
 }
