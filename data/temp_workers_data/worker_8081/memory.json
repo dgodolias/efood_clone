@@ -1,19 +1,5 @@
 [
   {
-    "StoreName": "Burger Bonanza",
-    "Latitude": 37.987654,
-    "Longitude": 23.725678,
-    "FoodCategory": ""burgers"",
-    "Stars": 3,
-    "NoOfVotes": 18,
-    "StoreLogo": ""/usr/bin/images/burger_bonanza.png"",
-    "Products": [
-      {"ProductName": "Classic Burger", "ProductType": "burger", "Available Amount": 2000, "Price": 7.5},
-      {"ProductName": "Cheeseburger", "ProductType": "burger", "Available Amount": 1500, "Price": 8.5},
-      {"ProductName": "Fries", "ProductType": "side", "Available Amount": 1000, "Price": 3.0}
-    ]
-  },
-  {
     "StoreName": "Pizza Palace",
     "Latitude": 37.9932963,
     "Longitude": 23.733413,
@@ -25,20 +11,6 @@
       {"ProductName": "Margherita", "ProductType": "pizza", "Available Amount": 5000, "Price": 8.5},
       {"ProductName": "Pepperoni", "ProductType": "pizza", "Available Amount": 3000, "Price": 10.0},
       {"ProductName": "Greek Salad", "ProductType": "salad", "Available Amount": 150, "Price": 6.0}
-    ]
-  },
-  {
-    "StoreName": "Gyro Grill",
-    "Latitude": 37.975432,
-    "Longitude": 23.718901,
-    "FoodCategory": ""greek"",
-    "Stars": 4,
-    "NoOfVotes": 20,
-    "StoreLogo": ""/usr/bin/images/gyro_grill.png"",
-    "Products": [
-      {"ProductName": "Chicken Gyro", "ProductType": "gyro", "Available Amount": 4000, "Price": 6.0},
-      {"ProductName": "Pork Gyro", "ProductType": "gyro", "Available Amount": 3500, "Price": 6.5},
-      {"ProductName": "Tzatziki", "ProductType": "side", "Available Amount": 500, "Price": 2.5}
     ]
   },
   {
@@ -56,20 +28,6 @@
     ]
   },
   {
-    "StoreName": "Pasta Place",
-    "Latitude": 37.990123,
-    "Longitude": 23.729876,
-    "FoodCategory": ""italian"",
-    "Stars": 3,
-    "NoOfVotes": 12,
-    "StoreLogo": ""/usr/bin/images/pasta_place.png"",
-    "Products": [
-      {"ProductName": "Spaghetti Bolognese", "ProductType": "pasta", "Available Amount": 2500, "Price": 11.0},
-      {"ProductName": "Carbonara", "ProductType": "pasta", "Available Amount": 2000, "Price": 12.5},
-      {"ProductName": "Caesar Salad", "ProductType": "salad", "Available Amount": 300, "Price": 7.0}
-    ]
-  },
-  {
     "StoreName": "Seafood Shack",
     "Latitude": 37.978901,
     "Longitude": 23.715678,
@@ -80,7 +38,8 @@
     "Products": [
       {"ProductName": "Fish and Chips", "ProductType": "seafood", "Available Amount": 2000, "Price": 13.0},
       {"ProductName": "Shrimp Cocktail", "ProductType": "seafood", "Available Amount": 1000, "Price": 15.0},
-      {"ProductName": "Coleslaw", "ProductType": "side", "Available Amount": 300, "Price": 3.5}
+      {"ProductName": "Coleslaw", "ProductType": "side", "Available Amount": 300, "Price": 3.5},
+      {"ProductName": "Quinoa Salad", "ProductType": "salad", "Available Amount": 10, "Price": 8.5}
     ]
   },
   {

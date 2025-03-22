@@ -138,20 +138,20 @@ class WorkerThread extends Thread {
                             }
                             break;
                         case "GET_SALES_BY_FOOD_CATEGORY":
-                            String category = data;
-                            Map<String, Integer> salesByStore = new HashMap<>();
-                            for (Store s : stores.values()) {
-                                if (s.getFoodCategory().equals(category)) {
-                                    int totalSales = s.getSales().values().stream().mapToInt(Integer::intValue).sum();
-                                    salesByStore.put(s.getStoreName(), totalSales);
+                                String category = data;
+                                Map<String, Integer> salesByStore = new HashMap<>();
+                                for (Store s : stores.values()) {
+                                    if (s.getFoodCategory().replaceAll("^\"|\"$", "").equalsIgnoreCase(category)) {
+                                        int totalSales = s.getSales().values().stream().mapToInt(Integer::intValue).sum();
+                                        salesByStore.put(s.getStoreName(), totalSales);
+                                    }
                                 }
-                            }
-                            StringBuilder result = new StringBuilder();
-                            for (Map.Entry<String, Integer> entry : salesByStore.entrySet()) {
-                                result.append(entry.getKey()).append(":").append(entry.getValue()).append(" ");
-                            }
-                            out.println(result.toString().trim());
-                            break;
+                                StringBuilder result = new StringBuilder();
+                                for (Map.Entry<String, Integer> entry : salesByStore.entrySet()) {
+                                    result.append(entry.getKey()).append(":").append(entry.getValue()).append(" ");
+                                }
+                                out.println(result.toString().trim());
+                                break;
                         case "GET_SALES_BY_PRODUCT_CATEGORY":
                             String productCategory = data;
                             Map<String, Integer> salesByProduct = new HashMap<>();
@@ -159,6 +159,7 @@ class WorkerThread extends Thread {
                                 for (Product p : s.getProducts()) {
                                     // Check both product type and product name
                                     if (p.getProductType().equals(productCategory) || p.getProductName().equals(productCategory)) {
+                                        System.out.println("Store: " + s.getStoreName() + ", Product: " + p.getProductName());
                                         int sales = s.getSales().getOrDefault(p.getProductName(), 0);
                                         salesByProduct.put(p.getProductName(), sales);
                                     }

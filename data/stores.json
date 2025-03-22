@@ -122,7 +122,8 @@
     "Products": [
       {"ProductName": "Fish and Chips", "ProductType": "seafood", "Available Amount": 2000, "Price": 13.0},
       {"ProductName": "Shrimp Cocktail", "ProductType": "seafood", "Available Amount": 1000, "Price": 15.0},
-      {"ProductName": "Coleslaw", "ProductType": "side", "Available Amount": 300, "Price": 3.5}
+      {"ProductName": "Coleslaw", "ProductType": "side", "Available Amount": 300, "Price": 3.5},
+      {"ProductName": "Quinoa Salad", "ProductType": "salad", "Available Amount": 10, "Price": 8.5}
     ]
   }
 ]
