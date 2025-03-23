@@ -73,6 +73,9 @@ class WorkerThread extends Thread {
                 String[] parts = request.split(" ", 2);
                 String command = parts[0];
                 String data = parts.length > 1 ? parts[1] : "";
+
+                List<String> salesList = new ArrayList<>();
+
                 synchronized (stores) {
                     Map<String, Integer> salesByStore = new HashMap<>();
                     switch (command) {
@@ -137,21 +140,18 @@ class WorkerThread extends Thread {
                                 out.println("Store not found: " + removeStoreName);
                             }
                             break;
-                        case "GET_SALES_BY_FOOD_CATEGORY":
+                        case "GET_SALES_BY_STORE_TYPE_CATEGORY":
                             String category = data;
 
                             for (Store s : stores.values()) {
                                 if (s.getFoodCategory().replaceAll("^\"|\"$", "").equalsIgnoreCase(category)) {
                                     int totalSales = s.getSales().values().stream().mapToInt(Integer::intValue).sum();
-                                    salesByStore.put(s.getStoreName(), totalSales);
+                                    salesList.add(s.getStoreName() + ":" + totalSales);
                                 }
                             }
-                            StringBuilder result = new StringBuilder();
-                            for (Map.Entry<String, Integer> entry : salesByStore.entrySet()) {
-                                result.append(entry.getKey()).append(":").append(entry.getValue()).append(" ");
-                            }
-                            out.println(result.toString().trim());
+                            out.println(String.join("|", salesList));
                             break;
+
                         case "GET_SALES_BY_PRODUCT_CATEGORY":
                             String productCategory = data;
 
@@ -163,14 +163,10 @@ class WorkerThread extends Thread {
                                     }
                                 }
                                 if (storeTotal > 0) {
-                                    salesByStore.put(s.getStoreName(), storeTotal);
+                                    salesList.add(s.getStoreName() + ":" + storeTotal);
                                 }
                             }
-                            StringBuilder categoryResult = new StringBuilder();
-                            for (Map.Entry<String, Integer> entry : salesByStore.entrySet()) {
-                                categoryResult.append(entry.getKey()).append(":").append(entry.getValue()).append(" ");
-                            }
-                            out.println(categoryResult.toString().trim());
+                            out.println(String.join("|", salesList));
                             break;
                         case "GET_SALES_BY_PRODUCT":
                             String productName = data;

@@ -295,22 +295,27 @@ class MasterThread extends Thread {
                         }
                         out.println("Product removed from store: " + removeStoreName);
                         break;
-                    case "GET_SALES_BY_FOOD_CATEGORY":
+                    case "GET_SALES_BY_STORE_TYPE_CATEGORY":
                         String foodCategory = data;
 
                         int total = 0;
                         for (WorkerConnection worker : workers) {
                             try {
-                                String response = worker.sendRequest("GET_SALES_BY_FOOD_CATEGORY " + foodCategory);
+                                String response = worker.sendRequest("GET_SALES_BY_STORE_TYPE_CATEGORY " + foodCategory);
                                 if (response.isEmpty()) continue;
-                                String[] sales = response.split(" ");
+                                String[] sales = response.split("\\|");
                                 for (String sale : sales) {
-                                    String[] partsSale = sale.split(":");
-                                    if (partsSale.length == 2) {
-                                        String store = partsSale[0];
-                                        int amount = Integer.parseInt(partsSale[1]);
-                                        salesByStore.put(store, salesByStore.getOrDefault(store, 0) + amount);
-                                        total += amount;
+                                    int lastColon = sale.lastIndexOf(":");
+                                    if (lastColon != -1) {
+                                        String store = sale.substring(0, lastColon).trim();
+                                        String amountStr = sale.substring(lastColon + 1).trim();
+                                        try {
+                                            int amount = Integer.parseInt(amountStr);
+                                            salesByStore.put(store, salesByStore.getOrDefault(store, 0) + amount);
+                                            total += amount;
+                                        } catch (NumberFormatException e) {
+                                            System.err.println("Invalid amount format: " + amountStr);
+                                        }
                                     }
                                 }
                             } catch (IOException e) {
@@ -319,9 +324,10 @@ class MasterThread extends Thread {
                         }
                         StringBuilder result = new StringBuilder();
                         for (Map.Entry<String, Integer> entry : salesByStore.entrySet()) {
-                            result.append("\"").append(entry.getKey()).append("\": ").append(entry.getValue()).append(", ");
+                            result.append("\"").append(entry.getKey()).append("\": ").append(entry.getValue()).append("\n");
                         }
-                        result.append("\"total\": ").append(total);
+                        result.append("\"total\": ").append(total).append("\n");
+                        result.append("END");
                         out.println(result.toString());
                         break;
                     case "GET_SALES_BY_PRODUCT_CATEGORY":
@@ -332,14 +338,19 @@ class MasterThread extends Thread {
                             try {
                                 String response = worker.sendRequest("GET_SALES_BY_PRODUCT_CATEGORY " + productCategory);
                                 if (response.isEmpty()) continue;
-                                String[] sales = response.split(" ");
+                                String[] sales = response.split("\\|");
                                 for (String sale : sales) {
-                                    String[] partsSale = sale.split(":");
-                                    if (partsSale.length == 2) {
-                                        String store = partsSale[0];
-                                        int amount = Integer.parseInt(partsSale[1]);
-                                        salesByStore.put(store, salesByStore.getOrDefault(store, 0) + amount);
-                                        totalCategory += amount;
+                                    int lastColon = sale.lastIndexOf(":");
+                                    if (lastColon != -1) {
+                                        String store = sale.substring(0, lastColon).trim();
+                                        String amountStr = sale.substring(lastColon + 1).trim();
+                                        try {
+                                            int amount = Integer.parseInt(amountStr);
+                                            salesByStore.put(store, salesByStore.getOrDefault(store, 0) + amount);
+                                            totalCategory += amount;
+                                        } catch (NumberFormatException e) {
+                                            System.err.println("Invalid amount format: " + amountStr);
+                                        }
                                     }
                                 }
                             } catch (IOException e) {
@@ -348,9 +359,10 @@ class MasterThread extends Thread {
                         }
                         StringBuilder categoryResult = new StringBuilder();
                         for (Map.Entry<String, Integer> entry : salesByStore.entrySet()) {
-                            categoryResult.append("\"").append(entry.getKey()).append("\": ").append(entry.getValue()).append(", ");
+                            categoryResult.append("\"").append(entry.getKey()).append("\": ").append(entry.getValue()).append("\n");
                         }
-                        categoryResult.append("\"total\": ").append(totalCategory);
+                        categoryResult.append("\"total\": ").append(totalCategory).append("\n");
+                        categoryResult.append("END");
                         out.println(categoryResult.toString());
                         break;
                     case "GET_SALES_BY_PRODUCT":

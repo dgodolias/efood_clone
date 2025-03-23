@@ -1,5 +1,19 @@
 [
   {
+    "StoreName": "Burger Bonanza",
+    "Latitude": 37.987654,
+    "Longitude": 23.725678,
+    "FoodCategory": ""burgers"",
+    "Stars": 3,
+    "NoOfVotes": 18,
+    "StoreLogo": ""/usr/bin/images/burger_bonanza.png"",
+    "Products": [
+      {"ProductName": "Classic Burger", "ProductType": "burger", "Available Amount": 2000, "Price": 7.5},
+      {"ProductName": "Cheeseburger", "ProductType": "burger", "Available Amount": 1500, "Price": 8.5},
+      {"ProductName": "Fries", "ProductType": "side", "Available Amount": 1000, "Price": 3.0}
+    ]
+  },
+  {
     "StoreName": "Pizza Palace",
     "Latitude": 37.9932963,
     "Longitude": 23.733413,
@@ -42,6 +56,35 @@
     ]
   },
   {
+    "StoreName": "Pasta Place",
+    "Latitude": 37.990123,
+    "Longitude": 23.729876,
+    "FoodCategory": ""italian"",
+    "Stars": 3,
+    "NoOfVotes": 12,
+    "StoreLogo": ""/usr/bin/images/pasta_place.png"",
+    "Products": [
+      {"ProductName": "Spaghetti Bolognese", "ProductType": "pasta", "Available Amount": 2500, "Price": 11.0},
+      {"ProductName": "Carbonara", "ProductType": "pasta", "Available Amount": 2000, "Price": 12.5},
+      {"ProductName": "Caesar Salad", "ProductType": "salad", "Available Amount": 300, "Price": 7.0}
+    ]
+  },
+  {
+    "StoreName": "Seafood Shack",
+    "Latitude": 37.978901,
+    "Longitude": 23.715678,
+    "FoodCategory": ""seafood"",
+    "Stars": 3,
+    "NoOfVotes": 15,
+    "StoreLogo": ""/usr/bin/images/seafood_shack.png"",
+    "Products": [
+      {"ProductName": "Fish and Chips", "ProductType": "seafood", "Available Amount": 2000, "Price": 13.0},
+      {"ProductName": "Shrimp Cocktail", "ProductType": "seafood", "Available Amount": 1000, "Price": 15.0},
+      {"ProductName": "Coleslaw", "ProductType": "side", "Available Amount": 300, "Price": 3.5},
+      {"ProductName": "Quinoa Salad", "ProductType": "salad", "Available Amount": 10, "Price": 8.5}
+    ]
+  },
+  {
     "StoreName": "Sushi Spot",
     "Latitude": 38.001234,
     "Longitude": 23.740123,
@@ -53,6 +96,20 @@
       {"ProductName": "California Roll", "ProductType": "sushi", "Available Amount": 800, "Price": 12.0},
       {"ProductName": "Spicy Tuna", "ProductType": "sushi", "Available Amount": 600, "Price": 14.0},
       {"ProductName": "Miso Soup", "ProductType": "soup", "Available Amount": 200, "Price": 4.5}
+    ]
+  },
+  {
+    "StoreName": "Taco Town",
+    "Latitude": 37.998765,
+    "Longitude": 23.735432,
+    "FoodCategory": ""mexican"",
+    "Stars": 4,
+    "NoOfVotes": 22,
+    "StoreLogo": ""/usr/bin/images/taco_town.png"",
+    "Products": [
+      {"ProductName": "Beef Taco", "ProductType": "taco", "Available Amount": 3000, "Price": 5.5},
+      {"ProductName": "Chicken Taco", "ProductType": "taco", "Available Amount": 2800, "Price": 5.5},
+      {"ProductName": "Guacamole", "ProductType": "side", "Available Amount": 400, "Price": 3.5}
     ]
   },
   {
