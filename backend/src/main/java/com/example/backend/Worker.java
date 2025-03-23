@@ -166,15 +166,20 @@ class WorkerThread extends Thread {
                                     salesList.add(s.getStoreName() + ":" + storeTotal);
                                 }
                             }
+                            System.out.println(String.join("|", salesList));
                             out.println(String.join("|", salesList));
                             break;
                         case "GET_SALES_BY_PRODUCT":
                             String productName = data;
-                            int totalSales = 0;
+
                             for (Store s : stores.values()) {
-                                totalSales += s.getSales().getOrDefault(productName, 0);
+                                int storeTotal = s.getSales().getOrDefault(productName, 0);
+                                if (storeTotal > 0) {
+                                    salesList.add(s.getStoreName() + ":" + storeTotal);
+                                }
                             }
-                            out.println(totalSales);
+                            System.out.println(String.join("|", salesList));
+                            out.println(String.join("|", salesList));
                             break;
                         case "PING":
                             out.println("PONG");

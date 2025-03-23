@@ -367,16 +367,40 @@ class MasterThread extends Thread {
                         break;
                     case "GET_SALES_BY_PRODUCT":
                         String productName = data;
-                        int totalSales = 0;
+                        Map<String, Integer> productSalesByStore = new HashMap<>();
+                        int totalProductSales = 0;
+
                         for (WorkerConnection worker : workers) {
                             try {
                                 String response = worker.sendRequest("GET_SALES_BY_PRODUCT " + productName);
-                                totalSales += Integer.parseInt(response);
+                                System.out.println("Worker on port " + worker.getPort() + " reported: " + response);
+
+                                // Parse the pipe-delimited response
+                                if (!response.isEmpty()) {
+                                    String[] storeSales = response.split("\\|");
+                                    for (String storeSale : storeSales) {
+                                        int colonIndex = storeSale.lastIndexOf(":");
+                                        if (colonIndex > 0) {
+                                            String store = storeSale.substring(0, colonIndex).trim();
+                                            int amount = Integer.parseInt(storeSale.substring(colonIndex + 1).trim());
+                                            productSalesByStore.put(store, productSalesByStore.getOrDefault(store, 0) + amount);
+                                            totalProductSales += amount;
+                                        }
+                                    }
+                                }
                             } catch (IOException e) {
                                 System.err.println("Failed to get sales from worker: " + e.getMessage());
                             }
                         }
-                        out.println(totalSales);
+
+                        // Format the response like GET_SALES_BY_PRODUCT_CATEGORY
+                        StringBuilder productResult = new StringBuilder();
+                        for (Map.Entry<String, Integer> entry : productSalesByStore.entrySet()) {
+                            productResult.append("\"").append(entry.getKey()).append("\": ").append(entry.getValue()).append("\n");
+                        }
+                        productResult.append("\"total\": ").append(totalProductSales).append("\n");
+                        productResult.append("END");
+                        out.println(productResult.toString());
                         break;
                     default:
                         out.println("Unknown command: " + command);
