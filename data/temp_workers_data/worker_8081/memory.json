@@ -38,7 +38,7 @@
     "Products": [
       {"ProductName": "Chicken Gyro", "ProductType": "gyro", "Available Amount": 4000, "Price": 6.0},
       {"ProductName": "Pork Gyro", "ProductType": "gyro", "Available Amount": 3500, "Price": 6.5},
-      {"ProductName": "Tzatziki", "ProductType": "side", "Available Amount": 500, "Price": 2.5}
+      {"ProductName": "Tzatziki", "ProductType": "side", "Available Amount": 498, "Price": 2.5}
     ]
   },
   {
