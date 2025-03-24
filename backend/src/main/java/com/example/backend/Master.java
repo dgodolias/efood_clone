@@ -434,6 +434,41 @@ class MasterThread extends Thread {
                         productResult.append("END");
                         out.println(productResult.toString());
                         break;
+                    case "BUY":
+                        String[] buyParts = data.split(",");
+                        if (buyParts.length < 3) {
+                            out.println("Invalid BUY format");
+                            out.println("END");
+                            continue;
+                        }
+                        String buyStoreName = buyParts[0].trim();
+                        String buyProductName = buyParts[1].trim();
+                        int buyQuantity = Integer.parseInt(buyParts[2].trim());
+
+                        // Find the appropriate workers
+                        List<WorkerConnection> buyWorkers = storeToWorkers.get(buyStoreName);
+                        if (buyWorkers == null) {
+                            buyWorkers = storeToWorkers.get("\"" + buyStoreName + "\"");
+                        }
+
+                        if (buyWorkers == null) {
+                            out.println("Store not found: " + buyStoreName);
+                            out.println("END");
+                            continue;
+                        }
+
+                        // Forward purchase request to all relevant workers
+                        for (WorkerConnection worker : buyWorkers) {
+                            try {
+                                worker.sendRequest("BUY " + data);
+                            } catch (IOException e) {
+                                System.err.println("Failed to send purchase to worker: " + e.getMessage());
+                            }
+                        }
+
+                        out.println("Purchase completed: " + buyQuantity + " of " + buyProductName + " from " + buyStoreName);
+                        out.println("END");
+                        break;
                     default:
                         out.println("Unknown command: " + command);
                 }

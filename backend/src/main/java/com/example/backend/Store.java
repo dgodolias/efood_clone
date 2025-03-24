@@ -30,7 +30,6 @@ public class Store {
     }
 
     public synchronized void addProduct(Product product) {
-        addFakeSales(product); // Automatically add fake sales for testing
         products.add(product);
     }
 
@@ -59,8 +58,18 @@ public class Store {
     public double getLatitude() { return latitude; }
     public double getLongitude() { return longitude; }
 
-    private void addFakeSales(Product product) {
-        // Add random sales between 1 and 100 for testing purposes
-        sales.put(product.getProductName(), (int) (Math.random() * 100) + 1);
+
+    public void purchaseProduct(String productName, int quantity) {
+
+        int currentSales = sales.getOrDefault(productName, 0);
+        sales.put(productName, currentSales + quantity);
+
+
+        for (Product product : products) {
+            if (product.getProductName().equals(productName)) {
+                product.setAvailableAmount(product.getAvailableAmount() - quantity);
+                break;
+            }
+        }
     }
 }

@@ -37,7 +37,8 @@
     "StoreLogo": "/usr/bin/images/gyro_grill.png",
     "Products": [
       {"ProductName": "Chicken Gyro", "ProductType": "gyro", "Available Amount": 4000, "Price": 6.0},
-      {"ProductName": "Pork Gyro", "ProductType": "gyro", "Available Amount": 3500, "Price": 6.5}
+      {"ProductName": "Pork Gyro", "ProductType": "gyro", "Available Amount": 3500, "Price": 6.5},
+      {"ProductName": "Tzatziki", "ProductType": "side", "Available Amount": 500, "Price": 2.5}
     ]
   },
   {
@@ -51,7 +52,7 @@
     "Products": [
       {"ProductName": "Lamb Kebab", "ProductType": "kebab", "Available Amount": 1500, "Price": 8.0},
       {"ProductName": "Chicken Kebab", "ProductType": "kebab", "Available Amount": 1200, "Price": 7.5},
-      {"ProductName": "Hummus", "ProductType": "side", "Available Amount": 200, "Price": 4.0}
+      {"ProductName": "Hummus", "ProductType": "side", "Available Amount": 199, "Price": 4.0}
     ]
   },
   {
@@ -81,20 +82,6 @@
       {"ProductName": "Shrimp Cocktail", "ProductType": "seafood", "Available Amount": 1000, "Price": 15.0},
       {"ProductName": "Coleslaw", "ProductType": "side", "Available Amount": 300, "Price": 3.5},
       {"ProductName": "Quinoa Salad", "ProductType": "salad", "Available Amount": 10, "Price": 8.5}
-    ]
-  },
-  {
-    "StoreName": "Dessert Delight",
-    "Latitude": 37.989012,
-    "Longitude": 23.731234,
-    "FoodCategory": "desserts",
-    "Stars": 4,
-    "NoOfVotes": 28,
-    "StoreLogo": "/usr/bin/images/dessert_delight.png",
-    "Products": [
-      {"ProductName": "Chocolate Cake", "ProductType": "dessert", "Available Amount": 500, "Price": 5.0},
-      {"ProductName": "Cheesecake", "ProductType": "dessert", "Available Amount": 400, "Price": 6.0},
-      {"ProductName": "Ice Cream", "ProductType": "dessert", "Available Amount": 600, "Price": 4.0}
     ]
   },
   {

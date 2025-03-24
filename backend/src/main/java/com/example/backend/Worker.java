@@ -181,6 +181,26 @@ class WorkerThread extends Thread {
                             System.out.println(String.join("|", salesList));
                             out.println(String.join("|", salesList));
                             break;
+                        case "BUY":
+                            String[] buyParts = data.split(",");
+                            if (buyParts.length < 3) {
+                                out.println("Invalid BUY format");
+                                continue;
+                            }
+                            String buyStoreName = buyParts[0].trim();
+                            String buyProductName = buyParts[1].trim();
+                            int buyQuantity = Integer.parseInt(buyParts[2].trim());
+
+                            Store buyStore = stores.get(buyStoreName);
+                            if (buyStore == null) {
+                                out.println("Store not found: " + buyStoreName);
+                                continue;
+                            }
+
+                            buyStore.purchaseProduct(buyProductName, buyQuantity);
+                            updateStoresFile();
+                            out.println("Purchase processed");
+                            break;
                         case "PING":
                             out.println("PONG");
                             break;

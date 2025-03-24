@@ -17,7 +17,7 @@ package com.example.efood.frontend;
                                      Scanner scanner = new Scanner(System.in)) {
                                     System.out.println("Connected to Master at " + MASTER_HOST + ":" + MASTER_PORT);
                                     while (true) {
-                                        System.out.println("Enter command (ADD_STORE, ADD_PRODUCT, REMOVE_PRODUCT, GET_SALES_BY_STORE_TYPE_CATEGORY, GET_SALES_BY_PRODUCT_CATEGORY, GET_SALES_BY_PRODUCT, EXIT):");
+                                        System.out.println("Enter command (ADD_STORE, ADD_PRODUCT, REMOVE_PRODUCT, GET_SALES_BY_STORE_TYPE_CATEGORY, GET_SALES_BY_PRODUCT_CATEGORY, GET_SALES_BY_PRODUCT, BUY, EXIT):");
                                         String command = scanner.nextLine();
                                         if (command.equalsIgnoreCase("EXIT")) break;
                                         String data = "";
@@ -96,6 +96,11 @@ package com.example.efood.frontend;
                                                 System.out.println("Enter product name:");
                                                 data = scanner.nextLine();
                                                 out.println("GET_SALES_BY_PRODUCT " + data);
+                                                break;
+                                            case "BUY":
+                                                System.out.println("Enter store name, product name, and quantity (comma-separated):");
+                                                data = scanner.nextLine();
+                                                out.println("BUY " + data);
                                                 break;
                                             default:
                                                 System.out.println("Unknown command: " + command);
