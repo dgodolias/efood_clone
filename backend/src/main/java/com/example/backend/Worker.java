@@ -284,20 +284,20 @@ class WorkerThread extends Thread {
     private String storeToJson(Store store) {
         StringBuilder json = new StringBuilder();
         json.append("  {\n");
-        json.append("    \"StoreName\": \"").append(store.getStoreName()).append("\",\n");
+        json.append("    \"StoreName\": \"").append(sanitizeJsonValue(store.getStoreName())).append("\",\n");
         json.append("    \"Latitude\": ").append(store.getLatitude()).append(",\n");
         json.append("    \"Longitude\": ").append(store.getLongitude()).append(",\n");
-        json.append("    \"FoodCategory\": \"").append(store.getFoodCategory()).append("\",\n");
+        json.append("    \"FoodCategory\": \"").append(sanitizeJsonValue(store.getFoodCategory())).append("\",\n");
         json.append("    \"Stars\": ").append(store.getStars()).append(",\n");
         json.append("    \"NoOfVotes\": ").append(store.getNoOfVotes()).append(",\n");
-        json.append("    \"StoreLogo\": \"").append(store.getStoreLogo()).append("\",\n");
+        json.append("    \"StoreLogo\": \"").append(sanitizeJsonValue(store.getStoreLogo())).append("\",\n");
         json.append("    \"Products\": [\n");
         List<Product> products = store.getProducts();
         for (int i = 0; i < products.size(); i++) {
             Product p = products.get(i);
             json.append("      {");
-            json.append("\"ProductName\": \"").append(p.getProductName()).append("\", ");
-            json.append("\"ProductType\": \"").append(p.getProductType()).append("\", ");
+            json.append("\"ProductName\": \"").append(sanitizeJsonValue(p.getProductName())).append("\", ");
+            json.append("\"ProductType\": \"").append(sanitizeJsonValue(p.getProductType())).append("\", ");
             json.append("\"Available Amount\": ").append(p.getAvailableAmount()).append(", ");
             json.append("\"Price\": ").append(p.getPrice());
             json.append("}");
@@ -307,5 +307,13 @@ class WorkerThread extends Thread {
         json.append("    ]\n");
         json.append("  }");
         return json.toString();
+    }
+
+    private String sanitizeJsonValue(String value) {
+        if (value == null) return "";
+        // Remove any surrounding quotes
+        value = value.replaceAll("^\"|\"$", "");
+        // Escape any quotes inside the value
+        return value.replace("\"", "\\\"");
     }
 }

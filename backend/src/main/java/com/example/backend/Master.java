@@ -239,6 +239,7 @@ class MasterThread extends Thread {
                 switch (command) {
                     case "ADD_STORE":
                         String storeName = extractField(data, "StoreName");
+                        System.out.println("ADD_STORE storeName: [" + storeName + "]");
                         if (storeName.isEmpty()) {
                             out.println("Error: Invalid store JSON");
                             out.println("END");
@@ -266,7 +267,14 @@ class MasterThread extends Thread {
                             continue;
                         }
                         String storeNameProd = productParts[0].trim();
+
+                        // Check the store name with and without quotes
                         List<WorkerConnection> prodWorkers = storeToWorkers.get(storeNameProd);
+                        if (prodWorkers == null) {
+                            // Try with quotes
+                            prodWorkers = storeToWorkers.get("\"" + storeNameProd + "\"");
+                        }
+
                         if (prodWorkers == null) {
                             out.println("Store not found: " + storeNameProd);
                             out.println("END");
@@ -293,12 +301,20 @@ class MasterThread extends Thread {
                             continue;
                         }
                         String removeStoreName = removeParts[0].trim();
+
+                        // Check the store name with and without quotes
                         List<WorkerConnection> removeWorkers = storeToWorkers.get(removeStoreName);
+                        if (removeWorkers == null) {
+                            // Try with quotes
+                            removeWorkers = storeToWorkers.get("\"" + removeStoreName + "\"");
+                        }
+
                         if (removeWorkers == null) {
                             out.println("Store not found: " + removeStoreName);
                             out.println("END");
                             continue;
                         }
+                        // Rest of the code remains the same...
                         for (WorkerConnection worker : removeWorkers) {
                             try {
                                 worker.sendRequest(request);
