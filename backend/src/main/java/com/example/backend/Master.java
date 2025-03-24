@@ -328,40 +328,61 @@ class MasterThread extends Thread {
                         out.println(removeResult.toString());
                         break;
                     case "GET_SALES_BY_STORE_TYPE_CATEGORY":
-                        String foodCategory = data;
+                            String foodCategory = parts.length > 1 ? parts[1].trim() : "";
+                            System.out.println("Processing GET_SALES_BY_STORE_TYPE_CATEGORY request for category: " + foodCategory);
 
-                        int total = 0;
-                        for (WorkerConnection worker : workers) {
-                            try {
-                                String response = worker.sendRequest("GET_SALES_BY_STORE_TYPE_CATEGORY " + foodCategory);
-                                if (response.isEmpty()) continue;
-                                String[] sales = response.split("\\|");
-                                for (String sale : sales) {
-                                    int lastColon = sale.lastIndexOf(":");
-                                    if (lastColon != -1) {
-                                        String store = sale.substring(0, lastColon).trim();
-                                        String amountStr = sale.substring(lastColon + 1).trim();
-                                        try {
-                                            int amount = Integer.parseInt(amountStr);
-                                            salesByStore.put(store, salesByStore.getOrDefault(store, 0) + amount);
-                                            total += amount;
-                                        } catch (NumberFormatException e) {
-                                            System.err.println("Invalid amount format: " + amountStr);
+                            // Use MapReduce to get and aggregate sales data by store type category
+
+                            Set<String> processedStores = new HashSet<>();
+                            int total = 0;
+
+
+                            for (WorkerConnection worker : workers) {
+                                try {
+                                    String response = worker.sendRequest("GET_SALES_BY_STORE_TYPE_CATEGORY " + foodCategory);
+
+
+                                    if (!response.isEmpty()) {
+                                        String[] storesSales = response.split("\\|");
+                                        for (String storeSale : storesSales) {
+                                            if (!storeSale.isEmpty()) {
+                                                String[] storeParts = storeSale.split(":");
+                                                if (storeParts.length == 2) {
+                                                    String store = storeParts[0];
+                                                    int amount = Integer.parseInt(storeParts[1]);
+
+                                                    // Only process this store if we haven't seen it before
+                                                    if (!processedStores.contains(store)) {
+                                                        salesByStore.put(store, amount);
+                                                        total += amount;
+                                                        processedStores.add(store);
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
+                                } catch (IOException e) {
+                                    System.err.println("Error communicating with worker for sales by store type: " + e.getMessage());
                                 }
-                            } catch (IOException e) {
-                                System.err.println("Failed to get sales from worker: " + e.getMessage());
                             }
-                        }
-                        StringBuilder result = new StringBuilder();
-                        for (Map.Entry<String, Integer> entry : salesByStore.entrySet()) {
-                            result.append("\"").append(entry.getKey()).append("\": ").append(entry.getValue()).append("\n");
-                        }
-                        result.append("\"total\": ").append(total).append("\n");
-                        result.append("END");
-                        out.println(result.toString());
-                        break;
+
+
+                            StringBuilder result = new StringBuilder();
+                            for (Map.Entry<String, Integer> entry : salesByStore.entrySet()) {
+                                if (result.length() > 0) {
+                                    result.append("\n");
+                                }
+                                result.append("\"").append(entry.getKey()).append("\": ").append(entry.getValue());
+                            }
+                            if (!salesByStore.isEmpty()) {
+                                result.append("\n");
+                            }
+                            result.append("\"total\": ").append(total);
+
+                            System.out.println("Sending sales by store type category results: " + result);
+                            out.println(result.toString());
+                            out.println("END");
+                            break;
                     case "GET_SALES_BY_PRODUCT_CATEGORY":
                         String productCategory = data;
 
