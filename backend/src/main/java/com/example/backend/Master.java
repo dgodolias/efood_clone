@@ -241,6 +241,7 @@ class MasterThread extends Thread {
                         String storeName = extractField(data, "StoreName");
                         if (storeName.isEmpty()) {
                             out.println("Error: Invalid store JSON");
+                            out.println("END");
                             continue;
                         }
                         List<WorkerConnection> assignedWorkers = getWorkersForStore(storeName);
@@ -251,18 +252,24 @@ class MasterThread extends Thread {
                                 System.err.println("Failed to send store to worker: " + e.getMessage());
                             }
                         }
-                        out.println("Store added: " + storeName);
+                        StringBuilder storeResult = new StringBuilder();
+                        storeResult.append("Store added: ").append(storeName).append("\n");
+                        storeResult.append("END");
+                        out.println(storeResult.toString());
                         break;
+
                     case "ADD_PRODUCT":
                         String[] productParts = data.split(",");
                         if (productParts.length < 5) {
                             out.println("Invalid ADD_PRODUCT format");
+                            out.println("END");
                             continue;
                         }
                         String storeNameProd = productParts[0].trim();
                         List<WorkerConnection> prodWorkers = storeToWorkers.get(storeNameProd);
                         if (prodWorkers == null) {
                             out.println("Store not found: " + storeNameProd);
+                            out.println("END");
                             continue;
                         }
                         for (WorkerConnection worker : prodWorkers) {
@@ -272,18 +279,24 @@ class MasterThread extends Thread {
                                 System.err.println("Failed to add product to worker: " + e.getMessage());
                             }
                         }
-                        out.println("Product added to store: " + storeNameProd);
+                        StringBuilder prodResult = new StringBuilder();
+                        prodResult.append("Product added to store: ").append(storeNameProd).append("\n");
+                        prodResult.append("END");
+                        out.println(prodResult.toString());
                         break;
+
                     case "REMOVE_PRODUCT":
                         String[] removeParts = data.split(",");
                         if (removeParts.length < 2) {
                             out.println("Invalid REMOVE_PRODUCT format");
+                            out.println("END");
                             continue;
                         }
                         String removeStoreName = removeParts[0].trim();
                         List<WorkerConnection> removeWorkers = storeToWorkers.get(removeStoreName);
                         if (removeWorkers == null) {
                             out.println("Store not found: " + removeStoreName);
+                            out.println("END");
                             continue;
                         }
                         for (WorkerConnection worker : removeWorkers) {
@@ -293,7 +306,10 @@ class MasterThread extends Thread {
                                 System.err.println("Failed to remove product from worker: " + e.getMessage());
                             }
                         }
-                        out.println("Product removed from store: " + removeStoreName);
+                        StringBuilder removeResult = new StringBuilder();
+                        removeResult.append("Product removed from store: ").append(removeStoreName).append("\n");
+                        removeResult.append("END");
+                        out.println(removeResult.toString());
                         break;
                     case "GET_SALES_BY_STORE_TYPE_CATEGORY":
                         String foodCategory = data;
