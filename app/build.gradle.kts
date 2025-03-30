@@ -50,4 +50,10 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
+    implementation ("com.google.code.gson:gson:2.8.9")
+    implementation ("androidx.appcompat:appcompat:1.3.1")
+    implementation ("androidx.fragment:fragment:1.3.6")
+    implementation ("androidx.recyclerview:recyclerview:1.2.1")
+    implementation ("com.google.code.gson:gson:2.8.8")
+
 }
