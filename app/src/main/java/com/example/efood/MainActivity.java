@@ -40,13 +40,15 @@ public class MainActivity extends AppCompatActivity {
         });
 
         Button filterStoresButton = findViewById(R.id.filterStoresButton);
-        filterStoresButton.setOnClickListener(v -> {
-            FilterStoresFragment fragment = new FilterStoresFragment();
-            FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-            transaction.replace(R.id.nav_host_fragment_content_main, fragment);
-            transaction.addToBackStack(null);
-            transaction.commit();
-        });
+        if (filterStoresButton != null) {
+            filterStoresButton.setOnClickListener(v -> {
+                FilterStoresFragment fragment = new FilterStoresFragment();
+                FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+                transaction.replace(R.id.nav_host_fragment_content_main, fragment);
+                transaction.addToBackStack(null);
+                transaction.commit();
+            });
+        }
 
         DrawerLayout drawer = binding.drawerLayout;
         NavigationView navigationView = binding.navView;
