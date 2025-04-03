@@ -1,0 +1,4 @@
+.\gradlew installDebug
+& "C:\Users\USER\AppData\Local\Android\Sdk\platform-tools\adb.exe" shell am start -n com.example.efood/.MainActivity
+
+& "C:\Users\USER\AppData\Local\Android\Sdk\platform-tools\adb.exe" shell am force-stop com.example.efood

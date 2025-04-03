@@ -26,8 +26,17 @@ public class StoreAdapter extends RecyclerView.Adapter<StoreAdapter.StoreViewHol
     @Override
     public void onBindViewHolder(@NonNull StoreViewHolder holder, int position) {
         Store store = storeList.get(position);
-        holder.storeNameTextView.setText(store.getStoreName());
-        holder.starsTextView.setText(String.valueOf(store.getStars()));
+        holder.textViewName.setText(store.getName());
+        
+        // Show coordinates as address (since we don't have actual address in JSON)
+        holder.textViewAddress.setText(String.format("Location: %.6f, %.6f", 
+                store.getLatitude(), store.getLongitude()));
+        
+        holder.textViewStars.setText(String.format("%d Stars (%d votes)", 
+                store.getStars(), store.getNoOfVotes()));
+        
+        // Show food category since we don't have cuisines array in JSON
+        holder.textViewCuisines.setText(store.getFoodCategory());
     }
 
     @Override
@@ -36,13 +45,14 @@ public class StoreAdapter extends RecyclerView.Adapter<StoreAdapter.StoreViewHol
     }
 
     static class StoreViewHolder extends RecyclerView.ViewHolder {
-        TextView storeNameTextView;
-        TextView starsTextView;
+        TextView textViewName, textViewAddress, textViewStars, textViewCuisines;
 
         public StoreViewHolder(@NonNull View itemView) {
             super(itemView);
-            storeNameTextView = itemView.findViewById(R.id.storeNameTextView);
-            starsTextView = itemView.findViewById(R.id.starsTextView);
+            textViewName = itemView.findViewById(R.id.textViewName);
+            textViewAddress = itemView.findViewById(R.id.textViewAddress);
+            textViewStars = itemView.findViewById(R.id.textViewStars);
+            textViewCuisines = itemView.findViewById(R.id.textViewCuisines);
         }
     }
 }

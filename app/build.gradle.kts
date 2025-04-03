@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
+    // Removed incompatible Java plugin
 }
 
 android {
@@ -34,7 +35,13 @@ android {
     }
     sourceSets {
         getByName("main") {
-            java.srcDirs("src/main/java")
+            java {
+                srcDirs("src/main/java")
+            }
+            res {
+                srcDirs("src/main/res")
+            }
+            manifest.srcFile("src/main/AndroidManifest.xml")
         }
     }
 }
@@ -55,5 +62,4 @@ dependencies {
     implementation ("androidx.fragment:fragment:1.3.6")
     implementation ("androidx.recyclerview:recyclerview:1.2.1")
     implementation ("com.google.code.gson:gson:2.8.8")
-
 }
