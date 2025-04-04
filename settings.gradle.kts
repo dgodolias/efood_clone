@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "efood"
+rootProject.name = "efood_clone_2"
 include(":app")
 include(":backend")

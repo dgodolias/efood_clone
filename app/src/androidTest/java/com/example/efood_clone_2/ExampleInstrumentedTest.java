@@ -1,4 +1,4 @@
-package com.example.efood;
+package com.example.efood_clone_2;
 
 import android.content.Context;
 
@@ -21,6 +21,6 @@ public class ExampleInstrumentedTest {
     public void useAppContext() {
         // Context of the app under test.
         Context appContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
-        assertEquals("com.example.efood", appContext.getPackageName());
+        assertEquals("com.example.efood_clone_2", appContext.getPackageName());
     }
 }

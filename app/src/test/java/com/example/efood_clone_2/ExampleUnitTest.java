@@ -1,4 +1,4 @@
-package com.example.efood;
+package com.example.efood_clone_2;
 
 import org.junit.Test;
 

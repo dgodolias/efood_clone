@@ -3,13 +3,13 @@ plugins {
 }
 
 android {
-    namespace = "com.example.efood"
-    compileSdk = 34
+    namespace = "com.example.efood_clone_2"
+    compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.efood"
+        applicationId = "com.example.efood_clone_2"
         minSdk = 29
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -29,31 +29,12 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-    buildFeatures {
-        viewBinding = true
-    }
-    sourceSets {
-        getByName("main") {
-            java.srcDirs("src/main/java")
-        }
-    }
 }
 
 dependencies {
     implementation(libs.appcompat)
     implementation(libs.material)
-    implementation(libs.constraintlayout)
-    implementation(libs.lifecycle.livedata.ktx)
-    implementation(libs.lifecycle.viewmodel.ktx)
-    implementation(libs.navigation.fragment)
-    implementation(libs.navigation.ui)
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
-    implementation ("com.google.code.gson:gson:2.8.9")
-    implementation ("androidx.appcompat:appcompat:1.3.1")
-    implementation ("androidx.fragment:fragment:1.3.6")
-    implementation ("androidx.recyclerview:recyclerview:1.2.1")
-    implementation ("com.google.code.gson:gson:2.8.8")
-
 }
