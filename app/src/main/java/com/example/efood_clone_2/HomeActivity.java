@@ -184,8 +184,8 @@ public class HomeActivity extends AppCompatActivity {
 
     private void loadFilteredStores() {
         try {
-            // Load filtered store data from assets
-            InputStream inputStream = getAssets().open("mock/filtered_universal_stores.txt");
+            // Load universal store data from assets
+            InputStream inputStream = getAssets().open("mocks/filtered_universal_stores.json");
             int size = inputStream.available();
             byte[] buffer = new byte[size];
             inputStream.read(buffer);
@@ -223,25 +223,51 @@ public class HomeActivity extends AppCompatActivity {
 
         } catch (IOException | JSONException e) {
             e.printStackTrace();
-            Toast.makeText(this, "Error loading stores: " + e.getMessage(),
-                          Toast.LENGTH_SHORT).show();
+            Log.e("HomeActivity", "Error loading stores: " + e.getMessage());
         }
     }
 
     private List<Store> createStoreList() {
         List<Store> stores = new ArrayList<>();
 
-        // Add 10 fake stores
-        stores.add(new Store("Pizza Paradise", 37.9838, 23.7275, "Pizza", 4, "$$"));
-        stores.add(new Store("Greek Gyros", 37.9759, 23.7357, "Souvlaki", 5, "$"));
-        stores.add(new Store("Sushi Master", 37.9683, 23.7299, "Sushi", 4, "$$$"));
-        stores.add(new Store("Burger House", 37.9785, 23.7365, "Burgers", 3, "$"));
-        stores.add(new Store("Pasta Italiana", 37.9833, 23.7312, "Italian", 5, "$$"));
-        stores.add(new Store("Taco Town", 37.9721, 23.7256, "Mexican", 4, "$"));
-        stores.add(new Store("BBQ Masters", 37.9801, 23.7231, "Barbecue", 3, "$$"));
-        stores.add(new Store("Veggie Heaven", 37.9865, 23.7189, "Vegetarian", 4, "$$$"));
-        stores.add(new Store("Street Food Corner", 37.9736, 23.7321, "Street Food", 5, "$"));
-        stores.add(new Store("Spicy Noodles", 37.9712, 23.7406, "Asian", 4, "$$"));
+        try {
+            // Load store data from assets
+            InputStream inputStream = getAssets().open("mocks/filtered_5km_stores.json");
+            int size = inputStream.available();
+            byte[] buffer = new byte[size];
+            inputStream.read(buffer);
+            inputStream.close();
+
+            // Convert bytes to JSON string
+            String jsonString = new String(buffer, StandardCharsets.UTF_8);
+
+            // Parse JSON array
+            JSONArray jsonArray = new JSONArray(jsonString);
+
+            // Extract each store object
+            for (int i = 0; i < jsonArray.length(); i++) {
+                JSONObject storeObject = jsonArray.getJSONObject(i);
+
+                String name = storeObject.getString("StoreName");
+                double latitude = storeObject.getDouble("Latitude");
+                double longitude = storeObject.getDouble("Longitude");
+                String category = storeObject.getString("FoodCategory");
+                int stars = storeObject.getInt("Stars");
+
+                // Convert stars to price category
+                String priceCategory = stars <= 2 ? "$" : (stars <= 4 ? "$$" : "$$$");
+
+                // Create store object and add to list
+                Store store = new Store(name, latitude, longitude, category, stars, priceCategory);
+                stores.add(store);
+            }
+        } catch (IOException | JSONException e) {
+            e.printStackTrace();
+            Log.e("HomeActivity", "Error loading stores: " + e.getMessage());
+            // Add some default stores if file loading fails
+            stores.add(new Store("Pizza Paradise", 37.9838, 23.7275, "Pizza", 4, "$$"));
+            stores.add(new Store("Greek Gyros", 37.9759, 23.7357, "Souvlaki", 5, "$"));
+        }
 
         return stores;
     }
