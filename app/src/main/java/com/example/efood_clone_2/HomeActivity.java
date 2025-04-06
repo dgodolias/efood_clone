@@ -56,6 +56,10 @@ public class HomeActivity extends AppCompatActivity {
         ImageView filterIcon = findViewById(R.id.filterIcon);
         filterIcon.setOnClickListener(v -> showFilterPopup(v));
 
+        // Set up location icon click listener
+        ImageView locationIcon = findViewById(R.id.locationIcon);
+        locationIcon.setOnClickListener(v -> showLocationPopup(v));
+
         // Initialize filter selections
         selectedFilters.put("type", new ArrayList<>());
         selectedFilters.put("stars", new ArrayList<>());
@@ -120,6 +124,24 @@ public class HomeActivity extends AppCompatActivity {
             // Dismiss the popup
             popupWindow.dismiss();
         });
+
+        // Show the popup window
+        popupWindow.showAsDropDown(anchorView);
+    }
+
+    private void showLocationPopup(View anchorView) {
+        // Inflate the location popup layout
+        View popupView = LayoutInflater.from(this).inflate(R.layout.location_popup, null);
+
+        // Create the popup window
+        int width = ViewGroup.LayoutParams.MATCH_PARENT;
+        int height = ViewGroup.LayoutParams.WRAP_CONTENT;
+        final PopupWindow popupWindow = new PopupWindow(popupView, width, height, true);
+        popupWindow.setOutsideTouchable(true);
+
+        // Set up close button
+        Button closeButton = popupView.findViewById(R.id.closeButton);
+        closeButton.setOnClickListener(v -> popupWindow.dismiss());
 
         // Show the popup window
         popupWindow.showAsDropDown(anchorView);

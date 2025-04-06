@@ -1,76 +1,90 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="#FFFFFF">
-
-    <TextView
-        android:id="@+id/headerText"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Are you hungry? Order now!"
-        android:textColor="#000000"
-        android:textSize="24sp"
-        android:gravity="left"
-        android:padding="16dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
-
-    <androidx.cardview.widget.CardView
-        android:id="@+id/bannerCardView"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_margin="16dp"
-        app:cardCornerRadius="24dp"
-        app:cardElevation="4dp"
-        app:layout_constraintTop_toBottomOf="@id/headerText"
-        app:layout_constraintHeight_percent="0.3">
-
-        <ImageView
-            android:id="@+id/bannerImageView"
+        <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+            xmlns:app="http://schemas.android.com/apk/res-auto"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:src="@drawable/home_banner"
-            android:scaleType="centerCrop"
-            android:contentDescription="Home Banner" />
-    </androidx.cardview.widget.CardView>
+            android:background="#FFFFFF">
 
-    <LinearLayout
-        android:id="@+id/titleContainer"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingHorizontal="16dp"
-        app:layout_constraintTop_toBottomOf="@id/bannerCardView">
+            <!-- Header with Location Icon -->
+            <TextView
+                android:id="@+id/headerText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="Are you hungry? Order now!"
+                android:textColor="#000000"
+                android:textSize="24sp"
+                android:gravity="left"
+                android:padding="16dp"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/locationIcon" />
 
-        <TextView
-            android:id="@+id/titleText"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Nearby Restaurants"
-            android:textSize="24sp"
-            android:textColor="#000000"
-            android:paddingVertical="16dp" />
+            <ImageView
+                android:id="@+id/locationIcon"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:src="@drawable/location_logo"
+                android:padding="4dp"
+                android:layout_marginEnd="16dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Location"
+                app:layout_constraintTop_toTopOf="@id/headerText"
+                app:layout_constraintBottom_toBottomOf="@id/headerText"
+                app:layout_constraintEnd_toEndOf="parent" />
 
-        <ImageView
-            android:id="@+id/filterIcon"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:src="@drawable/filter_logo"
-            android:padding="4dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Filter" />
-    </LinearLayout>
+            <androidx.cardview.widget.CardView
+                android:id="@+id/bannerCardView"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_margin="16dp"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="4dp"
+                app:layout_constraintTop_toBottomOf="@id/headerText"
+                app:layout_constraintHeight_percent="0.3">
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerView"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        app:layout_constraintTop_toBottomOf="@id/titleContainer"
-        app:layout_constraintBottom_toBottomOf="parent" />
+                <ImageView
+                    android:id="@+id/bannerImageView"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:src="@drawable/home_banner"
+                    android:scaleType="centerCrop"
+                    android:contentDescription="Home Banner" />
+            </androidx.cardview.widget.CardView>
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+            <LinearLayout
+                android:id="@+id/titleContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="16dp"
+                app:layout_constraintTop_toBottomOf="@id/bannerCardView">
+
+                <TextView
+                    android:id="@+id/titleText"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Nearby Restaurants"
+                    android:textSize="24sp"
+                    android:textColor="#000000"
+                    android:paddingVertical="16dp" />
+
+                <ImageView
+                    android:id="@+id/filterIcon"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:src="@drawable/filter_logo"
+                    android:padding="4dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Filter" />
+            </LinearLayout>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerView"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                app:layout_constraintTop_toBottomOf="@id/titleContainer"
+                app:layout_constraintBottom_toBottomOf="parent" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
