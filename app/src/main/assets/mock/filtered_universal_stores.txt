@@ -1,0 +1,30 @@
+[
+  {
+    "StoreName": "Pizza Express",
+    "Latitude": 37.9834,
+    "Longitude": 23.7293,
+    "FoodCategory": "pizza",
+    "Stars": 4
+  },
+  {
+    "StoreName": "Burger King",
+    "Latitude": 37.9819,
+    "Longitude": 23.7331,
+    "FoodCategory": "burger",
+    "Stars": 3
+  },
+  {
+    "StoreName": "Souvlaki House",
+    "Latitude": 37.9856,
+    "Longitude": 23.7271,
+    "FoodCategory": "souvlaki",
+    "Stars": 5
+  },
+  {
+    "StoreName": "Java Coffee",
+    "Latitude": 37.9812,
+    "Longitude": 23.7291,
+    "FoodCategory": "coffee",
+    "Stars": 4
+  }
+]
