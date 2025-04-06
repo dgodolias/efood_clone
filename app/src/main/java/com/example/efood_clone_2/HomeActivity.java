@@ -92,6 +92,7 @@ public class HomeActivity extends AppCompatActivity {
         addCheckboxesToGroup(priceGroup, prices, "price");
 
         // Set up apply button
+       // Set up apply button
         Button applyButton = popupView.findViewById(R.id.applyButton);
         applyButton.setOnClickListener(v -> {
             // Create JSON from selected filters
@@ -105,10 +106,9 @@ public class HomeActivity extends AppCompatActivity {
                     jsonFilters.put(entry.getKey(), filterArray);
                 }
 
-                // Print the JSON to console and show toast
+                // Log the JSON to console only
                 String jsonString = jsonFilters.toString(2);
                 Log.d("FilterSelected", jsonString);
-                Toast.makeText(HomeActivity.this, "Filters: " + jsonString, Toast.LENGTH_LONG).show();
 
                 // Load filtered data
                 loadFilteredStores();

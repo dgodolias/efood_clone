@@ -37,6 +37,7 @@ dependencies {
     testImplementation(libs.junit)
     implementation(libs.recyclerview)
     implementation(libs.cardview)
+    implementation(libs.flexbox)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
 }

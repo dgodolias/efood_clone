@@ -19,11 +19,15 @@
             android:textColor="#000000"
             android:layout_marginBottom="8dp" />
 
-        <LinearLayout
-            android:id="@+id/typeGroup"
+        <HorizontalScrollView
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical" />
+            android:layout_height="wrap_content">
+            <LinearLayout
+                android:id="@+id/typeGroup"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal" />
+        </HorizontalScrollView>
 
         <!-- Stars Section -->
         <TextView
@@ -35,11 +39,15 @@
             android:layout_marginTop="16dp"
             android:layout_marginBottom="8dp" />
 
-        <LinearLayout
-            android:id="@+id/starsGroup"
+        <HorizontalScrollView
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical" />
+            android:layout_height="wrap_content">
+            <LinearLayout
+                android:id="@+id/starsGroup"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal" />
+        </HorizontalScrollView>
 
         <!-- Price Section -->
         <TextView
@@ -51,11 +59,15 @@
             android:layout_marginTop="16dp"
             android:layout_marginBottom="8dp" />
 
-        <LinearLayout
-            android:id="@+id/priceGroup"
+        <HorizontalScrollView
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical" />
+            android:layout_height="wrap_content">
+            <LinearLayout
+                android:id="@+id/priceGroup"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal" />
+        </HorizontalScrollView>
 
         <!-- Apply Button -->
         <Button
