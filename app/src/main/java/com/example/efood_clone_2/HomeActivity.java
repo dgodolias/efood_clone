@@ -17,6 +17,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.efood_clone_2.adapter.StoreAdapter;
+import com.example.efood_clone_2.model.Product;
 import com.example.efood_clone_2.model.Store;
 
 import org.json.JSONArray;
@@ -213,8 +214,26 @@ public class HomeActivity extends AppCompatActivity {
                 // Convert stars to price category
                 String priceCategory = stars <= 2 ? "$" : (stars <= 4 ? "$$" : "$$$");
 
-                // Create store object and add to list
+                // Create store object
                 Store store = new Store(name, latitude, longitude, category, stars, priceCategory);
+
+                // Parse products if available
+                if (storeObject.has("Products")) {
+                    JSONArray productsArray = storeObject.getJSONArray("Products");
+
+                    for (int j = 0; j < productsArray.length(); j++) {
+                        JSONObject productObject = productsArray.getJSONObject(j);
+
+                        String productName = productObject.getString("ProductName");
+                        String productType = productObject.getString("ProductType");
+                        int availableAmount = productObject.getInt("Available Amount");
+                        double price = productObject.getDouble("Price");
+
+                        Product product = new Product(productName, productType, availableAmount, price);
+                        store.addProduct(product);
+                    }
+                }
+
                 storeList.add(store);
             }
 
@@ -238,13 +257,9 @@ public class HomeActivity extends AppCompatActivity {
             inputStream.read(buffer);
             inputStream.close();
 
-            // Convert bytes to JSON string
             String jsonString = new String(buffer, StandardCharsets.UTF_8);
-
-            // Parse JSON array
             JSONArray jsonArray = new JSONArray(jsonString);
 
-            // Extract each store object
             for (int i = 0; i < jsonArray.length(); i++) {
                 JSONObject storeObject = jsonArray.getJSONObject(i);
 
@@ -253,20 +268,41 @@ public class HomeActivity extends AppCompatActivity {
                 double longitude = storeObject.getDouble("Longitude");
                 String category = storeObject.getString("FoodCategory");
                 int stars = storeObject.getInt("Stars");
-
-                // Convert stars to price category
                 String priceCategory = stars <= 2 ? "$" : (stars <= 4 ? "$$" : "$$$");
 
-                // Create store object and add to list
                 Store store = new Store(name, latitude, longitude, category, stars, priceCategory);
+
+                // Parse products if available in JSON
+                if (storeObject.has("Products")) {
+                    JSONArray productsArray = storeObject.getJSONArray("Products");
+
+                    for (int j = 0; j < productsArray.length(); j++) {
+                        JSONObject productObject = productsArray.getJSONObject(j);
+
+                        String productName = productObject.getString("ProductName");
+                        String productType = productObject.getString("ProductType");
+                        int availableAmount = productObject.getInt("Available Amount");
+                        double price = productObject.getDouble("Price");
+
+                        Product product = new Product(productName, productType, availableAmount, price);
+                        store.addProduct(product);
+                    }
+                }
+
                 stores.add(store);
             }
         } catch (IOException | JSONException e) {
             e.printStackTrace();
             Log.e("HomeActivity", "Error loading stores: " + e.getMessage());
-            // Add some default stores if file loading fails
-            stores.add(new Store("Pizza Paradise", 37.9838, 23.7275, "Pizza", 4, "$$"));
-            stores.add(new Store("Greek Gyros", 37.9759, 23.7357, "Souvlaki", 5, "$"));
+
+            // Add default stores with products if loading fails
+            Store defaultStore = new Store("Pizza Paradise", 37.9838, 23.7275, "Pizza", 4, "$$");
+            defaultStore.addProduct(new Product("Margherita", "pizza", 10, 8.5));
+            stores.add(defaultStore);
+
+            Store defaultStore2 = new Store("Greek Gyros", 37.9759, 23.7357, "Souvlaki", 5, "$");
+            defaultStore2.addProduct(new Product("Gyro", "souvlaki", 15, 5.0));
+            stores.add(defaultStore2);
         }
 
         return stores;

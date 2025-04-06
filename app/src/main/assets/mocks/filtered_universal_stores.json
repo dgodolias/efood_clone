@@ -1,30 +1,31 @@
 [
   {
-    "StoreName": "Pizza Express",
-    "Latitude": 37.9834,
-    "Longitude": 23.7293,
-    "FoodCategory": "pizza",
-    "Stars": 4
+    "StoreName": "Pizza Palace",
+    "Latitude": 37.9932963,
+    "Longitude": 23.733413,
+    "FoodCategory": "pizzeria",
+    "Stars": 4,
+    "NoOfVotes": 25,
+    "StoreLogo": "/usr/bin/images/pizza_palace.png",
+    "Products": [
+      {"ProductName": "Margherita", "ProductType": "pizza", "Available Amount": 5000, "Price": 8.5},
+      {"ProductName": "Pepperoni", "ProductType": "pizza", "Available Amount": 3000, "Price": 10.0},
+      {"ProductName": "Greek Salad", "ProductType": "salad", "Available Amount": 150, "Price": 6.0}
+    ]
   },
   {
-    "StoreName": "Burger King",
-    "Latitude": 37.9819,
-    "Longitude": 23.7331,
-    "FoodCategory": "burger",
-    "Stars": 3
-  },
-  {
-    "StoreName": "Souvlaki House",
-    "Latitude": 37.9856,
-    "Longitude": 23.7271,
-    "FoodCategory": "souvlaki",
-    "Stars": 5
-  },
-  {
-    "StoreName": "Java Coffee",
-    "Latitude": 37.9812,
-    "Longitude": 23.7291,
-    "FoodCategory": "coffee",
-    "Stars": 4
+    "StoreName": "Seafood Shack",
+    "Latitude": 37.978901,
+    "Longitude": 23.715678,
+    "FoodCategory": "seafood",
+    "Stars": 3,
+    "NoOfVotes": 15,
+    "StoreLogo": "/usr/bin/images/seafood_shack.png",
+    "Products": [
+      {"ProductName": "Fish and Chips", "ProductType": "seafood", "Available Amount": 2000, "Price": 13.0},
+      {"ProductName": "Shrimp Cocktail", "ProductType": "seafood", "Available Amount": 1000, "Price": 15.0},
+      {"ProductName": "Coleslaw", "ProductType": "side", "Available Amount": 300, "Price": 3.5},
+      {"ProductName": "Quinoa Salad", "ProductType": "salad", "Available Amount": 10, "Price": 8.5}
+    ]
   }
 ]

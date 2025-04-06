@@ -1,5 +1,6 @@
 package com.example.efood_clone_2.adapter;
 
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -7,6 +8,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.efood_clone_2.R;
+import com.example.efood_clone_2.StoreActivity;
 import com.example.efood_clone_2.model.Store;
 import java.util.List;
 
@@ -35,6 +37,13 @@ public class StoreAdapter extends RecyclerView.Adapter<StoreAdapter.ViewHolder> 
         holder.tvCoordinates.setText(store.getCoordinates());
         holder.tvType.setText(store.getFoodType());
         holder.tvPrice.setText(store.getPriceCategory());
+
+        // Set click listener
+        holder.itemView.setOnClickListener(v -> {
+            Intent intent = new Intent(v.getContext(), StoreActivity.class);
+            intent.putExtra("store", store);
+            v.getContext().startActivity(intent);
+        });
     }
 
     @Override

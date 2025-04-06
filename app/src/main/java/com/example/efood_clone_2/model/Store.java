@@ -1,27 +1,38 @@
 package com.example.efood_clone_2.model;
 
-public class Store {
-    private String name;
-    private double latitude;
-    private double longitude;
-    private String foodType;
-    private int stars;
-    private String priceCategory;
+    import java.io.Serializable;
+    import java.util.ArrayList;
+    import java.util.List;
 
-    public Store(String name, double latitude, double longitude, String foodType, int stars, String priceCategory) {
-        this.name = name;
-        this.latitude = latitude;
-        this.longitude = longitude;
-        this.foodType = foodType;
-        this.stars = stars;
-        this.priceCategory = priceCategory;
+    public class Store implements Serializable {
+        private String name;
+        private double latitude;
+        private double longitude;
+        private String foodType;
+        private int stars;
+        private String priceCategory;
+        private List<Product> products;
+
+        public Store(String name, double latitude, double longitude, String foodType, int stars, String priceCategory) {
+            this.name = name;
+            this.latitude = latitude;
+            this.longitude = longitude;
+            this.foodType = foodType;
+            this.stars = stars;
+            this.priceCategory = priceCategory;
+            this.products = new ArrayList<>();
+        }
+
+        public String getName() { return name; }
+        public double getLatitude() { return latitude; }
+        public double getLongitude() { return longitude; }
+        public String getFoodType() { return foodType; }
+        public int getStars() { return stars; }
+        public String getPriceCategory() { return priceCategory; }
+        public String getCoordinates() { return latitude + ", " + longitude; }
+
+        // New getters/setters for products
+        public List<Product> getProducts() { return products; }
+        public void setProducts(List<Product> products) { this.products = products; }
+        public void addProduct(Product product) { this.products.add(product); }
     }
-
-    public String getName() { return name; }
-    public double getLatitude() { return latitude; }
-    public double getLongitude() { return longitude; }
-    public String getFoodType() { return foodType; }
-    public int getStars() { return stars; }
-    public String getPriceCategory() { return priceCategory; }
-    public String getCoordinates() { return latitude + ", " + longitude; }
-}
