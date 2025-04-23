@@ -152,6 +152,9 @@ package com.example.efood_clone_2;
                         StringBuilder compactFormat = new StringBuilder();
                         boolean firstItem = true;
 
+                        // Add store name at the beginning of compact format
+                        compactFormat.append(store.getStoreName());
+
                         // Loop through cart items
                         for (CartItem item : Cart.getInstance().getItems()) {
                             // Add to existing summary format
@@ -163,8 +166,10 @@ package com.example.efood_clone_2;
                                    .append("\n");
 
                             // Add to new compact format
-                            if (!firstItem) {
+                            if (firstItem) {
                                 compactFormat.append("|");
+                            } else {
+                                compactFormat.append("#");
                             }
                             compactFormat.append(item.getQuantity())
                                         .append("*\"")
@@ -180,9 +185,13 @@ package com.example.efood_clone_2;
                         Log.d("Checkout", summary.toString());
                         Log.d("Checkout", "Compact format: " + compactFormat.toString());
 
+                        // Call the new method to parse and print the items
+                        TCPClient client = new TCPClient();
+                        client.buy(compactFormat.toString());
+
                         // Show the order summary to the user
                         Toast.makeText(StoreActivity.this,
-                                "Order placed!\n" + orderSummary.toString(),
+                                "Order placed!\n" + summary.toString(),
                                 Toast.LENGTH_LONG).show();
 
                         // Clear cart after checkout

@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -249,5 +250,74 @@ public class TCPClient {
                 mainHandler.post(() -> callback.onError("Network error: " + e.getMessage()));
             }
         });
+    }
+
+
+    public void buy(String compactFormString) {
+        // Convert the compact format to a map of store name -> (product name -> quantity)
+        Map<String, Map<String, Integer>> purchaseMap = compactToBuyFormat(compactFormString);
+        System.out.println("test");
+        // Print the structured purchase data
+        for (Map.Entry<String, Map<String, Integer>> storeEntry : purchaseMap.entrySet()) {
+            String storeName = storeEntry.getKey();
+            Map<String, Integer> products = storeEntry.getValue();
+
+            System.out.println("Store: " + storeName);
+            for (Map.Entry<String, Integer> productEntry : products.entrySet()) {
+                String productName = productEntry.getKey();
+                int quantity = productEntry.getValue();
+                System.out.println("  Product: " + productName + ", Quantity: " + quantity);
+            }
+        }
+
+        // Purchase processing will be implemented later
+    }
+
+    private Map<String, Map<String, Integer>> compactToBuyFormat(String compactForm) {
+        Map<String, Map<String, Integer>> purchaseMap = new HashMap<>();
+
+        // Add debug log to see the input string
+        System.out.println("Parsing: " + compactForm);
+
+        // Split by store delimiter |
+        String[] storeEntries = compactForm.split("\\|");
+        if (storeEntries.length < 2) {
+            System.out.println("Invalid format: Not enough segments in " + compactForm);
+            return purchaseMap; // Return empty map if format invalid
+        }
+
+        String storeName = storeEntries[0].trim();
+        Map<String, Integer> productMap = new HashMap<>();
+
+        // Get the product segment (everything after the first |)
+        String productSegment = storeEntries[1].trim();
+
+        // Split products by # delimiter
+        String[] productEntries = productSegment.split("#");
+
+        // Process each product entry (format: quantity*"productName")
+        for (String productEntry : productEntries) {
+            String[] parts = productEntry.split("\\*");
+
+            if (parts.length == 2) {
+                try {
+                    int quantity = Integer.parseInt(parts[0].trim());
+                    // Remove surrounding quotes if present
+                    String productName = parts[1].trim().replaceAll("^\"|\"$", "");
+                    productMap.put(productName, quantity);
+                } catch (NumberFormatException e) {
+                    System.out.println("Invalid quantity format in: " + productEntry);
+                }
+            }
+        }
+
+        if (!productMap.isEmpty()) {
+            purchaseMap.put(storeName, productMap);
+        }
+
+        // Debug log the result
+        System.out.println("Parsed map size: " + purchaseMap.size());
+
+        return purchaseMap;
     }
 }
