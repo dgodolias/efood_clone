@@ -54,6 +54,13 @@ public class Master {
 
     private void loadInitialStores() throws IOException {
         File storesFile = new File("data/stores.json");
+        try (BufferedReader reader = new BufferedReader(new FileReader(storesFile))) {
+            StringBuilder content = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) content.append(line).append("\n");
+            System.out.println("Content of stores.json:\n" + content.toString());
+        }
+
         if (!storesFile.exists()) {
             System.out.println("No initial stores found in data/stores.json");
             return;
