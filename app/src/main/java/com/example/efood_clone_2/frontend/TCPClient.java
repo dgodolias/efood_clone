@@ -17,6 +17,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -41,62 +42,66 @@ public class TCPClient {
 
     public void getNearbyStores(double latitude, double longitude, StoreListCallback callback) {
         executor.execute(() -> {
-            try (Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
-                 PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+            try {
+                // Connect to the server
+                Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
+                PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+                BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-                Log.d(TAG, "Connected to server at " + SERVER_HOST + ":" + SERVER_PORT);
+                // Send the request
+                String request = String.format("FIND_STORES_WITHIN_RANGE %f,%f", latitude, longitude);
+                out.println(request);
 
-                // Send the command to find stores within range
-                String command = "FIND_STORES_WITHIN_RANGE " + latitude + "," + longitude;
-                out.println(command);
-                Log.d(TAG, "Sent command: " + command);
-
-                // Read the response
-                List<Store> storeList = new ArrayList<>();
+                // Read multiple lines from the server
+                List<Store> stores = new ArrayList<>();
                 String line;
-                String response = "";
-                StringBuilder sb = new StringBuilder();
+                while ((line = in.readLine()) != null) {
+                    // Optional: Stop at a specific end marker, e.g., "END"
+                    if (line.equals("END")) break;
 
-                while ((line = in.readLine()) != null && !line.equals("END")) {
-                    if (line.equals("No stores found within 5km of your location.")) {
-                        mainHandler.post(() -> callback.onStoresReceived(new ArrayList<>()));
-                        return;
+                    // Parse each line as a store
+                    Store store = parseSingleStore(line);
+                    if (store != null) {
+                        stores.add(store);
                     }
-
-                    // Parse the store information
-                    // Format: "StoreName - FoodCategory (Distance km)"
-                    int dashIndex = line.indexOf(" - ");
-                    int bracketIndex = line.lastIndexOf(" (");
-
-                    if (dashIndex > 0 && bracketIndex > dashIndex) {
-                        String name = line.substring(0, dashIndex);
-                        String foodType = line.substring(dashIndex + 3, bracketIndex);
-                        String distanceStr = line.substring(bracketIndex + 2, line.length() - 3);
-
-                        try {
-                            double distance = Double.parseDouble(distanceStr);
-                            Store store = new Store(name, latitude, longitude, foodType, 4, "$$");
-                            store.setDistance(distance);
-                            storeList.add(store);
-                        } catch (NumberFormatException e) {
-                            Log.e(TAG, "Error parsing distance: " + e.getMessage());
-                        }
-                    }
-                    sb.append(line);
                 }
-                response = sb.toString();
-                Log.d(TAG,"response: "+response);
 
-                
-                // Notify result on main thread
-                mainHandler.post(() -> callback.onStoresReceived(storeList));
+                // Sort stores by distance
+                Collections.sort(stores, (s1, s2) -> Double.compare(s1.getDistance(), s2.getDistance()));
 
+                // Send the result back to the main thread
+                mainHandler.post(() -> callback.onStoresReceived(stores));
+
+                // Clean up
+                socket.close();
             } catch (IOException e) {
-                Log.e(TAG, "Error connecting to server: " + e.getMessage(), e);
+                Log.e("TCPClient", "Error connecting to server: " + e.getMessage(), e);
                 mainHandler.post(() -> callback.onError("Network error: " + e.getMessage()));
             }
         });
+    }
+
+    // Helper method to parse a single store from a line
+    private Store parseSingleStore(String storeString) {
+        try {
+            String[] parts = storeString.split("\\^");
+            if (parts.length >= 7) {
+                String name = parts[0];
+                double lat = Double.parseDouble(parts[1]);
+                double lon = Double.parseDouble(parts[2]);
+                String category = parts[3].replace("\"", ""); // Remove quotes
+                int stars = Integer.parseInt(parts[4]);
+                String price = parts[5];
+                double distance = Double.parseDouble(parts[6]);
+
+                Store store = new Store(name, lat, lon, category, stars, price);
+                store.setDistance(distance);
+                return store;
+            }
+        } catch (Exception e) {
+            Log.e("TCPClient", "Error parsing store: " + storeString + " - " + e.getMessage());
+        }
+        return null;
     }
 
     public void getFilteredStores(Map<String, List<String>> filters, StoreListCallback callback) {

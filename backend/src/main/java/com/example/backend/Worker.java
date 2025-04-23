@@ -216,13 +216,21 @@ class WorkerThread extends Thread {
                             for (Store s : stores.values()) {
                                 double distance = calculateDistance(latt, longt, s.getLatitude(), s.getLongitude());
                                 if (distance <= 5.0) { // 5km range
-                                    nearbyStores.add(s.getStoreName() + " - " + s.getFoodCategory() + " (" + String.format("%.2f", distance) + "km)");
+                                    // Format: name^lat^lon^category^stars^price^distance
+                                    String storeData = String.format("%s^%f^%f^%s^%d^%s^%f",
+                                        s.getStoreName(),
+                                        s.getLatitude(),
+                                        s.getLongitude(),
+                                        s.getFoodCategory(),
+                                        s.getStars(),
+                                        s.getPriceCategory(),
+                                        distance);
+                                    nearbyStores.add(storeData);
                                 }
                             }
-
+                            System.out.println("TCPClient "+ "Nearby stores: " + nearbyStores);
                             out.println(String.join("|", nearbyStores));
                             break;
-
                         case "FILTER_STORES":
                             String filterData = parts.length > 1 ? parts[1] : "";
 
