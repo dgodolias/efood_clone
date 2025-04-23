@@ -1,5 +1,9 @@
 package com.example.efood_clone_2.model;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -115,5 +119,86 @@ public class Store implements Serializable {
                 break;
             }
         }
+    }
+
+    public static Store JsonToStore(String jsonString) throws JSONException {
+        JSONObject json = new JSONObject(jsonString);
+
+        // Extract basic store information
+        String storeName = json.optString("StoreName", "");
+        double latitude = json.optDouble("Latitude", 0.0);
+        double longitude = json.optDouble("Longitude", 0.0);
+        String foodCategory = json.optString("FoodCategory", "");
+        int stars = json.optInt("Stars", 0);
+        int noOfVotes = json.optInt("NoOfVotes", 0);
+        String storeLogo = json.optString("StoreLogo", "");
+
+        // Create store instance using the full constructor
+        Store store = new Store(storeName, latitude, longitude, foodCategory, stars, noOfVotes, storeLogo);
+
+        // Set price category if available, otherwise it's already set based on stars in constructor
+        if (json.has("PriceCategory")) {
+            store.setPriceCategory(json.getString("PriceCategory"));
+        }
+
+        // Set distance if available
+        if (json.has("Distance")) {
+            store.setDistance(json.getDouble("Distance"));
+        }
+
+        // Parse products if available
+        if (json.has("Products") && !json.isNull("Products")) {
+            JSONArray productsArray = json.getJSONArray("Products");
+            for (int i = 0; i < productsArray.length(); i++) {
+                JSONObject productJson = productsArray.getJSONObject(i);
+                String productName = productJson.getString("ProductName");
+                String productType = productJson.getString("ProductType");
+                int availableAmount = productJson.getInt("Available Amount");
+                double price = productJson.getDouble("Price");
+
+                Product product = new Product(productName, productType, availableAmount, price);
+                store.addProduct(product);
+            }
+        }
+
+        return store;
+    }
+
+
+    private String StoreToJson(Store store) {
+        StringBuilder json = new StringBuilder();
+        json.append("  {\n");
+        json.append("    \"StoreName\": \"").append(sanitizeJsonValue(store.getStoreName())).append("\",\n");
+        json.append("    \"Latitude\": ").append(store.getLatitude()).append(",\n");
+        json.append("    \"Longitude\": ").append(store.getLongitude()).append(",\n");
+        json.append("    \"FoodCategory\": \"").append(sanitizeJsonValue(store.getFoodCategory())).append("\",\n");
+        json.append("    \"Stars\": ").append(store.getStars()).append(",\n");
+        json.append("    \"NoOfVotes\": ").append(store.getNoOfVotes()).append(",\n");
+        json.append("    \"StoreLogo\": \"").append(sanitizeJsonValue(store.getStoreLogo())).append("\",\n");
+        json.append("    \"PriceCategory\": \"").append(sanitizeJsonValue(store.getPriceCategory())).append("\",\n");
+        json.append("    \"Products\": [\n");
+        List<Product> products = store.getProducts();
+        for (int i = 0; i < products.size(); i++) {
+            Product p = products.get(i);
+            json.append("      {");
+            json.append("\"ProductName\": \"").append(sanitizeJsonValue(p.getProductName())).append("\", ");
+            json.append("\"ProductType\": \"").append(sanitizeJsonValue(p.getProductType())).append("\", ");
+            json.append("\"Available Amount\": ").append(p.getAvailableAmount()).append(", ");
+            json.append("\"Price\": ").append(p.getPrice());
+            json.append("}");
+            if (i < products.size() - 1) json.append(",");
+            json.append("\n");
+        }
+        json.append("    ]\n");
+        json.append("  }");
+        return json.toString();
+    }
+
+    private String sanitizeJsonValue(String value) {
+        if (value == null) return "";
+        // Remove any surrounding quotes
+        value = value.replaceAll("^\"|\"$", "");
+        // Escape any quotes inside the value
+        return value.replace("\"", "\\\"");
     }
 }

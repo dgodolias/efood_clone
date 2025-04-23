@@ -6,6 +6,7 @@
     "FoodCategory": "pizzeria",
     "Stars": 4,
     "NoOfVotes": 25,
+    "PriceCategory": "$$",
     "StoreLogo": "/usr/bin/images/pizza_palace.png",
     "Products": [
       {"ProductName": "Margherita", "ProductType": "pizza", "Available Amount": 5000, "Price": 8.5},
@@ -20,6 +21,7 @@
     "FoodCategory": "burgers",
     "Stars": 3,
     "NoOfVotes": 18,
+    "PriceCategory": "$",
     "StoreLogo": "/usr/bin/images/burger_bonanza.png",
     "Products": [
       {"ProductName": "Classic Burger", "ProductType": "burger", "Available Amount": 2000, "Price": 7.5},
@@ -34,6 +36,7 @@
     "FoodCategory": "sushi",
     "Stars": 5,
     "NoOfVotes": 30,
+    "PriceCategory": "$$$",
     "StoreLogo": "/usr/bin/images/sushi_spot.png",
     "Products": [
       {"ProductName": "California Roll", "ProductType": "sushi", "Available Amount": 800, "Price": 12.0},
@@ -48,6 +51,7 @@
     "FoodCategory": "greek",
     "Stars": 4,
     "NoOfVotes": 20,
+    "PriceCategory": "$",
     "StoreLogo": "/usr/bin/images/gyro_grill.png",
     "Products": [
       {"ProductName": "Chicken Gyro", "ProductType": "gyro", "Available Amount": 4000, "Price": 6.0},
@@ -62,6 +66,7 @@
     "FoodCategory": "italian",
     "Stars": 3,
     "NoOfVotes": 12,
+    "PriceCategory": "$$",
     "StoreLogo": "/usr/bin/images/pasta_place.png",
     "Products": [
       {"ProductName": "Spaghetti Bolognese", "ProductType": "pasta", "Available Amount": 2500, "Price": 11.0},
@@ -76,6 +81,7 @@
     "FoodCategory": "mexican",
     "Stars": 4,
     "NoOfVotes": 22,
+    "PriceCategory": "$",
     "StoreLogo": "/usr/bin/images/taco_town.png",
     "Products": [
       {"ProductName": "Beef Taco", "ProductType": "taco", "Available Amount": 3000, "Price": 5.5},
@@ -90,6 +96,7 @@
     "FoodCategory": "kebab",
     "Stars": 2,
     "NoOfVotes": 10,
+    "PriceCategory": "$",
     "StoreLogo": "/usr/bin/images/kebab_kingdom.png",
     "Products": [
       {"ProductName": "Lamb Kebab", "ProductType": "kebab", "Available Amount": 1500, "Price": 8.0},
@@ -104,6 +111,7 @@
     "FoodCategory": "vegetarian",
     "Stars": 5,
     "NoOfVotes": 35,
+    "PriceCategory": "$$",
     "StoreLogo": "/usr/bin/images/veggie_vibes.png",
     "Products": [
       {"ProductName": "Veggie Burger", "ProductType": "burger", "Available Amount": 1000, "Price": 9.0},
@@ -118,6 +126,7 @@
     "FoodCategory": "seafood",
     "Stars": 3,
     "NoOfVotes": 15,
+    "PriceCategory": "$$$",
     "StoreLogo": "/usr/bin/images/seafood_shack.png",
     "Products": [
       {"ProductName": "Fish and Chips", "ProductType": "seafood", "Available Amount": 2000, "Price": 13.0},

@@ -55,6 +55,9 @@ public class TCPClient {
                 // Read the response
                 List<Store> storeList = new ArrayList<>();
                 String line;
+                String response = "";
+                StringBuilder sb = new StringBuilder();
+
                 while ((line = in.readLine()) != null && !line.equals("END")) {
                     if (line.equals("No stores found within 5km of your location.")) {
                         mainHandler.post(() -> callback.onStoresReceived(new ArrayList<>()));
@@ -80,8 +83,12 @@ public class TCPClient {
                             Log.e(TAG, "Error parsing distance: " + e.getMessage());
                         }
                     }
+                    sb.append(line);
                 }
+                response = sb.toString();
+                Log.d(TAG,"response: "+response);
 
+                
                 // Notify result on main thread
                 mainHandler.post(() -> callback.onStoresReceived(storeList));
 

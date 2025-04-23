@@ -1,3 +1,5 @@
 -na vgalw ta comments ektos twn ||#### ####||
 -na kanw dynamica workers k oxi Master 2 from cmd
 -na TO vgalw
+-na valw logos
+-na fortononte ta stores apo main oxi home
