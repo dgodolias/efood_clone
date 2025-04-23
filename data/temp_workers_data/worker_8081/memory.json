@@ -9,9 +9,9 @@
     "StoreLogo": "/usr/bin/images/burger_bonanza.png",
     "PriceCategory": "$$",
     "Products": [
-      {"ProductName": "Classic Burger", "ProductType": "burger", "Available Amount": 2000, "Price": 7.5},
-      {"ProductName": "Cheeseburger", "ProductType": "burger", "Available Amount": 1500, "Price": 8.5},
-      {"ProductName": "Fries", "ProductType": "side", "Available Amount": 1000, "Price": 3.0}
+      {"ProductName": "Classic Burger", "ProductType": "burger", "Available Amount": 1996, "Price": 7.5},
+      {"ProductName": "Cheeseburger", "ProductType": "burger", "Available Amount": 1497, "Price": 8.5},
+      {"ProductName": "Fries", "ProductType": "side", "Available Amount": 998, "Price": 3.0}
     ]
   },
   {
@@ -87,7 +87,7 @@
       {"ProductName": "Fish and Chips", "ProductType": "seafood", "Available Amount": 2000, "Price": 13.0},
       {"ProductName": "Shrimp Cocktail", "ProductType": "seafood", "Available Amount": 1000, "Price": 15.0},
       {"ProductName": "Coleslaw", "ProductType": "side", "Available Amount": 300, "Price": 3.5},
-      {"ProductName": "Quinoa Salad", "ProductType": "salad", "Available Amount": 10, "Price": 8.5}
+      {"ProductName": "Quinoa Salad", "ProductType": "salad", "Available Amount": -10, "Price": 8.5}
     ]
   },
   {
