@@ -217,6 +217,7 @@ public class TCPClient {
                 mainHandler.post(() -> callback.onError("Network error: " + e.getMessage()));
             }
         });
+
     }
 
     // Also add this method to make a purchase
@@ -256,21 +257,41 @@ public class TCPClient {
     public void buy(String compactFormString) {
         // Convert the compact format to a map of store name -> (product name -> quantity)
         Map<String, Map<String, Integer>> purchaseMap = compactToBuyFormat(compactFormString);
-        System.out.println("test");
-        // Print the structured purchase data
+
+        // Debug log
+        Log.d(TAG, "Processing purchases from: " + compactFormString);
+
+        // Create a simple callback for purchase results
+        ResultCallback callback = new ResultCallback() {
+            @Override
+            public void onSuccess(String message) {
+                Log.d(TAG, "Purchase success: " + message);
+            }
+
+            @Override
+            public void onError(String error) {
+                Log.e(TAG, "Purchase error: " + error);
+            }
+        };
+
+        // Process each store's purchases
         for (Map.Entry<String, Map<String, Integer>> storeEntry : purchaseMap.entrySet()) {
             String storeName = storeEntry.getKey();
             Map<String, Integer> products = storeEntry.getValue();
 
-            System.out.println("Store: " + storeName);
+            // Process each product in this store
             for (Map.Entry<String, Integer> productEntry : products.entrySet()) {
                 String productName = productEntry.getKey();
                 int quantity = productEntry.getValue();
-                System.out.println("  Product: " + productName + ", Quantity: " + quantity);
+
+                // Log the purchase being made
+                Log.d(TAG, "Purchasing - Store: " + storeName +
+                      ", Product: " + productName + ", Quantity: " + quantity);
+
+                // Call the purchaseProduct method to send the BUY command
+                purchaseProduct(storeName, productName, quantity, callback);
             }
         }
-
-        // Purchase processing will be implemented later
     }
 
     private Map<String, Map<String, Integer>> compactToBuyFormat(String compactForm) {

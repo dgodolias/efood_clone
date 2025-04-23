@@ -9,8 +9,8 @@
     "StoreLogo": "/usr/bin/images/burger_bonanza.png",
     "PriceCategory": "$$",
     "Products": [
-      {"ProductName": "Classic Burger", "ProductType": "burger", "Available Amount": 2000, "Price": 7.5},
-      {"ProductName": "Cheeseburger", "ProductType": "burger", "Available Amount": 1500, "Price": 8.5},
+      {"ProductName": "Classic Burger", "ProductType": "burger", "Available Amount": 1995, "Price": 7.5},
+      {"ProductName": "Cheeseburger", "ProductType": "burger", "Available Amount": 1492, "Price": 8.5},
       {"ProductName": "Fries", "ProductType": "side", "Available Amount": 1000, "Price": 3.0}
     ]
   },
@@ -55,8 +55,8 @@
     "PriceCategory": "$",
     "Products": [
       {"ProductName": "Lamb Kebab", "ProductType": "kebab", "Available Amount": 1500, "Price": 8.0},
-      {"ProductName": "Chicken Kebab", "ProductType": "kebab", "Available Amount": 1200, "Price": 7.5},
-      {"ProductName": "Hummus", "ProductType": "side", "Available Amount": 200, "Price": 4.0}
+      {"ProductName": "Chicken Kebab", "ProductType": "kebab", "Available Amount": 1199, "Price": 7.5},
+      {"ProductName": "Hummus", "ProductType": "side", "Available Amount": 199, "Price": 4.0}
     ]
   },
   {

@@ -4,3 +4,4 @@
 -na valw logos
 -na fortononte ta stores apo main oxi home
 -na dw to rolo paizei to workerconneciton k an einai na ot vgalw
+-na dw an prepei na mpei kwdikas sto managerconsoleapp anti twn master/worker
