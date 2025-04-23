@@ -170,4 +170,84 @@ public class TCPClient {
             }
         });
     }
+
+    public interface StoreDetailsCallback {
+        void onStoreDetailsReceived(Store store);
+        void onError(String error);
+    }
+
+    public void getStoreDetails(String storeName, StoreDetailsCallback callback) {
+        executor.execute(() -> {
+            try (Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
+                 PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+
+                Log.d(TAG, "Requesting store details for: " + storeName);
+
+                // Request store details with GET_STORE_DETAILS command
+                out.println("GET_STORE_DETAILS " + storeName);
+
+                // Read the response which should be a JSON store object
+                StringBuilder response = new StringBuilder();
+                String line;
+                while ((line = in.readLine()) != null && !line.equals("END")) {
+                    response.append(line);
+                }
+
+                String jsonResponse = response.toString();
+                Log.d(TAG, "Received store details: " + jsonResponse);
+
+                if (jsonResponse.isEmpty() || jsonResponse.contains("Store not found")) {
+                    mainHandler.post(() -> callback.onError("Store details not found: " + storeName));
+                    return;
+                }
+
+                try {
+                    // Parse the JSON into a Store object with products
+                    Store store = Store.JsonToStore(jsonResponse);
+                    mainHandler.post(() -> callback.onStoreDetailsReceived(store));
+                } catch (JSONException e) {
+                    Log.e(TAG, "Error parsing store JSON: " + e.getMessage(), e);
+                    mainHandler.post(() -> callback.onError("Error parsing store data: " + e.getMessage()));
+                }
+
+            } catch (IOException e) {
+                Log.e(TAG, "Network error getting store details: " + e.getMessage(), e);
+                mainHandler.post(() -> callback.onError("Network error: " + e.getMessage()));
+            }
+        });
+    }
+
+    // Also add this method to make a purchase
+    public void purchaseProduct(String storeName, String productName, int quantity, ResultCallback callback) {
+        executor.execute(() -> {
+            try (Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
+                 PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+
+                Log.d(TAG, "Sending purchase request - Store: " + storeName +
+                            ", Product: " + productName + ", Quantity: " + quantity);
+
+                // Format: BUY storeName,productName,quantity
+                String buyCommand = String.format("BUY %s,%s,%d", storeName, productName, quantity);
+                out.println(buyCommand);
+
+                // Read response
+                StringBuilder response = new StringBuilder();
+                String line;
+                while ((line = in.readLine()) != null && !line.equals("END")) {
+                    response.append(line).append("\n");
+                }
+
+                String result = response.toString().trim();
+                Log.d(TAG, "Purchase result: " + result);
+
+                mainHandler.post(() -> callback.onSuccess(result));
+
+            } catch (IOException e) {
+                Log.e(TAG, "Error during purchase: " + e.getMessage(), e);
+                mainHandler.post(() -> callback.onError("Network error: " + e.getMessage()));
+            }
+        });
+    }
 }

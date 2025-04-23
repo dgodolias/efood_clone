@@ -277,6 +277,33 @@ class WorkerThread extends Thread {
                             System.out.println("Filter data: " + matchingStores);
                             out.println(String.join("|", matchingStores));
                             break;
+                        case "GET_STORE_DETAILS":
+                                    String requestedStoreName = parts.length > 1 ? parts[1].trim() : "";
+                                    Store foundStore = null;
+
+                                    // Find the store by name using the Map's values
+                                    for (Store s : stores.values()) {
+                                        if (s.getStoreName().equals(requestedStoreName) ||
+                                            ("\"" + s.getStoreName() + "\"").equals(requestedStoreName)) {
+                                            foundStore = s;
+                                            break;
+                                        }
+                                    }
+
+                                    if (foundStore == null) {
+                                        out.println("Error: Store not found");
+                                    } else {
+                                        // Convert store to JSON and send it
+                                        try {
+                                            String storeJson = Store.StoreToJson(foundStore);
+                                            System.out.println("Sending store details from Worker: " + storeJson);
+                                            out.println(storeJson);
+                                        } catch (Exception e) {
+                                            System.err.println("Error serializing store to JSON: " + e.getMessage());
+                                            out.println("Error: Failed to serialize store data");
+                                        }
+                                    }
+                                    break;
                         case "PING":
                             out.println("PONG");
                             break;

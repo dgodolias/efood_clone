@@ -610,6 +610,44 @@ class MasterThread extends Thread {
                         out.println("Purchase completed: " + buyQuantity + " of " + buyProductName + " from " + buyStoreName);
                         out.println("END");
                         break;
+                    case "GET_STORE_DETAILS":
+                        String detailsStoreName = data.trim();
+                        System.out.println("Processing GET_STORE_DETAILS for: " + detailsStoreName);
+
+                        // Find the store
+                        List<WorkerConnection> storeWorkers = storeToWorkers.get(detailsStoreName);
+                        if (storeWorkers == null) {
+                            // Try with quotes
+                            storeWorkers = storeToWorkers.get("\"" + detailsStoreName + "\"");
+                        }
+
+                        if (storeWorkers == null) {
+                            out.println("Error: Store not found");
+                            out.println("END");
+                            continue;
+                        }
+
+                        // Forward the request to the first worker that has this store
+                        String storeDetails = null;
+                        for (WorkerConnection worker : storeWorkers) {
+                            try {
+                                storeDetails = worker.sendRequest("GET_STORE_DETAILS " + detailsStoreName);
+                                if (storeDetails != null && !storeDetails.isEmpty()) {
+                                    break;  // Found the store details
+                                }
+                            } catch (IOException e) {
+                                System.err.println("Failed to get store details from worker: " + e.getMessage());
+                            }
+                        }
+
+                        if (storeDetails == null || storeDetails.isEmpty()) {
+                            out.println("Error: Could not retrieve store details");
+                        } else {
+                            out.println(storeDetails);
+                        }
+                        System.out.println("Sending store details from Master: " + storeDetails);
+                        out.println("END");
+                        break;
                     default:
                         out.println("Unknown command: " + command);
                 }

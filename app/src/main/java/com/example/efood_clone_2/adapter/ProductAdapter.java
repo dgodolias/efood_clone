@@ -1,5 +1,6 @@
 package com.example.efood_clone_2.adapter;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,6 +11,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.efood_clone_2.R;
+import com.example.efood_clone_2.frontend.TCPClient;
 import com.example.efood_clone_2.interfaces.CartUpdateListener;
 import com.example.efood_clone_2.model.Cart;
 import com.example.efood_clone_2.model.Product;
@@ -23,12 +25,15 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ViewHold
     private NumberFormat currencyFormat;
     private int expandedPosition = -1;
     private CartUpdateListener cartUpdateListener;
+    private String storeName;
 
-    public ProductAdapter(List<Product> productList, CartUpdateListener cartUpdateListener) {
-        this.productList = productList;
-        this.currencyFormat = NumberFormat.getCurrencyInstance(Locale.US);
-        this.cartUpdateListener = cartUpdateListener;
-    }
+public ProductAdapter(List<Product> productList, CartUpdateListener cartUpdateListener, String storeName) {
+    this.productList = productList;
+    this.currencyFormat = NumberFormat.getCurrencyInstance(Locale.US);
+    this.cartUpdateListener = cartUpdateListener;
+    this.storeName = storeName;
+    Log.d("ProductAdapter", "Created adapter with " + productList.size() + " products for store: " + storeName);
+}
 
     @NonNull
     @Override
@@ -41,6 +46,7 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ViewHold
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Product product = productList.get(position);
+        Log.d("ProductAdapter", "Binding product: " + product.getProductName() + " (position " + position + ")");
         holder.tvProductName.setText(product.getProductName());
         holder.tvProductType.setText(product.getProductType());
         holder.tvProductAvailability.setText("Available: " + product.getAvailableAmount());
@@ -82,6 +88,27 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ViewHold
         holder.btnAddToCart.setOnClickListener(v -> {
             int quantity = Integer.parseInt(holder.tvQuantity.getText().toString());
             Cart.getInstance().addItem(product, quantity);
+
+            // Call the server to make the actual purchase
+            TCPClient tcpClient = new TCPClient();
+            tcpClient.purchaseProduct(
+                storeName,
+                product.getProductName(),
+                quantity,
+                new TCPClient.ResultCallback() {
+                    @Override
+                    public void onSuccess(String message) {
+                        Log.d("ProductAdapter", "Purchase successful: " + message);
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        Log.e("ProductAdapter", "Purchase failed: " + error);
+                        // Optionally show error to user
+                    }
+                }
+            );
+
             expandedPosition = -1;
             notifyDataSetChanged();
             if (cartUpdateListener != null) {

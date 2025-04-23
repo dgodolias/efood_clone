@@ -1,10 +1,12 @@
 package com.example.efood_clone_2;
 
+        import android.content.Intent;
         import android.os.Bundle;
+        import android.util.Log;
         import android.view.View;
         import android.widget.Button;
         import android.widget.ImageView;
-        import android.widget.TextView;
+        import android.widget.TextView; import android.widget.ProgressBar; import android.widget.Toast;
 
         import androidx.appcompat.app.AppCompatActivity;
         import androidx.constraintlayout.widget.ConstraintLayout;
@@ -19,6 +21,7 @@ package com.example.efood_clone_2;
         import com.example.efood_clone_2.model.Product;
         import com.example.efood_clone_2.model.Store;
         import com.google.android.material.bottomsheet.BottomSheetDialog;
+        import com.example.efood_clone_2.frontend.TCPClient;
 
         import java.text.NumberFormat;
         import java.util.List;
@@ -32,6 +35,8 @@ package com.example.efood_clone_2;
             private ProductAdapter productAdapter;
             private Button btnCart;
             private NumberFormat currencyFormat;
+            private TCPClient tcpClient;
+            private ProgressBar loadingProgressBar;
 
             @Override
             protected void onCreate(Bundle savedInstanceState) {
@@ -46,12 +51,50 @@ package com.example.efood_clone_2;
                 productsRecyclerView = findViewById(R.id.productsRecyclerView);
                 ImageView backButton = findViewById(R.id.backButton);
                 btnCart = findViewById(R.id.btnCart);
+                loadingProgressBar = findViewById(R.id.loadingProgressBar);
 
                 currencyFormat = NumberFormat.getCurrencyInstance(Locale.US);
+                tcpClient = new TCPClient();
 
                 // Get store from intent
                 if (getIntent().hasExtra("store")) {
                     store = (Store) getIntent().getSerializableExtra("store");
+
+                    // Set basic store information first
+                    tvStoreName.setText(store.getStoreName());
+                    tvStoreStars.setText("★ " + store.getStars());
+                    tvStoreType.setText(store.getFoodCategory());
+                    tvStorePrice.setText(store.getPriceCategory());
+
+                    // Show loading indicator
+                    loadingProgressBar.setVisibility(View.VISIBLE);
+                    productsRecyclerView.setVisibility(View.GONE);
+
+                    // Get full store details including products
+                    tcpClient.getStoreDetails(store.getStoreName(), new TCPClient.StoreDetailsCallback() {
+                        @Override
+                        public void onStoreDetailsReceived(Store fullStore) {
+                            store = fullStore; // Update store with full details
+
+                            // Setup products recycler view with the products from full store
+                            setupProductsRecyclerView(store.getProducts());
+
+                            // Hide loading indicator
+                            loadingProgressBar.setVisibility(View.GONE);
+                            productsRecyclerView.setVisibility(View.VISIBLE);
+
+                            Log.d("StoreActivity", "Loaded " + store.getProducts().size() +
+                                    " products for " + store.getStoreName());
+                        }
+
+                        @Override
+                        public void onError(String error) {
+                            Toast.makeText(StoreActivity.this,
+                                    "Error loading store details: " + error, Toast.LENGTH_LONG).show();
+                            loadingProgressBar.setVisibility(View.GONE);
+                            Log.e("StoreActivity", "Error loading store details: " + error);
+                        }
+                    });
                 }
 
                 // Set up back button
@@ -60,24 +103,13 @@ package com.example.efood_clone_2;
                 // Set up cart button click listener
                 btnCart.setOnClickListener(v -> showCartBottomSheet());
 
-                // Populate store information
-                if (store != null) {
-                    tvStoreName.setText(store.getStoreName());
-                    tvStoreStars.setText("★ " + store.getStars());
-                    tvStoreType.setText(store.getFoodCategory());
-                    tvStorePrice.setText(store.getPriceCategory());
-
-                    // Set up products recycler view
-                    setupProductsRecyclerView(store.getProducts());
-                }
-
                 // Update cart button
                 updateCartButton();
             }
 
             private void setupProductsRecyclerView(List<Product> products) {
                 productsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-                productAdapter = new ProductAdapter(products, this);
+                productAdapter = new ProductAdapter(products, this, store.getStoreName());
                 productsRecyclerView.setAdapter(productAdapter);
             }
 
