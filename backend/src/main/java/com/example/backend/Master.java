@@ -490,6 +490,47 @@ class MasterThread extends Thread {
                                 out.println(resultProd.toString());
                                 out.println("END");
                                 break;
+
+                    case "FIND_STORES_WITHIN_RANGE":
+                        String[] coords = data.split(",");
+                        if (coords.length != 2) {
+                            out.println("Invalid coordinates format");
+                            out.println("END");
+                            continue;
+                        }
+
+                        double lat = Double.parseDouble(coords[0]);
+                        double lon = Double.parseDouble(coords[1]);
+
+                        Set<String> nearbyStores = new HashSet<>();
+
+                        // Send request to all workers and collect results
+                        for (WorkerConnection worker : workers) {
+                            try {
+                                String response = worker.sendRequest("FIND_STORES_WITHIN_RANGE " + data);
+                                if (response != null && !response.isEmpty()) {
+                                    String[] stores = response.split("\\|");
+                                    for (String store : stores) {
+                                        if (!store.isEmpty()) {
+                                            nearbyStores.add(store);
+                                        }
+                                    }
+                                }
+                            } catch (IOException e) {
+                                System.err.println("Error communicating with worker: " + e.getMessage());
+                            }
+                        }
+
+                        // Return results to client
+                        if (nearbyStores.isEmpty()) {
+                            out.println("No stores found within 5km of your location.");
+                        } else {
+                            for (String store : nearbyStores) {
+                                out.println(store);
+                            }
+                        }
+                        out.println("END");
+                        break;
                     case "BUY":
                         String[] buyParts = data.split(",");
                         if (buyParts.length < 3) {

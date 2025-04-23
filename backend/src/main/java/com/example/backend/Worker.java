@@ -201,6 +201,27 @@ class WorkerThread extends Thread {
                             updateStoresFile();
                             out.println("Purchase processed");
                             break;
+
+                        case "FIND_STORES_WITHIN_RANGE":
+                            String[] coordinates = data.split(",");
+                            if (coordinates.length != 2) {
+                                out.println("");
+                                continue;
+                            }
+
+                            double latt = Double.parseDouble(coordinates[0]);
+                            double longt = Double.parseDouble(coordinates[1]);
+                            List<String> nearbyStores = new ArrayList<>();
+
+                            for (Store s : stores.values()) {
+                                double distance = calculateDistance(latt, longt, s.getLatitude(), s.getLongitude());
+                                if (distance <= 5.0) { // 5km range
+                                    nearbyStores.add(s.getStoreName() + " - " + s.getFoodCategory() + " (" + String.format("%.2f", distance) + "km)");
+                                }
+                            }
+
+                            out.println(String.join("|", nearbyStores));
+                            break;
                         case "PING":
                             out.println("PONG");
                             break;
@@ -218,6 +239,22 @@ class WorkerThread extends Thread {
                 System.err.println("Error closing socket: " + e.getMessage());
             }
         }
+    }
+
+    private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+        // Haversine formula
+        final int R = 6371; // Earth radius in kilometers
+
+        double latDistance = Math.toRadians(lat2 - lat1);
+        double lonDistance = Math.toRadians(lon2 - lon1);
+
+        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
+
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return R * c;
     }
 
     private String extractField(String json, String field) {
