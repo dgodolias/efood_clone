@@ -160,4 +160,11 @@ package com.example.efood_clone_2;
             public void onCartUpdated() {
                 updateCartButton();
             }
+
+            @Override
+            protected void onDestroy() {
+                super.onDestroy();
+                // Clear the cart when leaving the activity
+                Cart.getInstance().clear();
+            }
         }

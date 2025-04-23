@@ -1,6 +1,5 @@
 package com.example.efood_clone_2.adapter;
 
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -8,32 +7,35 @@ import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
 import com.example.efood_clone_2.R;
-import com.example.efood_clone_2.frontend.TCPClient;
 import com.example.efood_clone_2.interfaces.CartUpdateListener;
 import com.example.efood_clone_2.model.Cart;
+import com.example.efood_clone_2.model.CartItem;
 import com.example.efood_clone_2.model.Product;
-import java.util.List;
+import com.example.efood_clone_2.frontend.TCPClient;
+
 import java.text.NumberFormat;
+import java.util.List;
 import java.util.Locale;
 
 public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ViewHolder> {
 
-    private List<Product> productList;
-    private NumberFormat currencyFormat;
-    private int expandedPosition = -1;
+    private List<Product> products;
     private CartUpdateListener cartUpdateListener;
+    private NumberFormat currencyFormat;
     private String storeName;
 
-public ProductAdapter(List<Product> productList, CartUpdateListener cartUpdateListener, String storeName) {
-    this.productList = productList;
-    this.currencyFormat = NumberFormat.getCurrencyInstance(Locale.US);
-    this.cartUpdateListener = cartUpdateListener;
-    this.storeName = storeName;
-    Log.d("ProductAdapter", "Created adapter with " + productList.size() + " products for store: " + storeName);
-}
+    public ProductAdapter(List<Product> products, CartUpdateListener cartUpdateListener, String storeName) {
+        this.products = products;
+        this.cartUpdateListener = cartUpdateListener;
+        this.storeName = storeName;
+        this.currencyFormat = NumberFormat.getCurrencyInstance(Locale.US);
+    }
 
     @NonNull
     @Override
@@ -45,100 +47,120 @@ public ProductAdapter(List<Product> productList, CartUpdateListener cartUpdateLi
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        Product product = productList.get(position);
-        Log.d("ProductAdapter", "Binding product: " + product.getProductName() + " (position " + position + ")");
+        Product product = products.get(position);
         holder.tvProductName.setText(product.getProductName());
+        holder.tvProductPrice.setText(currencyFormat.format(product.getPrice()));
         holder.tvProductType.setText(product.getProductType());
         holder.tvProductAvailability.setText("Available: " + product.getAvailableAmount());
-        holder.tvProductPrice.setText(currencyFormat.format(product.getPrice()));
 
-        // Manage expansion state
-        final boolean isExpanded = position == expandedPosition;
-        holder.expandableLayout.setVisibility(isExpanded ? View.VISIBLE : View.GONE);
-        holder.itemView.setActivated(isExpanded);
+        // Reset quantity when binding
+        holder.quantity = 1;
+        holder.tvQuantity.setText(String.valueOf(holder.quantity));
 
-        // Reset quantity when collapsed
-        if (!isExpanded) {
-            holder.tvQuantity.setText("1");
-        }
+        // Check current quantity in cart for this product
+        int quantityInCart = getQuantityInCart(product);
 
-        holder.itemView.setOnClickListener(v -> {
-            expandedPosition = isExpanded ? -1 : position;
-            notifyDataSetChanged();
-        });
+        // Set initial state of plus button based on availability
+        updatePlusButtonState(holder, product);
 
-        // Quantity controls
         holder.btnMinus.setOnClickListener(v -> {
-            int quantity = Integer.parseInt(holder.tvQuantity.getText().toString());
-            if (quantity > 1) {
-                quantity--;
-                holder.tvQuantity.setText(String.valueOf(quantity));
+            if (holder.quantity > 1) {
+                holder.quantity--;
+                holder.tvQuantity.setText(String.valueOf(holder.quantity));
+                // Enable plus button if it was disabled
+                updatePlusButtonState(holder, product);
             }
         });
 
         holder.btnPlus.setOnClickListener(v -> {
-            int quantity = Integer.parseInt(holder.tvQuantity.getText().toString());
-            int available = product.getAvailableAmount();
-            if (quantity < available) {
-                quantity++;
-                holder.tvQuantity.setText(String.valueOf(quantity));
+            int availableForSelection = product.getAvailableAmount() - quantityInCart;
+            if (holder.quantity < availableForSelection) {
+                holder.quantity++;
+                holder.tvQuantity.setText(String.valueOf(holder.quantity));
+                // Check if we need to disable the plus button
+                updatePlusButtonState(holder, product);
+            } else {
+                Toast.makeText(v.getContext(), "Cannot add more than available stock", Toast.LENGTH_SHORT).show();
             }
         });
 
         holder.btnAddToCart.setOnClickListener(v -> {
-            int quantity = Integer.parseInt(holder.tvQuantity.getText().toString());
-            Cart.getInstance().addItem(product, quantity);
+            // Validate against available quantity (considering cart)
+            int quantityToAdd = holder.quantity;
+            int totalRequestedQuantity = quantityInCart + quantityToAdd;
 
-            // Call the server to make the actual purchase
-            TCPClient tcpClient = new TCPClient();
-            tcpClient.purchaseProduct(
-                storeName,
-                product.getProductName(),
-                quantity,
-                new TCPClient.ResultCallback() {
-                    @Override
-                    public void onSuccess(String message) {
-                        Log.d("ProductAdapter", "Purchase successful: " + message);
-                    }
-
-                    @Override
-                    public void onError(String error) {
-                        Log.e("ProductAdapter", "Purchase failed: " + error);
-                        // Optionally show error to user
-                    }
-                }
-            );
-
-            expandedPosition = -1;
-            notifyDataSetChanged();
-            if (cartUpdateListener != null) {
+            if (totalRequestedQuantity <= product.getAvailableAmount()) {
+                // Add to cart
+                Cart.getInstance().addItem(product, quantityToAdd);
+                // Notify that cart was updated
                 cartUpdateListener.onCartUpdated();
+                // Collapse the expandable view
+                holder.expandableLayout.setVisibility(View.GONE);
+                // Show success message
+                Toast.makeText(v.getContext(),
+                        quantityToAdd + " " + product.getProductName() + " added to cart",
+                        Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(v.getContext(),
+                        "Cannot add more than available stock (" + product.getAvailableAmount() + ")",
+                        Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        // Handle item click to expand/collapse
+        holder.itemView.setOnClickListener(v -> {
+            if (holder.expandableLayout.getVisibility() == View.VISIBLE) {
+                holder.expandableLayout.setVisibility(View.GONE);
+            } else {
+                holder.expandableLayout.setVisibility(View.VISIBLE);
+                holder.quantity = 1;
+                holder.tvQuantity.setText(String.valueOf(holder.quantity));
+                updatePlusButtonState(holder, product);
             }
         });
     }
 
+    private void updatePlusButtonState(ViewHolder holder, Product product) {
+        int quantityInCart = getQuantityInCart(product);
+        int availableForSelection = product.getAvailableAmount() - quantityInCart;
+
+        // Disable the plus button if current quantity equals max available
+        holder.btnPlus.setEnabled(holder.quantity < availableForSelection);
+        holder.btnPlus.setAlpha(holder.quantity < availableForSelection ? 1.0f : 0.5f);
+    }
+
+    private int getQuantityInCart(Product product) {
+        for (CartItem item : Cart.getInstance().getItems()) {
+            if (item.getProduct().getProductName().equals(product.getProductName())) {
+                return item.getQuantity();
+            }
+        }
+        return 0;
+    }
+
     @Override
     public int getItemCount() {
-        return productList.size();
+        return products.size();
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvProductName, tvProductType, tvProductAvailability, tvProductPrice, tvQuantity;
-        LinearLayout expandableLayout;
+        TextView tvProductName, tvProductPrice, tvProductType, tvProductAvailability, tvQuantity;
         ImageButton btnMinus, btnPlus;
         Button btnAddToCart;
+        LinearLayout expandableLayout;
+        int quantity = 1;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             tvProductName = itemView.findViewById(R.id.tvProductName);
+            tvProductPrice = itemView.findViewById(R.id.tvProductPrice);
             tvProductType = itemView.findViewById(R.id.tvProductType);
             tvProductAvailability = itemView.findViewById(R.id.tvProductAvailability);
-            tvProductPrice = itemView.findViewById(R.id.tvProductPrice);
-            expandableLayout = itemView.findViewById(R.id.expandableLayout);
             tvQuantity = itemView.findViewById(R.id.tvQuantity);
             btnMinus = itemView.findViewById(R.id.btnMinus);
             btnPlus = itemView.findViewById(R.id.btnPlus);
             btnAddToCart = itemView.findViewById(R.id.btnAddToCart);
+            expandableLayout = itemView.findViewById(R.id.expandableLayout);
         }
     }
 }
