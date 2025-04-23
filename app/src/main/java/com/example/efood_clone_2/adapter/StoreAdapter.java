@@ -37,6 +37,7 @@ public class StoreAdapter extends RecyclerView.Adapter<StoreAdapter.ViewHolder> 
         holder.tvCoordinates.setText(store.getCoordinates());
         holder.tvType.setText(store.getFoodType());
         holder.tvPrice.setText(store.getPriceCategory());
+        holder.tvDistance.setText(store.getFormattedDistance());
 
         // Set click listener
         holder.itemView.setOnClickListener(v -> {
@@ -52,7 +53,7 @@ public class StoreAdapter extends RecyclerView.Adapter<StoreAdapter.ViewHolder> 
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvName, tvStars, tvCoordinates, tvType, tvPrice;
+        TextView tvName, tvStars, tvCoordinates, tvType, tvPrice, tvDistance;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -61,6 +62,7 @@ public class StoreAdapter extends RecyclerView.Adapter<StoreAdapter.ViewHolder> 
             tvCoordinates = itemView.findViewById(R.id.tvCoordinates);
             tvType = itemView.findViewById(R.id.tvType);
             tvPrice = itemView.findViewById(R.id.tvPrice);
+            tvDistance = itemView.findViewById(R.id.tvDistance);
         }
     }
 }

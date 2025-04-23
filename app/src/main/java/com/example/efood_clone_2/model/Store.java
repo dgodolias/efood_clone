@@ -13,6 +13,9 @@ package com.example.efood_clone_2.model;
         private String priceCategory;
         private List<Product> products;
 
+        // In Store.java
+        private double distance;
+
         public Store(String name, double latitude, double longitude, String foodType, int stars, String priceCategory) {
             this.name = name;
             this.latitude = latitude;
@@ -21,6 +24,13 @@ package com.example.efood_clone_2.model;
             this.stars = stars;
             this.priceCategory = priceCategory;
             this.products = new ArrayList<>();
+            this.distance = -1; // Default value
+        }
+
+        public double getDistance() { return distance; }
+        public void setDistance(double distance) { this.distance = distance; }
+        public String getFormattedDistance() {
+            return distance >= 0 ? String.format("%.1f km", distance) : "";
         }
 
         public String getName() { return name; }

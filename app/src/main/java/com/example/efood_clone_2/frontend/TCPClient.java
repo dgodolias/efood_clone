@@ -70,10 +70,14 @@ public class TCPClient {
                         String foodType = line.substring(dashIndex + 3, bracketIndex);
                         String distanceStr = line.substring(bracketIndex + 2, line.length() - 3);
 
-                        // Creating a basic store with the information we have
-                        // Placeholder values for coordinates and stars
-                        Store store = new Store(name, latitude, longitude, foodType, 4, "$$");
-                        storeList.add(store);
+                        try {
+                            double distance = Double.parseDouble(distanceStr);
+                            Store store = new Store(name, latitude, longitude, foodType, 4, "$$");
+                            store.setDistance(distance);
+                            storeList.add(store);
+                        } catch (NumberFormatException e) {
+                            Log.e(TAG, "Error parsing distance: " + e.getMessage());
+                        }
                     }
                 }
 
