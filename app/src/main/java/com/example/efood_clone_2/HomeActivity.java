@@ -122,27 +122,23 @@ protected void onCreate(Bundle savedInstanceState) {
        // Set up apply button
         Button applyButton = popupView.findViewById(R.id.applyButton);
         applyButton.setOnClickListener(v -> {
-            // Create JSON from selected filters
-            JSONObject jsonFilters = new JSONObject();
-            try {
-                for (Map.Entry<String, List<String>> entry : selectedFilters.entrySet()) {
-                    JSONArray filterArray = new JSONArray();
-                    for (String value : entry.getValue()) {
-                        filterArray.put(value);
-                    }
-                    jsonFilters.put(entry.getKey(), filterArray);
+            Log.d("FilterSelected", "Applying filters through TCP client");
+
+            // Call TCPClient to get filtered stores
+            TCPClient client = new TCPClient();
+            client.getFilteredStores(selectedFilters, new TCPClient.StoreListCallback() {
+                @Override
+                public void onStoresReceived(List<Store> stores) {
+                    storeList.clear();
+                    storeList.addAll(stores);
+                    storeAdapter.notifyDataSetChanged();
                 }
 
-                // Log the JSON to console only
-                String jsonString = jsonFilters.toString(2);
-                Log.d("FilterSelected", jsonString);
-
-                // Load filtered data
-                loadFilteredStores();
-
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
+                @Override
+                public void onError(String error) {
+                    Toast.makeText(HomeActivity.this, error, Toast.LENGTH_LONG).show();
+                }
+            });
 
             // Dismiss the popup
             popupWindow.dismiss();

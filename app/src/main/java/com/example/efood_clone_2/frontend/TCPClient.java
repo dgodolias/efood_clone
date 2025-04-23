@@ -18,6 +18,7 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -82,6 +83,71 @@ public class TCPClient {
                 }
 
                 // Notify result on main thread
+                mainHandler.post(() -> callback.onStoresReceived(storeList));
+
+            } catch (IOException e) {
+                Log.e(TAG, "Error connecting to server: " + e.getMessage(), e);
+                mainHandler.post(() -> callback.onError("Network error: " + e.getMessage()));
+            }
+        });
+    }
+
+    public void getFilteredStores(Map<String, List<String>> filters, StoreListCallback callback) {
+        executor.execute(() -> {
+            try (Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
+                 PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+
+                Log.d(TAG, "Connected to server for filtered stores");
+
+                // Build filter string without using JSON libraries
+                StringBuilder filterString = new StringBuilder("FILTER_STORES ");
+                for (Map.Entry<String, List<String>> entry : filters.entrySet()) {
+                    if (entry.getValue().isEmpty()) continue;
+
+                    filterString.append(entry.getKey()).append(":");
+                    for (int i = 0; i < entry.getValue().size(); i++) {
+                        filterString.append(entry.getValue().get(i));
+                        if (i < entry.getValue().size() - 1) {
+                            filterString.append(",");
+                        }
+                    }
+                    filterString.append(";");
+                }
+
+                out.println(filterString.toString());
+                Log.d(TAG, "Sent filter command: " + filterString);
+
+                // Read response
+                List<Store> storeList = new ArrayList<>();
+                String line;
+                while ((line = in.readLine()) != null && !line.equals("END")) {
+                    if (line.equals("No stores found with the specified filters.")) {
+                        mainHandler.post(() -> callback.onStoresReceived(new ArrayList<>()));
+                        return;
+                    }
+
+                    // Parse the store information
+                    int dashIndex = line.indexOf(" - ");
+                    int bracketIndex = line.lastIndexOf(" (");
+
+                    if (dashIndex > 0 && bracketIndex > dashIndex) {
+                        String name = line.substring(0, dashIndex);
+                        String foodType = line.substring(dashIndex + 3, bracketIndex);
+                        String distanceStr = line.substring(bracketIndex + 2, line.length() - 3);
+
+                        try {
+                            double distance = Double.parseDouble(distanceStr);
+                            // Default values for coordinates, will be set by server
+                            Store store = new Store(name, 0, 0, foodType, 4, "$$");
+                            store.setDistance(distance);
+                            storeList.add(store);
+                        } catch (NumberFormatException e) {
+                            Log.e(TAG, "Error parsing distance: " + e.getMessage());
+                        }
+                    }
+                }
+
                 mainHandler.post(() -> callback.onStoresReceived(storeList));
 
             } catch (IOException e) {

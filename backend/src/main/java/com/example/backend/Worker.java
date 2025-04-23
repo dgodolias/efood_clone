@@ -222,6 +222,49 @@ class WorkerThread extends Thread {
 
                             out.println(String.join("|", nearbyStores));
                             break;
+
+                        case "FILTER_STORES":
+                            String filterData = parts.length > 1 ? parts[1] : "";
+
+                            // Extract coordinates if provided in format "lat,lon;filters..."
+                            double filterUserLat = 0.0;
+                            double filterUserLon = 0.0;
+
+                            // Check if coordinates are included at the beginning of filter data
+                            if (filterData.contains(";")) {
+                                String[] locationAndFilters = filterData.split(";", 2);
+                                if (locationAndFilters.length > 1) {
+                                    String[] coords = locationAndFilters[0].split(",");
+                                    if (coords.length == 2) {
+                                        try {
+                                            filterUserLat = Double.parseDouble(coords[0]);
+                                            filterUserLon = Double.parseDouble(coords[1]);
+                                            filterData = locationAndFilters[1];
+                                        } catch (NumberFormatException e) {
+                                            System.err.println("Invalid coordinates format: " + e.getMessage());
+                                        }
+                                    }
+                                }
+                            }
+
+                            //Print the filterData
+                            System.out.println("Filter data: " + filterData);
+
+                            Map<String, List<String>> filters = parseFilterString(filterData);
+
+                            List<String> matchingStores = new ArrayList<>();
+                            for (Store storee : stores.values()) {
+                                if (matchesFilters(storee, filters)) {
+                                    String storeInfo = String.format("%s - %s (%.1f km)",
+                                        storee.getStoreName(),
+                                        storee.getFoodCategory(),
+                                        calculateDistance(filterUserLat, filterUserLon, storee.getLatitude(), storee.getLongitude()));
+                                    matchingStores.add(storeInfo);
+                                }
+                            }
+
+                            out.println(String.join("|", matchingStores));
+                            break;
                         case "PING":
                             out.println("PONG");
                             break;
@@ -239,6 +282,73 @@ class WorkerThread extends Thread {
                 System.err.println("Error closing socket: " + e.getMessage());
             }
         }
+    }
+
+    private Map<String, List<String>> parseFilterString(String filterData) {
+        Map<String, List<String>> filters = new HashMap<>();
+        String[] filterGroups = filterData.split(";");
+
+        for (String group : filterGroups) {
+            if (group.isEmpty()) continue;
+
+            String[] parts = group.split(":");
+            if (parts.length == 2) {
+                String key = parts[0];
+                String[] values = parts[1].split(",");
+                List<String> valueList = new ArrayList<>();
+                for (String value : values) {
+                    if (!value.isEmpty()) {
+                        valueList.add(value);
+                    }
+                }
+                filters.put(key, valueList);
+            }
+        }
+
+        return filters;
+    }
+
+    private boolean matchesFilters(Store store, Map<String, List<String>> filters) {
+        // Type filter
+        if (filters.containsKey("type") && !filters.get("type").isEmpty()) {
+            boolean typeMatch = false;
+            for (String type : filters.get("type")) {
+                if (store.getFoodCategory().equalsIgnoreCase(type)) {
+                    typeMatch = true;
+                    break;
+                }
+            }
+            if (!typeMatch) return false;
+        }
+
+        // Stars filter
+        if (filters.containsKey("stars") && !filters.get("stars").isEmpty()) {
+            boolean starsMatch = false;
+            for (String starsFilter : filters.get("stars")) {
+                if (starsFilter.startsWith("above ")) {
+                    float minStars = Float.parseFloat(starsFilter.replace("above ", ""));
+                    if (store.getStars() >= minStars) {
+                        starsMatch = true;
+                        break;
+                    }
+                }
+            }
+            if (!starsMatch) return false;
+        }
+
+        // Price filter
+        if (filters.containsKey("price") && !filters.get("price").isEmpty()) {
+            boolean priceMatch = false;
+            for (String price : filters.get("price")) {
+                if (store.getPriceCategory().equals(price)) {
+                    priceMatch = true;
+                    break;
+                }
+            }
+            if (!priceMatch) return false;
+        }
+
+        return true;
     }
 
     private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {

@@ -62,9 +62,9 @@ package com.example.efood_clone_2;
 
                 // Populate store information
                 if (store != null) {
-                    tvStoreName.setText(store.getName());
+                    tvStoreName.setText(store.getStoreName());
                     tvStoreStars.setText("★ " + store.getStars());
-                    tvStoreType.setText(store.getFoodType());
+                    tvStoreType.setText(store.getFoodCategory());
                     tvStorePrice.setText(store.getPriceCategory());
 
                     // Set up products recycler view

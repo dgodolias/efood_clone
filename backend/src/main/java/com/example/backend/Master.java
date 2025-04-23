@@ -538,6 +538,43 @@ class MasterThread extends Thread {
                         }
                         out.println("END");
                         break;
+
+                    case "FILTER_STORES":
+                        System.out.println("Processing filter request: " + data);
+
+                        // Parse filter data
+                        Map<String, List<String>> filters = parseFilterString(data);
+
+                        // Send the filter request to all workers
+                        List<String> filteredStores = new ArrayList<>();
+                        Set<String> processedStoreNames = new HashSet<>();
+
+                        for (WorkerConnection worker : workers) {
+                            try {
+                                String response = worker.sendRequest(request);
+                                if (response != null && !response.isEmpty()) {
+                                    String[] stores = response.split("\\|");
+                                    for (String store : stores) {
+                                        if (!store.isEmpty() && !processedStoreNames.contains(store)) {
+                                            filteredStores.add(store);
+                                            processedStoreNames.add(store);
+                                        }
+                                    }
+                                }
+                            } catch (IOException e) {
+                                System.err.println("Error communicating with worker for filter: " + e.getMessage());
+                            }
+                        }
+
+                        if (filteredStores.isEmpty()) {
+                            out.println("No stores found with the specified filters.");
+                        } else {
+                            for (String store : filteredStores) {
+                                out.println(store);
+                            }
+                        }
+                        out.println("END");
+                        break;
                     case "BUY":
                         String[] buyParts = data.split(",");
                         if (buyParts.length < 3) {
@@ -586,6 +623,30 @@ class MasterThread extends Thread {
                 System.err.println("Error closing socket: " + e.getMessage());
             }
         }
+    }
+
+    private Map<String, List<String>> parseFilterString(String filterData) {
+        Map<String, List<String>> filters = new HashMap<>();
+        String[] filterGroups = filterData.split(";");
+
+        for (String group : filterGroups) {
+            if (group.isEmpty()) continue;
+
+            String[] parts = group.split(":");
+            if (parts.length == 2) {
+                String key = parts[0];
+                String[] values = parts[1].split(",");
+                List<String> valueList = new ArrayList<>();
+                for (String value : values) {
+                    if (!value.isEmpty()) {
+                        valueList.add(value);
+                    }
+                }
+                filters.put(key, valueList);
+            }
+        }
+
+        return filters;
     }
 
     private String extractField(String json, String field) {

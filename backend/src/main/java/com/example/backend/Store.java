@@ -15,6 +15,8 @@ public class Store {
     private String storeLogo;
     private List<Product> products;
     private Map<String, Integer> sales;
+    private String priceCategory;
+    private double distance; // Add distance field
 
     public Store(String storeName, double latitude, double longitude, String foodCategory,
                  int stars, int noOfVotes, String storeLogo) {
@@ -27,6 +29,8 @@ public class Store {
         this.storeLogo = storeLogo;
         this.products = new ArrayList<>();
         this.sales = new ConcurrentHashMap<>();
+        // Determine price category based on stars
+        this.priceCategory = stars <= 2 ? "$" : (stars <= 4 ? "$$" : "$$$");
     }
 
     public synchronized void addProduct(Product product) {
@@ -57,13 +61,26 @@ public class Store {
     public String getStoreLogo() { return storeLogo; }
     public double getLatitude() { return latitude; }
     public double getLongitude() { return longitude; }
+    public String getPriceCategory() { return priceCategory; }
+    public void setPriceCategory(String priceCategory) { this.priceCategory = priceCategory; }
 
+    // Add distance related methods
+    public double getDistance() { return distance; }
+    public void setDistance(double distance) { this.distance = distance; }
+
+    // Add the missing method
+    public String getFormattedDistance() {
+        return String.format("%.1f km", distance);
+    }
+
+    // For coordinate display
+    public String getCoordinates() {
+        return String.format("%.4f, %.4f", latitude, longitude);
+    }
 
     public void purchaseProduct(String productName, int quantity) {
-
         int currentSales = sales.getOrDefault(productName, 0);
         sales.put(productName, currentSales + quantity);
-
 
         for (Product product : products) {
             if (product.getProductName().equals(productName)) {

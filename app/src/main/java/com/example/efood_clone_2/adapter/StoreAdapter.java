@@ -32,10 +32,10 @@ public class StoreAdapter extends RecyclerView.Adapter<StoreAdapter.ViewHolder> 
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Store store = storeList.get(position);
 
-        holder.tvName.setText(store.getName());
+        holder.tvName.setText(store.getStoreName());
         holder.tvStars.setText("★ " + store.getStars());
         holder.tvCoordinates.setText(store.getCoordinates());
-        holder.tvType.setText(store.getFoodType());
+        holder.tvType.setText(store.getFoodCategory());
         holder.tvPrice.setText(store.getPriceCategory());
         holder.tvDistance.setText(store.getFormattedDistance());
 
