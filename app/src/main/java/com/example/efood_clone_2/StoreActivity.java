@@ -37,11 +37,14 @@ package com.example.efood_clone_2;
             private NumberFormat currencyFormat;
             private TCPClient tcpClient;
             private ProgressBar loadingProgressBar;
+            private StringBuilder orderSummary;
 
             @Override
             protected void onCreate(Bundle savedInstanceState) {
                 super.onCreate(savedInstanceState);
                 setContentView(R.layout.activity_store);
+
+                orderSummary = new StringBuilder();
 
                 // Initialize views
                 tvStoreName = findViewById(R.id.tvStoreName);
@@ -138,9 +141,55 @@ package com.example.efood_clone_2;
                     bottomSheetDialog.dismiss();
                 });
 
-                // Checkout button (no functionality yet)
+                // Checkout button
                 btnCheckout.setOnClickListener(v -> {
-                    bottomSheetDialog.dismiss();
+                    List<CartItem> items = Cart.getInstance().getItems();
+                    if (items.isEmpty()) {
+                        Toast.makeText(StoreActivity.this, "Your cart is empty", Toast.LENGTH_SHORT).show();
+                    } else {
+                        // Keep the existing order summary
+                        StringBuilder summary = new StringBuilder("Order Summary:\n\n");
+                        StringBuilder compactFormat = new StringBuilder();
+                        boolean firstItem = true;
+
+                        // Loop through cart items
+                        for (CartItem item : Cart.getInstance().getItems()) {
+                            // Add to existing summary format
+                            summary.append(item.getQuantity())
+                                   .append(" x ")
+                                   .append(item.getProduct().getProductName())
+                                   .append(" - ")
+                                   .append(currencyFormat.format(item.getSubtotal()))
+                                   .append("\n");
+
+                            // Add to new compact format
+                            if (!firstItem) {
+                                compactFormat.append("|");
+                            }
+                            compactFormat.append(item.getQuantity())
+                                        .append("*\"")
+                                        .append(item.getProduct().getProductName())
+                                        .append("\"");
+                            firstItem = false;
+                        }
+
+                        summary.append("\nTotal: ")
+                               .append(currencyFormat.format(Cart.getInstance().getTotalPrice()));
+
+                        // Log both formats
+                        Log.d("Checkout", summary.toString());
+                        Log.d("Checkout", "Compact format: " + compactFormat.toString());
+
+                        // Show the order summary to the user
+                        Toast.makeText(StoreActivity.this,
+                                "Order placed!\n" + orderSummary.toString(),
+                                Toast.LENGTH_LONG).show();
+
+                        // Clear cart after checkout
+                        Cart.getInstance().clear();
+                        updateCartButton();
+                        bottomSheetDialog.dismiss();
+                    }
                 });
 
                 bottomSheetDialog.show();
