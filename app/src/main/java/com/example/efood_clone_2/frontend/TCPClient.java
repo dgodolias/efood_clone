@@ -7,9 +7,7 @@ import android.util.Log;
 import com.example.efood_clone_2.model.Product;
 import com.example.efood_clone_2.model.Store;
 
-import org.json.JSONArray;
 import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -18,6 +16,7 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -32,6 +31,16 @@ public class TCPClient {
 
     public interface StoreListCallback {
         void onStoresReceived(List<Store> stores);
+        void onError(String error);
+    }
+
+    public interface ResultCallback {
+        void onSuccess(String message);
+        void onError(String error);
+    }
+
+    public interface SalesReportCallback {
+        void onSalesDataReceived(Map<String, Integer> salesData, int total);
         void onError(String error);
     }
 
@@ -75,7 +84,7 @@ public class TCPClient {
                 // Clean up
                 socket.close();
             } catch (IOException e) {
-                Log.e("TCPClient", "Error connecting to server: " + e.getMessage(), e);
+                Log.e(TAG, "Error connecting to server: " + e.getMessage(), e);
                 mainHandler.post(() -> callback.onError("Network error: " + e.getMessage()));
             }
         });
@@ -99,12 +108,12 @@ public class TCPClient {
                 return store;
             }
         } catch (Exception e) {
-            Log.e("TCPClient", "Error parsing store: " + storeString + " - " + e.getMessage());
+            Log.e(TAG, "Error parsing store: " + storeString + " - " + e.getMessage());
         }
         return null;
     }
 
-    public void getFilteredStores(Map<String, List<String>> filters, StoreListCallback callback) {
+    public void getFilteredStores(Map<String, List<String>> filters, double latitude, double longitude, StoreListCallback callback) {
         executor.execute(() -> {
             try (Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
                  PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
@@ -112,8 +121,12 @@ public class TCPClient {
 
                 Log.d(TAG, "Connected to server for filtered stores");
 
-                // Build filter string without using JSON libraries
+                // Build filter string including coordinates
                 StringBuilder filterString = new StringBuilder("FILTER_STORES ");
+                // Add coordinates first
+                filterString.append(latitude).append(",").append(longitude).append(";");
+
+                // Add the rest of the filters
                 for (Map.Entry<String, List<String>> entry : filters.entrySet()) {
                     if (entry.getValue().isEmpty()) continue;
 
@@ -139,26 +152,15 @@ public class TCPClient {
                         return;
                     }
 
-                    // Parse the store information
-                    int dashIndex = line.indexOf(" - ");
-                    int bracketIndex = line.lastIndexOf(" (");
-
-                    if (dashIndex > 0 && bracketIndex > dashIndex) {
-                        String name = line.substring(0, dashIndex);
-                        String foodType = line.substring(dashIndex + 3, bracketIndex);
-                        String distanceStr = line.substring(bracketIndex + 2, line.length() - 3);
-
-                        try {
-                            double distance = Double.parseDouble(distanceStr);
-                            // Default values for coordinates, will be set by server
-                            Store store = new Store(name, 0, 0, foodType, 4, "$$");
-                            store.setDistance(distance);
-                            storeList.add(store);
-                        } catch (NumberFormatException e) {
-                            Log.e(TAG, "Error parsing distance: " + e.getMessage());
-                        }
+                    // Use parseSingleStore to create store objects
+                    Store store = parseSingleStore(line);
+                    if (store != null) {
+                        storeList.add(store);
                     }
                 }
+
+                // Sort stores by distance
+                Collections.sort(storeList, (s1, s2) -> Double.compare(s1.getDistance(), s2.getDistance()));
 
                 mainHandler.post(() -> callback.onStoresReceived(storeList));
 

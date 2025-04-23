@@ -40,6 +40,9 @@ public class HomeActivity extends AppCompatActivity {
     private List<Store> storeList;
     private Map<String, List<String>> selectedFilters = new HashMap<>();
 
+    double latitude = 37.9838;  // Replace with actual GPS coordinates
+    double longitude = 23.7275; // Replace with actual GPS coordinates
+
 @Override
 protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
@@ -69,8 +72,7 @@ protected void onCreate(Bundle savedInstanceState) {
 
     // Get nearby stores using your location
     // For testing, use a fixed location (e.g., Athens, Greece)
-    double latitude = 37.9838;  // Replace with actual GPS coordinates
-    double longitude = 23.7275; // Replace with actual GPS coordinates
+
 
     TCPClient client = new TCPClient();
     client.getNearbyStores(latitude, longitude, new TCPClient.StoreListCallback() {
@@ -126,19 +128,20 @@ protected void onCreate(Bundle savedInstanceState) {
 
             // Call TCPClient to get filtered stores
             TCPClient client = new TCPClient();
-            client.getFilteredStores(selectedFilters, new TCPClient.StoreListCallback() {
-                @Override
-                public void onStoresReceived(List<Store> stores) {
-                    storeList.clear();
-                    storeList.addAll(stores);
-                    storeAdapter.notifyDataSetChanged();
-                }
+// You need to add latitude and longitude parameters
+client.getFilteredStores(selectedFilters, latitude, longitude, new TCPClient.StoreListCallback() {
+    @Override
+    public void onStoresReceived(List<Store> stores) {
+        storeList.clear();
+        storeList.addAll(stores);
+        storeAdapter.notifyDataSetChanged();
+    }
 
-                @Override
-                public void onError(String error) {
-                    Toast.makeText(HomeActivity.this, error, Toast.LENGTH_LONG).show();
-                }
-            });
+    @Override
+    public void onError(String error) {
+        Toast.makeText(HomeActivity.this, error, Toast.LENGTH_LONG).show();
+    }
+});
 
             // Dismiss the popup
             popupWindow.dismiss();

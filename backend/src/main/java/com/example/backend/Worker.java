@@ -255,22 +255,26 @@ class WorkerThread extends Thread {
                                 }
                             }
 
-                            //Print the filterData
-                            System.out.println("Filter data: " + filterData);
-
                             Map<String, List<String>> filters = parseFilterString(filterData);
 
                             List<String> matchingStores = new ArrayList<>();
                             for (Store storee : stores.values()) {
                                 if (matchesFilters(storee, filters)) {
-                                    String storeInfo = String.format("%s - %s (%.1f km)",
+                                    double distance = calculateDistance(filterUserLat, filterUserLon, storee.getLatitude(), storee.getLongitude());
+                                    // Use the same format as FIND_STORES_WITHIN_RANGE
+                                    String storeData = String.format("%s^%f^%f^%s^%d^%s^%f",
                                         storee.getStoreName(),
+                                        storee.getLatitude(),
+                                        storee.getLongitude(),
                                         storee.getFoodCategory(),
-                                        calculateDistance(filterUserLat, filterUserLon, storee.getLatitude(), storee.getLongitude()));
-                                    matchingStores.add(storeInfo);
+                                        storee.getStars(),
+                                        storee.getPriceCategory(),
+                                        distance);
+                                    matchingStores.add(storeData);
                                 }
                             }
 
+                            System.out.println("Filter data: " + matchingStores);
                             out.println(String.join("|", matchingStores));
                             break;
                         case "PING":
