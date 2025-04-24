@@ -26,7 +26,7 @@ public class Store implements Serializable {
 
     // Full constructor
     public Store(String storeName, double latitude, double longitude, String foodCategory,
-                 int stars, int noOfVotes, String storeLogo) {
+                 float stars, int noOfVotes, String storeLogo) {
         this.storeName = storeName;
         this.latitude = latitude;
         this.longitude = longitude;
@@ -151,7 +151,7 @@ public class Store implements Serializable {
         double latitude = json.optDouble("Latitude", 0.0);
         double longitude = json.optDouble("Longitude", 0.0);
         String foodCategory = json.optString("FoodCategory", "");
-        int stars = json.optInt("Stars", 0);
+        float stars = (float)json.optDouble("Stars", 0.0);
         int noOfVotes = json.optInt("NoOfVotes", 0);
         String storeLogo = json.optString("StoreLogo", "");
 

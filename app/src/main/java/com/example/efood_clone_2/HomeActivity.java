@@ -43,52 +43,52 @@ public class HomeActivity extends AppCompatActivity {
     double latitude = 37.9838;  // Replace with actual GPS coordinates
     double longitude = 23.7275; // Replace with actual GPS coordinates
 
-@Override
-protected void onCreate(Bundle savedInstanceState) {
-    super.onCreate(savedInstanceState);
-    setContentView(R.layout.activity_home);
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_home);
 
-    // Initialize storeList as empty
-    storeList = new ArrayList<>();
+        // Initialize storeList as empty
+        storeList = new ArrayList<>();
 
-    // Set up RecyclerView
-    recyclerView = findViewById(R.id.recyclerView);
-    recyclerView.setLayoutManager(new LinearLayoutManager(this));
-    storeAdapter = new StoreAdapter(storeList);
-    recyclerView.setAdapter(storeAdapter);
+        // Set up RecyclerView
+        recyclerView = findViewById(R.id.recyclerView);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        storeAdapter = new StoreAdapter(storeList);
+        recyclerView.setAdapter(storeAdapter);
 
-    // Set up filter icon click listener
-    ImageView filterIcon = findViewById(R.id.filterIcon);
-    filterIcon.setOnClickListener(v -> showFilterPopup(v));
+        // Set up filter icon click listener
+        ImageView filterIcon = findViewById(R.id.filterIcon);
+        filterIcon.setOnClickListener(v -> showFilterPopup(v));
 
-    // Set up location icon click listener
-    ImageView locationIcon = findViewById(R.id.locationIcon);
-    locationIcon.setOnClickListener(v -> showLocationPopup(v));
+        // Set up location icon click listener
+        ImageView locationIcon = findViewById(R.id.locationIcon);
+        locationIcon.setOnClickListener(v -> showLocationPopup(v));
 
-    // Initialize filter selections
-    selectedFilters.put("type", new ArrayList<>());
-    selectedFilters.put("stars", new ArrayList<>());
-    selectedFilters.put("price", new ArrayList<>());
+        // Initialize filter selections
+        selectedFilters.put("type", new ArrayList<>());
+        selectedFilters.put("stars", new ArrayList<>());
+        selectedFilters.put("price", new ArrayList<>());
 
-    // Get nearby stores using your location
-    // For testing, use a fixed location (e.g., Athens, Greece)
+        // Get nearby stores using your location
+        // For testing, use a fixed location (e.g., Athens, Greece)
 
 
-    TCPClient client = new TCPClient();
-    client.getNearbyStores(latitude, longitude, new TCPClient.StoreListCallback() {
-        @Override
-        public void onStoresReceived(List<Store> stores) {
-            storeList.clear();
-            storeList.addAll(stores);
-            storeAdapter.notifyDataSetChanged();
-        }
+        TCPClient client = new TCPClient();
+        client.getNearbyStores(latitude, longitude, new TCPClient.StoreListCallback() {
+            @Override
+            public void onStoresReceived(List<Store> stores) {
+                storeList.clear();
+                storeList.addAll(stores);
+                storeAdapter.notifyDataSetChanged();
+            }
 
-        @Override
-        public void onError(String error) {
-            Toast.makeText(HomeActivity.this, error, Toast.LENGTH_LONG).show();
-        }
-    });
-}
+            @Override
+            public void onError(String error) {
+                Toast.makeText(HomeActivity.this, error, Toast.LENGTH_LONG).show();
+            }
+        });
+    }
 
 
     private void showFilterPopup(View anchorView) {

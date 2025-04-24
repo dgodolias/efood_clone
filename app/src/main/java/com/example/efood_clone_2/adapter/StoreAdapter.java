@@ -34,6 +34,8 @@ public class StoreAdapter extends RecyclerView.Adapter<StoreAdapter.ViewHolder> 
         Store store = storeList.get(position);
         holder.tvName.setText(store.getStoreName());
         holder.tvStars.setText(store.getStars() + "★");
+        //print the stars
+        System.out.println("STARS:"+store.getStars());
         holder.tvType.setText(store.getFoodCategory());
         holder.tvDistance.setText(store.getFormattedDistance());
         holder.tvCoordinates.setText(store.getCoordinates());

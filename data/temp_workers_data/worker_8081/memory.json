@@ -49,14 +49,14 @@
     "Latitude": 37.982345,
     "Longitude": 23.722345,
     "FoodCategory": "kebab",
-    "Stars": 2.27,
-    "NoOfVotes": 11,
+    "Stars": 2.5,
+    "NoOfVotes": 12,
     "StoreLogo": "/usr/bin/images/kebab_kingdom.png",
     "PriceCategory": "$$",
     "Products": [
       {"ProductName": "Lamb Kebab", "ProductType": "kebab", "Available Amount": 1500, "Price": 8.0},
       {"ProductName": "Chicken Kebab", "ProductType": "kebab", "Available Amount": 1200, "Price": 7.5},
-      {"ProductName": "Hummus", "ProductType": "side", "Available Amount": 199, "Price": 4.0}
+      {"ProductName": "Hummus", "ProductType": "side", "Available Amount": 198, "Price": 4.0}
     ]
   },
   {
@@ -125,14 +125,14 @@
     "Latitude": 37.995678,
     "Longitude": 23.738901,
     "FoodCategory": "vegetarian",
-    "Stars": 5.0,
-    "NoOfVotes": 35,
+    "Stars": 4.89,
+    "NoOfVotes": 36,
     "StoreLogo": "/usr/bin/images/veggie_vibes.png",
     "PriceCategory": "$$",
     "Products": [
       {"ProductName": "Veggie Burger", "ProductType": "burger", "Available Amount": 1000, "Price": 9.0},
       {"ProductName": "Falafel Wrap", "ProductType": "wrap", "Available Amount": 800, "Price": 8.5},
-      {"ProductName": "Quinoa Salad", "ProductType": "salad", "Available Amount": 150, "Price": 6.5}
+      {"ProductName": "Quinoa Salad", "ProductType": "salad", "Available Amount": 149, "Price": 6.5}
     ]
   }
 ]
