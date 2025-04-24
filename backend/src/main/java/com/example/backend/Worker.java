@@ -202,94 +202,78 @@ class WorkerThread extends Thread {
                             out.println("Purchase processed");
                             break;
 
-                        case "FIND_STORES_WITHIN_RANGE":
-                            String[] coordinates = data.split(",");
-                            if (coordinates.length != 2) {
-                                out.println("");
-                                continue;
-                            }
-
-                            double latt = Double.parseDouble(coordinates[0]);
-                            double longt = Double.parseDouble(coordinates[1]);
-                            List<String> nearbyStores = new ArrayList<>();
-
-                            for (Store s : stores.values()) {
-                                double distance = calculateDistance(latt, longt, s.getLatitude(), s.getLongitude());
-                                if (distance <= 5.0) { // 5km range
-                                    // Format: name^lat^lon^category^stars^price^distance
-                                    String storeData = String.format("%s^%f^%f^%s^%d^%s^%f",
-                                        s.getStoreName(),
-                                        s.getLatitude(),
-                                        s.getLongitude(),
-                                        s.getFoodCategory(),
-                                        s.getStars(),
-                                        s.getPriceCategory(),
-                                        distance);
-                                    nearbyStores.add(storeData);
-                                }
-                            }
-                            System.out.println("TCPClient "+ "Nearby stores: " + nearbyStores);
-                            out.println(String.join("|", nearbyStores));
-                            break;
                         case "FILTER_STORES":
-                            String filterData = parts.length > 1 ? parts[1] : "";
-
-                            // Extract coordinates if provided in format "lat,lon;filters..."
-                            double filterUserLat = 0.0;
-                            double filterUserLon = 0.0;
-
-                            // Check if coordinates are included at the beginning of filter data
-                            if (filterData.contains(";")) {
-                                String[] locationAndFilters = filterData.split(";", 2);
-                                if (locationAndFilters.length > 1) {
-                                    String[] coords = locationAndFilters[0].split(",");
-                                    if (coords.length == 2) {
-                                        try {
-                                            filterUserLat = Double.parseDouble(coords[0]);
-                                            filterUserLon = Double.parseDouble(coords[1]);
-                                            filterData = locationAndFilters[1];
-                                        } catch (NumberFormatException e) {
-                                            System.err.println("Invalid coordinates format: " + e.getMessage());
-                                        }
-                                    }
-                                }
-                            }
-
-                            Map<String, List<String>> filters = parseFilterString(filterData);
-
-                            // Using StringBuilder to construct the JSON array of stores
-                            StringBuilder jsonStoresArray = new StringBuilder("[");
+                            Map<String, List<String>> filters = parseFilterString(data);
+                            StringBuilder filteredStoresJson = new StringBuilder("[");
                             boolean firstStore = true;
 
-                            for (Store storee : stores.values()) {
-                                if (matchesFilters(storee, filters)) {
-                                    // Calculate distance and set it in the store object
-                                    double distance = calculateDistance(filterUserLat, filterUserLon,
-                                            storee.getLatitude(), storee.getLongitude());
-                                    storee.setDistance(distance);
-
+                            for (Store s : stores.values()) {
+                                if (matchesFilters(s, filters)) {
                                     try {
-                                        String storeJson = Store.StoreToJson(storee);
+                                        String storeJson = Store.StoreToJson(s);
                                         // Compact the JSON
                                         storeJson = storeJson.replaceAll("\\s*\\n\\s*", "").replaceAll("\\s+", " ").trim();
 
                                         if (!firstStore) {
-                                            jsonStoresArray.append(",");
+                                            filteredStoresJson.append(",");
                                         } else {
                                             firstStore = false;
                                         }
 
-                                        jsonStoresArray.append(storeJson);
+                                        filteredStoresJson.append(storeJson);
                                     } catch (Exception e) {
                                         System.err.println("Error serializing store to JSON: " + e.getMessage());
                                     }
                                 }
                             }
 
-                            jsonStoresArray.append("]");
-                            System.out.println("Sending filtered stores as JSON array"+ ": " + jsonStoresArray.toString());
-                            out.println(jsonStoresArray.toString());
+                            filteredStoresJson.append("]");
+                            System.out.println("Sending filtered stores as JSON array: " + filteredStoresJson.toString());
+                            out.println(filteredStoresJson.toString());
                             break;
+
+                        case "FIND_STORES_WITHIN_RANGE":
+                                String[] coordinates = data.split(",");
+                                if (coordinates.length != 2) {
+                                    out.println("[]");  // Return empty JSON array
+                                    continue;
+                                }
+
+                                double latt = Double.parseDouble(coordinates[0]);
+                                double longt = Double.parseDouble(coordinates[1]);
+
+                                // Using StringBuilder to construct the JSON array of stores
+                                StringBuilder nearbyStoresJson = new StringBuilder("[");
+                                boolean firstNearbyStore = true;
+
+                                for (Store s : stores.values()) {
+                                    double distance = calculateDistance(latt, longt, s.getLatitude(), s.getLongitude());
+                                    if (distance <= 5.0) { // 5km range
+                                        // Set the distance in the store object
+                                        s.setDistance(distance);
+
+                                        try {
+                                            String storeJson = Store.StoreToJson(s);
+                                            // Compact the JSON
+                                            storeJson = storeJson.replaceAll("\\s*\\n\\s*", "").replaceAll("\\s+", " ").trim();
+
+                                            if (!firstNearbyStore) {
+                                                nearbyStoresJson.append(",");
+                                            } else {
+                                                firstNearbyStore = false;
+                                            }
+
+                                            nearbyStoresJson.append(storeJson);
+                                        } catch (Exception e) {
+                                            System.err.println("Error serializing store to JSON: " + e.getMessage());
+                                        }
+                                    }
+                                }
+
+                                nearbyStoresJson.append("]");
+                                System.out.println("Sending nearby stores as JSON array: " + nearbyStoresJson.toString());
+                                out.println(nearbyStoresJson.toString());
+                                break;
                         case "GET_STORE_DETAILS":
                             String requestedStoreName = parts.length > 1 ? parts[1].trim() : "";
                             Store foundStore = null;

@@ -131,7 +131,7 @@
     "PriceCategory": "$$",
     "Products": [
       {"ProductName": "Veggie Burger", "ProductType": "burger", "Available Amount": 1000, "Price": 9.0},
-      {"ProductName": "Falafel Wrap", "ProductType": "wrap", "Available Amount": 800, "Price": 8.5},
+      {"ProductName": "Falafel Wrap", "ProductType": "wrap", "Available Amount": 799, "Price": 8.5},
       {"ProductName": "Quinoa Salad", "ProductType": "salad", "Available Amount": 150, "Price": 6.5}
     ]
   }
