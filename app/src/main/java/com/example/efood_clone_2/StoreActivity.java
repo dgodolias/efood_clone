@@ -1,6 +1,8 @@
 package com.example.efood_clone_2;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -26,6 +28,8 @@ import com.example.efood_clone_2.model.Store;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.example.efood_clone_2.frontend.TCPClient;
 
+import java.io.InputStream;
+import java.net.URL;
 import java.text.NumberFormat;
 import java.util.List;
 import java.util.Locale;
@@ -57,6 +61,7 @@ public class StoreActivity extends AppCompatActivity implements CartUpdateListen
         ImageView backButton = findViewById(R.id.backButton);
         btnCart = findViewById(R.id.btnCart);
         loadingProgressBar = findViewById(R.id.loadingProgressBar);
+        ImageView ivStoreLogo = findViewById(R.id.ivStoreLogo);
 
         currencyFormat = NumberFormat.getCurrencyInstance(Locale.US);
         tcpClient = new TCPClient();
@@ -68,6 +73,42 @@ public class StoreActivity extends AppCompatActivity implements CartUpdateListen
             tvStoreStars.setText("★ " + store.getStars());
             tvStoreType.setText(store.getFoodCategory());
             tvStorePrice.setText(store.getPriceCategory());
+
+            String logoPath = store.getStoreLogo();
+            if (logoPath != null && !logoPath.isEmpty()) {
+                if (logoPath.startsWith("http://") || logoPath.startsWith("https://")) {
+                    // Handle remote URL
+                    new Thread(() -> {
+                        try {
+                            URL url = new URL(logoPath);
+                            final Bitmap bitmap = BitmapFactory.decodeStream(url.openConnection().getInputStream());
+                            runOnUiThread(() -> ivStoreLogo.setImageBitmap(bitmap));
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            runOnUiThread(() -> ivStoreLogo.setImageResource(R.drawable.default_store));
+                        }
+                    }).start();
+                } else {
+                    // Handle local asset path
+                    try {
+                        // Extract just the filename if it's a path
+                        String assetFileName = logoPath;
+                        if (logoPath.contains("/")) {
+                            assetFileName = logoPath.substring(logoPath.lastIndexOf("/") + 1);
+                        }
+
+                        // Try to load from assets
+                        InputStream is = getAssets().open("logos/" + assetFileName);
+                        Bitmap bitmap = BitmapFactory.decodeStream(is);
+                        ivStoreLogo.setImageBitmap(bitmap);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        ivStoreLogo.setImageResource(R.drawable.default_store);
+                    }
+                }
+            } else {
+                ivStoreLogo.setImageResource(R.drawable.default_store);
+            }
 
             loadingProgressBar.setVisibility(View.VISIBLE);
             productsRecyclerView.setVisibility(View.GONE);

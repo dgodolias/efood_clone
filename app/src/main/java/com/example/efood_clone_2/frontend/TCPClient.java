@@ -43,11 +43,6 @@ public class TCPClient {
         void onError(String error);
     }
 
-    public interface SalesReportCallback {
-        void onSalesDataReceived(Map<String, Integer> salesData, int total);
-        void onError(String error);
-    }
-
     public TCPClient() {
         mainHandler = new Handler(Looper.getMainLooper());
         executor = Executors.newSingleThreadExecutor();

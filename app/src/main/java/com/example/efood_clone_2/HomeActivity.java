@@ -18,16 +18,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.efood_clone_2.adapter.StoreAdapter;
 import com.example.efood_clone_2.frontend.TCPClient;
-import com.example.efood_clone_2.model.Product;
 import com.example.efood_clone_2.model.Store;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -49,6 +41,11 @@ public class HomeActivity extends AppCompatActivity {
         setContentView(R.layout.activity_home);
 
         storeList = new ArrayList<>();
+
+        // Initialize filter lists
+        selectedFilters.put("type", new ArrayList<>());
+        selectedFilters.put("stars", new ArrayList<>());
+        selectedFilters.put("price", new ArrayList<>());
 
         recyclerView = findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
@@ -76,7 +73,6 @@ public class HomeActivity extends AppCompatActivity {
             }
         });
     }
-
 
     private void showFilterPopup(View anchorView) {
         View popupView = LayoutInflater.from(this).inflate(R.layout.popup_filter, null);
@@ -107,18 +103,18 @@ public class HomeActivity extends AppCompatActivity {
             TCPClient client = new TCPClient();
 
             client.getFilteredStores(selectedFilters, latitude, longitude, new TCPClient.StoreListCallback() {
-    @Override
-    public void onStoresReceived(List<Store> stores) {
-        storeList.clear();
-        storeList.addAll(stores);
-        storeAdapter.notifyDataSetChanged();
-    }
+                @Override
+                public void onStoresReceived(List<Store> stores) {
+                    storeList.clear();
+                    storeList.addAll(stores);
+                    storeAdapter.notifyDataSetChanged();
+                }
 
-    @Override
-    public void onError(String error) {
-        Toast.makeText(HomeActivity.this, error, Toast.LENGTH_LONG).show();
-    }
-});
+                @Override
+                public void onError(String error) {
+                    Toast.makeText(HomeActivity.this, error, Toast.LENGTH_LONG).show();
+                }
+            });
 
             popupWindow.dismiss();
         });
@@ -141,6 +137,13 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     private void addCheckboxesToGroup(LinearLayout group, String[] items, String filterKey) {
+        // Ensure we have a list for this filter key
+        if (!selectedFilters.containsKey(filterKey)) {
+            selectedFilters.put(filterKey, new ArrayList<>());
+        }
+
+        List<String> values = selectedFilters.get(filterKey);
+
         for (String item : items) {
             CheckBox checkBox = new CheckBox(this);
             checkBox.setText(item);
@@ -152,11 +155,11 @@ public class HomeActivity extends AppCompatActivity {
             params.setMargins(0, 0, 16, 0);
             checkBox.setLayoutParams(params);
 
-           if (selectedFilters.get(filterKey) != null && selectedFilters.get(filterKey).contains(item)){
+            if (values.contains(item)) {
                 checkBox.setChecked(true);
-           }
-           checkBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                List<String> values = selectedFilters.get(filterKey);
+            }
+
+            checkBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 if (isChecked) {
                     if (!values.contains(item)) {
                         values.add(item);
@@ -164,7 +167,6 @@ public class HomeActivity extends AppCompatActivity {
                 } else {
                     values.remove(item);
                 }
-                selectedFilters.put(filterKey, values);
             });
 
             group.addView(checkBox);

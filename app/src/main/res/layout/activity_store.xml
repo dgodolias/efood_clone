@@ -21,48 +21,65 @@
             app:cardCornerRadius="8dp"
             app:cardElevation="4dp">
 
-            <LinearLayout
+            <!-- Instead of wrap_content, use a fixed height -->
+            <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
+                android:layout_height="180dp">
+
+                <!-- Background Logo -->
+                <ImageView
+                    android:id="@+id/ivStoreLogo"
+                    android:layout_width="match_parent"
+                    android:layout_height="120dp"
+                    android:layout_gravity="center"
+                    android:scaleType="centerInside"
+                    android:alpha="0.1" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
+                    android:orientation="vertical"
+                    android:padding="16dp">
 
-                    <ImageView
-                        android:id="@+id/backButton"
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:src="@android:drawable/ic_menu_revert"
-                        android:layout_marginEnd="16dp"
-                        android:background="?attr/selectableItemBackgroundBorderless" />
-
-                    <TextView
-                        android:id="@+id/tvStoreName"
-                        android:layout_width="0dp"
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:textSize="24sp"
-                        android:textStyle="bold"
-                        android:textColor="#000000" />
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
 
-                    <TextView
-                        android:id="@+id/tvStoreStars"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textSize="18sp"
-                        android:textColor="#000000" />
+                        <ImageView
+                            android:id="@+id/backButton"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@android:drawable/ic_menu_revert"
+                            android:layout_marginEnd="16dp"
+                            android:background="?attr/selectableItemBackgroundBorderless" />
+
+                        <TextView
+                            android:id="@+id/tvStoreName"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:textSize="24sp"
+                            android:textStyle="bold"
+                            android:textColor="#000000" />
+
+                        <TextView
+                            android:id="@+id/tvStoreStars"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textSize="18sp"
+                            android:textColor="#000000" />
+                    </LinearLayout>
                 </LinearLayout>
 
+                <!-- Category and Price at bottom of FrameLayout -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:layout_marginTop="8dp">
+                    android:padding="16dp"
+                    android:layout_gravity="bottom">
 
                     <TextView
                         android:id="@+id/tvStoreType"
@@ -79,7 +96,7 @@
                         android:textSize="16sp"
                         android:textColor="#000000" />
                 </LinearLayout>
-            </LinearLayout>
+            </FrameLayout>
         </androidx.cardview.widget.CardView>
 
         <!-- Products Title -->

@@ -96,9 +96,7 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ViewHold
 
                 holder.expandableLayout.setVisibility(View.GONE);
 
-                Toast.makeText(v.getContext(),
-                        quantityToAdd + " " + product.getProductName() + " added to cart",
-                        Toast.LENGTH_SHORT).show();
+
             } else {
                 Toast.makeText(v.getContext(),
                         "Cannot add more than available stock (" + product.getAvailableAmount() + ")",
