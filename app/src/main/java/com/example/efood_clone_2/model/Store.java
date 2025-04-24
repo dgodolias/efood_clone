@@ -1,5 +1,7 @@
 package com.example.efood_clone_2.model;
 
+import com.example.efood_clone_2.model.Product;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -20,7 +22,6 @@ public class Store implements Serializable {
     private String storeLogo;
     private List<Product> products;
     private Map<String, Integer> sales;
-    private String priceCategory;
     private double distance;
 
     // Full constructor
@@ -35,10 +36,10 @@ public class Store implements Serializable {
         this.storeLogo = storeLogo;
         this.products = new ArrayList<>();
         this.sales = new ConcurrentHashMap<>();
-        this.priceCategory = stars <= 2 ? "$" : (stars <= 4 ? "$$" : "$$$");
+        // Price category will be calculated on demand
     }
 
-    // Simplified constructor used in TCPClient
+    // Simplified constructor
     public Store(String storeName, double latitude, double longitude, String foodCategory,
                  int stars, String priceCategory) {
         this.storeName = storeName;
@@ -50,15 +51,16 @@ public class Store implements Serializable {
         this.storeLogo = "";
         this.products = new ArrayList<>();
         this.sales = new ConcurrentHashMap<>();
-        this.priceCategory = priceCategory;
-    }
-
-    public synchronized void addProduct(Product product) {
-        products.add(product);
+        // Still accept priceCategory parameter for backward compatibility
+        // but it will be overridden when getPriceCategory() is called
     }
 
     public synchronized void removeProduct(String productName) {
         products.removeIf(p -> p.getProductName().equals(productName));
+    }
+
+    public synchronized void addProduct(Product product) {
+        products.add(product);
     }
 
     public synchronized List<Product> getProducts() {
@@ -95,8 +97,28 @@ public class Store implements Serializable {
     public double getLongitude() { return longitude; }
     public void setLongitude(double longitude) { this.longitude = longitude; }
 
-    public String getPriceCategory() { return priceCategory; }
-    public void setPriceCategory(String priceCategory) { this.priceCategory = priceCategory; }
+    public String getPriceCategory() {
+        // Calculate average price of all products
+        if (products.isEmpty()) {
+            return "$"; // Default when no products
+        }
+
+        double totalPrice = 0;
+        for (Product p : products) {
+            totalPrice += p.getPrice();
+        }
+
+        double averagePrice = totalPrice / products.size();
+
+        // Determine price category based on average price
+        if (averagePrice <= 5.0) {
+            return "$";
+        } else if (averagePrice <= 15.0) {
+            return "$$";
+        } else {
+            return "$$$";
+        }
+    }
 
     public double getDistance() { return distance; }
     public void setDistance(double distance) { this.distance = distance; }
@@ -136,11 +158,6 @@ public class Store implements Serializable {
         // Create store instance using the full constructor
         Store store = new Store(storeName, latitude, longitude, foodCategory, stars, noOfVotes, storeLogo);
 
-        // Set price category if available, otherwise it's already set based on stars in constructor
-        if (json.has("PriceCategory")) {
-            store.setPriceCategory(json.getString("PriceCategory"));
-        }
-
         // Set distance if available
         if (json.has("Distance")) {
             store.setDistance(json.getDouble("Distance"));
@@ -165,7 +182,7 @@ public class Store implements Serializable {
     }
 
 
-    private String StoreToJson(Store store) {
+    static String StoreToJson(Store store) {
         StringBuilder json = new StringBuilder();
         json.append("  {\n");
         json.append("    \"StoreName\": \"").append(sanitizeJsonValue(store.getStoreName())).append("\",\n");
@@ -194,7 +211,7 @@ public class Store implements Serializable {
         return json.toString();
     }
 
-    private String sanitizeJsonValue(String value) {
+    private static String sanitizeJsonValue(String value) {
         if (value == null) return "";
         // Remove any surrounding quotes
         value = value.replaceAll("^\"|\"$", "");
