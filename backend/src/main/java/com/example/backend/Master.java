@@ -18,26 +18,54 @@ public class Master {
     private ScheduledExecutorService heartbeatScheduler;
     private PrintWriter out;
 
-    public Master(int workerCount, int startPort) throws IOException {
-        workers = new ArrayList<>();
-        workerProcesses = new ArrayList<>();
-        storeToWorkers = new HashMap<>();
+public Master(int startPort) throws IOException {
+    workers = new ArrayList<>();
+    workerProcesses = new ArrayList<>();
+    storeToWorkers = new HashMap<>();
 
-        out = new PrintWriter(System.out, true);
+    out = new PrintWriter(System.out, true);
 
-        deleteDirectory(new File("data/temp_workers_data"));
+    deleteDirectory(new File("data/temp_workers_data"));
 
-        for (int i = 0; i < workerCount; i++) {
-            int workerPort = startPort + i;
-            spawnWorker(workerPort);
-            WorkerConnection wc = new WorkerConnection("localhost", workerPort);
-            workers.add(wc);
-            System.out.println("Started and connected to worker at localhost:" + workerPort);
+    // Count stores and calculate dynamic worker count
+    int storeCount = countStoresInJsonFile();
+    int workerCount = Math.max(1, (int)Math.sqrt(storeCount));
+
+    System.out.println("Initializing " + workerCount + " workers for " + storeCount + " stores");
+
+    for (int i = 0; i < workerCount; i++) {
+        int workerPort = startPort + i;
+        spawnWorker(workerPort);
+        WorkerConnection wc = new WorkerConnection("localhost", workerPort);
+        workers.add(wc);
+        System.out.println("Started and connected to worker at localhost:" + workerPort);
+    }
+
+    loadInitialStores();
+    startHeartbeat();
+}
+
+private int countStoresInJsonFile() {
+    try {
+        File storesFile = new File("data/stores.json");
+        if (!storesFile.exists()) {
+            System.out.println("No stores.json file found, using default worker count");
+            return 2; // Default if file not found
         }
 
-        loadInitialStores();
-        startHeartbeat();
+        String jsonContent = new String(Files.readAllBytes(Paths.get("data/stores.json"))).trim();
+        if (!jsonContent.startsWith("[") || !jsonContent.endsWith("]")) {
+            System.err.println("Invalid JSON format in stores.json");
+            return 2; // Default if invalid format
+        }
+
+        List<String> storeJsons = parseStoreJsons(jsonContent);
+        return storeJsons.size();
+    } catch (IOException e) {
+        System.err.println("Error reading stores.json: " + e.getMessage());
+        return 2; // Default on error
     }
+}
 
     private void deleteDirectory(File directory) {
         if (directory.exists()) {
@@ -204,16 +232,15 @@ public class Master {
         }, 0, 5, TimeUnit.SECONDS);
     }
 
-    public static void main(String[] args) {
-        try {
-            int workerCount = args.length > 0 ? Integer.parseInt(args[0]) : 2;
-            int startPort = 8081;
-            Master master = new Master(workerCount, startPort);
-            master.start();
-        } catch (IOException e) {
-            System.err.println("Failed to initialize Master: " + e.getMessage());
-        }
+public static void main(String[] args) {
+    try {
+        int startPort = 8081;
+        Master master = new Master(startPort);
+        master.start();
+    } catch (IOException e) {
+        System.err.println("Failed to initialize Master: " + e.getMessage());
     }
+}
 }
 
 class MasterThread extends Thread {
@@ -500,42 +527,52 @@ class MasterThread extends Thread {
                         break;
 
                     // ########################### CLIENT COMMANDS ###########################
-                    case "FIND_STORES_WITHIN_RANGE":
-                        String[] coords = data.split(",");
-                        if (coords.length != 2) {
-                            out.println("Invalid coordinates format");
-                            out.println("END");
-                            continue;
-                        }
+case "FIND_STORES_WITHIN_RANGE":
+    String[] coords = data.split(",");
+    if (coords.length != 2) {
+        out.println("Invalid coordinates format");
+        out.println("END");
+        continue;
+    }
 
-                        Set<String> nearbyStores = new HashSet<>();
+    StringBuilder combinedStoresJson = new StringBuilder("[");
+    boolean firstStore = true;
+    Set<String> addedStoreNames = new HashSet<>(); // Track stores we've already added
 
-                        for (WorkerConnection worker : workers) {
-                            try {
-                                String response = worker.sendRequest("FIND_STORES_WITHIN_RANGE " + data);
-                                if (response != null && !response.isEmpty()) {
-                                    String[] stores = response.split("\\|");
-                                    for (String store : stores) {
-                                        if (!store.isEmpty()) {
-                                            nearbyStores.add(store);
-                                        }
-                                    }
-                                }
-                            } catch (IOException e) {
-                                System.err.println("Error communicating with worker: " + e.getMessage());
+    for (WorkerConnection worker : workers) {
+        try {
+            String response = worker.sendRequest("FIND_STORES_WITHIN_RANGE " + data);
+            if (response != null && !response.isEmpty() && response.startsWith("[") && response.endsWith("]")) {
+                // Extract store objects from the JSON array
+                String storesContent = response.substring(1, response.length() - 1).trim();
+                if (!storesContent.isEmpty()) {
+                    // Split by valid JSON objects
+                    List<String> storeObjects = splitJsonObjects(storesContent);
+
+                    for (String storeJson : storeObjects) {
+                        // Extract store name to check for duplicates
+                        String sName = extractField(storeJson, "StoreName");
+                        if (!addedStoreNames.contains(sName)) {
+                            if (!firstStore) {
+                                combinedStoresJson.append(",");
+                            } else {
+                                firstStore = false;
                             }
+                            combinedStoresJson.append(storeJson);
+                            addedStoreNames.add(sName);
                         }
+                    }
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Error communicating with worker: " + e.getMessage());
+        }
+    }
 
-                        if (nearbyStores.isEmpty()) {
-                            out.println("No stores found within 5km of your location.");
-                        } else {
-                            for (String store : nearbyStores) {
-                                out.println(store);
-                            }
-                        }
-                        out.println("END");
-                        break;
-
+    combinedStoresJson.append("]");
+    out.println(combinedStoresJson.toString());
+    out.println("END");
+    break;
                     case "FILTER_STORES":
                         System.out.println("Processing filter request: " + data);
 
@@ -686,6 +723,31 @@ class MasterThread extends Thread {
             }
         }
     }
+
+private List<String> splitJsonObjects(String jsonContent) {
+    List<String> objects = new ArrayList<>();
+    int braceCount = 0;
+    int startIndex = -1;
+
+    for (int i = 0; i < jsonContent.length(); i++) {
+        char c = jsonContent.charAt(i);
+
+        if (c == '{') {
+            if (braceCount == 0) {
+                startIndex = i;
+            }
+            braceCount++;
+        } else if (c == '}') {
+            braceCount--;
+            if (braceCount == 0 && startIndex != -1) {
+                objects.add(jsonContent.substring(startIndex, i+1));
+                startIndex = -1;
+            }
+        }
+    }
+
+    return objects;
+}
 
     private Map<String, List<String>> parseFilterString(String filterData) {
         Map<String, List<String>> filters = new HashMap<>();

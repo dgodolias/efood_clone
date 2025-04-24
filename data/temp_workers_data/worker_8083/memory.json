@@ -15,6 +15,21 @@
     ]
   },
   {
+    "StoreName": "Pizza Palace",
+    "Latitude": 37.9932963,
+    "Longitude": 23.733413,
+    "FoodCategory": "pizza",
+    "Stars": 4.0,
+    "NoOfVotes": 25,
+    "StoreLogo": "app/src/main/assets/logos/pizza_palace.png",
+    "PriceCategory": "$$",
+    "Products": [
+      {"ProductName": "Margherita", "ProductType": "pizza", "Available Amount": 5000, "Price": 8.5},
+      {"ProductName": "Pepperoni", "ProductType": "pizza", "Available Amount": 3000, "Price": 10.0},
+      {"ProductName": "Greek Salad", "ProductType": "salad", "Available Amount": 150, "Price": 6.0}
+    ]
+  },
+  {
     "StoreName": "Gyro Grill",
     "Latitude": 37.975432,
     "Longitude": 23.718901,
@@ -42,6 +57,21 @@
       {"ProductName": "Lamb Kebab", "ProductType": "kebab", "Available Amount": 1500, "Price": 8.0},
       {"ProductName": "Chicken Kebab", "ProductType": "kebab", "Available Amount": 1200, "Price": 7.5},
       {"ProductName": "Hummus", "ProductType": "side", "Available Amount": 200, "Price": 4.0}
+    ]
+  },
+  {
+    "StoreName": "Pasta Place",
+    "Latitude": 37.990123,
+    "Longitude": 23.729876,
+    "FoodCategory": "cooked",
+    "Stars": 3.0,
+    "NoOfVotes": 12,
+    "StoreLogo": "app/src/main/assets/logos/pasta_place.png",
+    "PriceCategory": "$$",
+    "Products": [
+      {"ProductName": "Spaghetti Bolognese", "ProductType": "pasta", "Available Amount": 2500, "Price": 11.0},
+      {"ProductName": "Carbonara", "ProductType": "pasta", "Available Amount": 2000, "Price": 12.5},
+      {"ProductName": "Caesar Salad", "ProductType": "salad", "Available Amount": 300, "Price": 7.0}
     ]
   },
   {
