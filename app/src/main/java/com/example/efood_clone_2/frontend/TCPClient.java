@@ -446,18 +446,33 @@ public void getNearbyStores(double latitude, double longitude, StoreListCallback
     }
 
     public void sendReview(String storeName, int rating) {
-        String command = "REVIEW " + storeName + "," + rating;
-        System.out.println("TCPClient "+ "Sending review command: " + command);
+        new Thread(() -> {
+            try {
+                // Connect to master server
+                Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
+                PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+                BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-        // Log to console but don't actually send until backend is ready
-        // When ready, uncomment the actual network code
-        // Example sending code would be:
-        // try {
-        //     String response = sendRequest(command);
-        //     Log.d("TCPClient", "Review response: " + response);
-        // } catch (Exception e) {
-        //     Log.e("TCPClient", "Error sending review: " + e.getMessage());
-        // }
+                // Send review command
+                String command = "REVIEW " + storeName + "," + rating;
+                System.out.println("TCPClient " + "Sending review command: " + command);
+                out.println(command);
+
+                // Read response
+                String response;
+                while ((response = in.readLine()) != null) {
+                    if (response.equals("END")) {
+                        break;
+                    }
+                    System.out.println("TCPClient received: " + response);
+                }
+
+                // Close connection
+                socket.close();
+            } catch (IOException e) {
+                System.err.println("Error sending review: " + e.getMessage());
+            }
+        }).start();
     }
 
 }

@@ -17,7 +17,7 @@ public class Store implements Serializable {
     private double latitude;
     private double longitude;
     private String foodCategory;
-    private int stars;
+    private float stars;
     private int noOfVotes;
     private String storeLogo;
     private List<Product> products;
@@ -82,8 +82,8 @@ public class Store implements Serializable {
     public String getFoodCategory() { return foodCategory; }
     public void setFoodCategory(String foodCategory) { this.foodCategory = foodCategory; }
 
-    public int getStars() { return stars; }
-    public void setStars(int stars) { this.stars = stars; }
+    public float getStars() { return stars; }
+    public void setStars(float stars) { this.stars = stars; }
 
     public int getNoOfVotes() { return noOfVotes; }
     public void setNoOfVotes(int noOfVotes) { this.noOfVotes = noOfVotes; }

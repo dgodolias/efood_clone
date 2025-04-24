@@ -303,6 +303,49 @@ class WorkerThread extends Thread {
                                 }
                             }
                             break;
+                        case "REVIEW":
+                            String[] reviewParts = data.split(",");
+                            if (reviewParts.length < 2) {
+                                out.println("Invalid REVIEW format");
+                                continue;
+                            }
+                            String reviewStoreName = reviewParts[0].trim();
+                            int reviewRating = Integer.parseInt(reviewParts[1].trim());
+
+                            // Find store
+                            Store reviewStore = null;
+                            for (Store s : stores.values()) {
+                                if (s.getStoreName().equals(reviewStoreName) ||
+                                    ("\"" + s.getStoreName() + "\"").equals(reviewStoreName)) {
+                                    reviewStore = s;
+                                    break;
+                                }
+                            }
+
+                            if (reviewStore == null) {
+                                out.println("Store not found: " + reviewStoreName);
+                                continue;
+                            }
+
+                            // Update store rating based on weighted average
+                            float currentStars = reviewStore.getStars();
+                            int currentVotes = reviewStore.getNoOfVotes();
+
+                            // Calculate new rating (weighted average)
+                            double totalRatingPoints = currentStars * currentVotes + reviewRating;
+                            int newVotes = currentVotes + 1;
+                            double newRating = totalRatingPoints / newVotes;
+
+                            // Round to 2 decimal places and store as float
+                            float roundedRating = (float) Math.round(newRating * 100) / 100;
+
+                            // Update store
+                            reviewStore.setStars(roundedRating);
+                            reviewStore.setNoOfVotes(newVotes);
+
+                            updateStoresFile();
+                            out.println("Review processed");
+                            break;
                         case "PING":
                             out.println("PONG");
                             break;

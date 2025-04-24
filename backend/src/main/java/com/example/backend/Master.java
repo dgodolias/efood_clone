@@ -648,6 +648,41 @@ class MasterThread extends Thread {
                         System.out.println("Sending store details from Master: " + storeDetails);
                         out.println("END");
                         break;
+                    case "REVIEW":
+                        String[] reviewParts = data.split(",");
+                        if (reviewParts.length < 2) {
+                            out.println("Invalid REVIEW format");
+                            out.println("END");
+                            continue;
+                        }
+                        String reviewStoreName = reviewParts[0].trim();
+                        int rating = Integer.parseInt(reviewParts[1].trim());
+
+                        // Find the store workers
+                        List<WorkerConnection> reviewWorkers = storeToWorkers.get(reviewStoreName);
+                        if (reviewWorkers == null) {
+                            // Try with quotes
+                            reviewWorkers = storeToWorkers.get("\"" + reviewStoreName + "\"");
+                        }
+
+                        if (reviewWorkers == null) {
+                            out.println("Store not found: " + reviewStoreName);
+                            out.println("END");
+                            continue;
+                        }
+
+                        // Forward review to all workers that have this store
+                        for (WorkerConnection worker : reviewWorkers) {
+                            try {
+                                worker.sendRequest(request);
+                            } catch (IOException e) {
+                                System.err.println("Failed to send review to worker: " + e.getMessage());
+                            }
+                        }
+
+                        out.println("Review submitted for store: " + reviewStoreName);
+                        out.println("END");
+                        break;
                     default:
                         out.println("Unknown command: " + command);
                 }

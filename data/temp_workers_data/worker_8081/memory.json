@@ -4,14 +4,14 @@
     "Latitude": 37.987654,
     "Longitude": 23.725678,
     "FoodCategory": "burgers",
-    "Stars": 3,
+    "Stars": 3.0,
     "NoOfVotes": 18,
     "StoreLogo": "/usr/bin/images/burger_bonanza.png",
     "PriceCategory": "$$",
     "Products": [
       {"ProductName": "Classic Burger", "ProductType": "burger", "Available Amount": 2000, "Price": 7.5},
-      {"ProductName": "Cheeseburger", "ProductType": "burger", "Available Amount": 1495, "Price": 8.5},
-      {"ProductName": "Fries", "ProductType": "side", "Available Amount": 994, "Price": 3.0}
+      {"ProductName": "Cheeseburger", "ProductType": "burger", "Available Amount": 1500, "Price": 8.5},
+      {"ProductName": "Fries", "ProductType": "side", "Available Amount": 1000, "Price": 3.0}
     ]
   },
   {
@@ -19,7 +19,7 @@
     "Latitude": 37.9932963,
     "Longitude": 23.733413,
     "FoodCategory": "pizzeria",
-    "Stars": 4,
+    "Stars": 4.0,
     "NoOfVotes": 25,
     "StoreLogo": "/usr/bin/images/pizza_palace.png",
     "PriceCategory": "$$",
@@ -34,7 +34,7 @@
     "Latitude": 37.975432,
     "Longitude": 23.718901,
     "FoodCategory": "greek",
-    "Stars": 4,
+    "Stars": 4.0,
     "NoOfVotes": 20,
     "StoreLogo": "/usr/bin/images/gyro_grill.png",
     "PriceCategory": "$",
@@ -49,8 +49,8 @@
     "Latitude": 37.982345,
     "Longitude": 23.722345,
     "FoodCategory": "kebab",
-    "Stars": 2,
-    "NoOfVotes": 10,
+    "Stars": 2.27,
+    "NoOfVotes": 11,
     "StoreLogo": "/usr/bin/images/kebab_kingdom.png",
     "PriceCategory": "$$",
     "Products": [
@@ -64,13 +64,13 @@
     "Latitude": 37.990123,
     "Longitude": 23.729876,
     "FoodCategory": "italian",
-    "Stars": 3,
+    "Stars": 3.0,
     "NoOfVotes": 12,
     "StoreLogo": "/usr/bin/images/pasta_place.png",
     "PriceCategory": "$$",
     "Products": [
       {"ProductName": "Spaghetti Bolognese", "ProductType": "pasta", "Available Amount": 2500, "Price": 11.0},
-      {"ProductName": "Carbonara", "ProductType": "pasta", "Available Amount": 1999, "Price": 12.5},
+      {"ProductName": "Carbonara", "ProductType": "pasta", "Available Amount": 2000, "Price": 12.5},
       {"ProductName": "Caesar Salad", "ProductType": "salad", "Available Amount": 300, "Price": 7.0}
     ]
   },
@@ -79,7 +79,7 @@
     "Latitude": 37.978901,
     "Longitude": 23.715678,
     "FoodCategory": "seafood",
-    "Stars": 3,
+    "Stars": 3.0,
     "NoOfVotes": 15,
     "StoreLogo": "/usr/bin/images/seafood_shack.png",
     "PriceCategory": "$$",
@@ -95,7 +95,7 @@
     "Latitude": 38.001234,
     "Longitude": 23.740123,
     "FoodCategory": "sushi",
-    "Stars": 5,
+    "Stars": 5.0,
     "NoOfVotes": 30,
     "StoreLogo": "/usr/bin/images/sushi_spot.png",
     "PriceCategory": "$$$",
@@ -110,7 +110,7 @@
     "Latitude": 37.998765,
     "Longitude": 23.735432,
     "FoodCategory": "mexican",
-    "Stars": 4,
+    "Stars": 4.0,
     "NoOfVotes": 22,
     "StoreLogo": "/usr/bin/images/taco_town.png",
     "PriceCategory": "$",
@@ -125,13 +125,13 @@
     "Latitude": 37.995678,
     "Longitude": 23.738901,
     "FoodCategory": "vegetarian",
-    "Stars": 5,
+    "Stars": 5.0,
     "NoOfVotes": 35,
     "StoreLogo": "/usr/bin/images/veggie_vibes.png",
     "PriceCategory": "$$",
     "Products": [
       {"ProductName": "Veggie Burger", "ProductType": "burger", "Available Amount": 1000, "Price": 9.0},
-      {"ProductName": "Falafel Wrap", "ProductType": "wrap", "Available Amount": 799, "Price": 8.5},
+      {"ProductName": "Falafel Wrap", "ProductType": "wrap", "Available Amount": 800, "Price": 8.5},
       {"ProductName": "Quinoa Salad", "ProductType": "salad", "Available Amount": 150, "Price": 6.5}
     ]
   }
