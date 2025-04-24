@@ -4,6 +4,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 
+import com.example.efood_clone_2.interfaces.StoreDetailsCallback;
 import com.example.efood_clone_2.model.Product;
 import com.example.efood_clone_2.model.Store;
 
@@ -281,11 +282,6 @@ public void getNearbyStores(double latitude, double longitude, StoreListCallback
         }).start();
     }
 
-    public interface StoreDetailsCallback {
-        void onStoreDetailsReceived(Store store);
-        void onError(String error);
-    }
-
     public void getStoreDetails(String storeName, StoreDetailsCallback callback) {
         executor.execute(() -> {
             try (Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
@@ -449,5 +445,19 @@ public void getNearbyStores(double latitude, double longitude, StoreListCallback
         return purchaseMap;
     }
 
+    public void sendReview(String storeName, int rating) {
+        String command = "REVIEW " + storeName + "," + rating;
+        Log.d("TCPClient", "Sending review command: " + command);
+
+        // Log to console but don't actually send until backend is ready
+        // When ready, uncomment the actual network code
+        // Example sending code would be:
+        // try {
+        //     String response = sendRequest(command);
+        //     Log.d("TCPClient", "Review response: " + response);
+        // } catch (Exception e) {
+        //     Log.e("TCPClient", "Error sending review: " + e.getMessage());
+        // }
+    }
 
 }
