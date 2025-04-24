@@ -194,4 +194,11 @@ public class HomeActivity extends AppCompatActivity {
             group.addView(checkBox);
         }
     }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Refresh data when returning to this screen
+        loadStoreData();
+    }
 }
