@@ -6,7 +6,7 @@
     "FoodCategory": "pizzeria",
     "Stars": 4,
     "NoOfVotes": 25,
-    "StoreLogo": "/usr/bin/images/pizza_palace.png",
+    "StoreLogo": "app/src/main/assets/logos/pizza_palace.png",
     "Products": [
       {"ProductName": "Margherita", "ProductType": "pizza", "Available Amount": 5000, "Price": 8.5},
       {"ProductName": "Pepperoni", "ProductType": "pizza", "Available Amount": 3000, "Price": 10.0},
@@ -20,7 +20,7 @@
     "FoodCategory": "burgers",
     "Stars": 3,
     "NoOfVotes": 18,
-    "StoreLogo": "/usr/bin/images/burger_bonanza.png",
+    "StoreLogo": "app/src/main/assets/logos/burger_bonanza.png",
     "Products": [
       {"ProductName": "Classic Burger", "ProductType": "burger", "Available Amount": 2000, "Price": 7.5},
       {"ProductName": "Cheeseburger", "ProductType": "burger", "Available Amount": 1500, "Price": 8.5},
@@ -34,7 +34,7 @@
     "FoodCategory": "sushi",
     "Stars": 5,
     "NoOfVotes": 30,
-    "StoreLogo": "/usr/bin/images/sushi_spot.png",
+    "StoreLogo": "app/src/main/assets/logos/sushi_spot.png",
     "Products": [
       {"ProductName": "California Roll", "ProductType": "sushi", "Available Amount": 800, "Price": 120.0},
       {"ProductName": "Spicy Tuna", "ProductType": "sushi", "Available Amount": 600, "Price": 14.0},
@@ -48,7 +48,7 @@
     "FoodCategory": "greek",
     "Stars": 4,
     "NoOfVotes": 20,
-    "StoreLogo": "/usr/bin/images/gyro_grill.png",
+    "StoreLogo": "app/src/main/assets/logos/gyro_grill.png",
     "Products": [
       {"ProductName": "Chicken Gyro", "ProductType": "gyro", "Available Amount": 4000, "Price": 6.0},
       {"ProductName": "Pork Gyro", "ProductType": "gyro", "Available Amount": 3500, "Price": 6.5},
@@ -62,7 +62,7 @@
     "FoodCategory": "italian",
     "Stars": 3,
     "NoOfVotes": 12,
-    "StoreLogo": "/usr/bin/images/pasta_place.png",
+    "StoreLogo": "app/src/main/assets/logos/pasta_place.png",
     "Products": [
       {"ProductName": "Spaghetti Bolognese", "ProductType": "pasta", "Available Amount": 2500, "Price": 11.0},
       {"ProductName": "Carbonara", "ProductType": "pasta", "Available Amount": 2000, "Price": 12.5},
@@ -76,7 +76,7 @@
     "FoodCategory": "mexican",
     "Stars": 4,
     "NoOfVotes": 22,
-    "StoreLogo": "/usr/bin/images/taco_town.png",
+    "StoreLogo": "app/src/main/assets/logos/taco_town.png",
     "Products": [
       {"ProductName": "Beef Taco", "ProductType": "taco", "Available Amount": 3000, "Price": 5.5},
       {"ProductName": "Chicken Taco", "ProductType": "taco", "Available Amount": 2800, "Price": 5.5},
@@ -90,7 +90,7 @@
     "FoodCategory": "kebab",
     "Stars": 2,
     "NoOfVotes": 10,
-    "StoreLogo": "/usr/bin/images/kebab_kingdom.png",
+    "StoreLogo": "app/src/main/assets/logos/kebab_kingdom.png",
     "Products": [
       {"ProductName": "Lamb Kebab", "ProductType": "kebab", "Available Amount": 1500, "Price": 8.0},
       {"ProductName": "Chicken Kebab", "ProductType": "kebab", "Available Amount": 1200, "Price": 7.5},
@@ -104,7 +104,7 @@
     "FoodCategory": "vegetarian",
     "Stars": 5,
     "NoOfVotes": 35,
-    "StoreLogo": "/usr/bin/images/veggie_vibes.png",
+    "StoreLogo": "app/src/main/assets/logos/veggie_vibes.png",
     "Products": [
       {"ProductName": "Veggie Burger", "ProductType": "burger", "Available Amount": 1000, "Price": 9.0},
       {"ProductName": "Falafel Wrap", "ProductType": "wrap", "Available Amount": 800, "Price": 8.5},
@@ -118,7 +118,7 @@
     "FoodCategory": "seafood",
     "Stars": 3,
     "NoOfVotes": 15,
-    "StoreLogo": "/usr/bin/images/seafood_shack.png",
+    "StoreLogo": "app/src/main/assets/logos/seafood_shack.png",
     "Products": [
       {"ProductName": "Fish and Chips", "ProductType": "seafood", "Available Amount": 2000, "Price": 13.0},
       {"ProductName": "Shrimp Cocktail", "ProductType": "seafood", "Available Amount": 1000, "Price": 15.0},

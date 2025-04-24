@@ -6,7 +6,7 @@
     "FoodCategory": "burgers",
     "Stars": 3.0,
     "NoOfVotes": 18,
-    "StoreLogo": "/usr/bin/images/burger_bonanza.png",
+    "StoreLogo": "app/src/main/assets/logos/burger_bonanza.png",
     "PriceCategory": "$$",
     "Products": [
       {"ProductName": "Classic Burger", "ProductType": "burger", "Available Amount": 2000, "Price": 7.5},
@@ -21,7 +21,7 @@
     "FoodCategory": "pizzeria",
     "Stars": 4.0,
     "NoOfVotes": 25,
-    "StoreLogo": "/usr/bin/images/pizza_palace.png",
+    "StoreLogo": "app/src/main/assets/logos/pizza_palace.png",
     "PriceCategory": "$$",
     "Products": [
       {"ProductName": "Margherita", "ProductType": "pizza", "Available Amount": 5000, "Price": 8.5},
@@ -36,7 +36,7 @@
     "FoodCategory": "greek",
     "Stars": 4.0,
     "NoOfVotes": 20,
-    "StoreLogo": "/usr/bin/images/gyro_grill.png",
+    "StoreLogo": "app/src/main/assets/logos/gyro_grill.png",
     "PriceCategory": "$",
     "Products": [
       {"ProductName": "Chicken Gyro", "ProductType": "gyro", "Available Amount": 4000, "Price": 6.0},
@@ -49,14 +49,14 @@
     "Latitude": 37.982345,
     "Longitude": 23.722345,
     "FoodCategory": "kebab",
-    "Stars": 2.5,
-    "NoOfVotes": 12,
-    "StoreLogo": "/usr/bin/images/kebab_kingdom.png",
+    "Stars": 2.0,
+    "NoOfVotes": 10,
+    "StoreLogo": "app/src/main/assets/logos/kebab_kingdom.png",
     "PriceCategory": "$$",
     "Products": [
       {"ProductName": "Lamb Kebab", "ProductType": "kebab", "Available Amount": 1500, "Price": 8.0},
       {"ProductName": "Chicken Kebab", "ProductType": "kebab", "Available Amount": 1200, "Price": 7.5},
-      {"ProductName": "Hummus", "ProductType": "side", "Available Amount": 198, "Price": 4.0}
+      {"ProductName": "Hummus", "ProductType": "side", "Available Amount": 200, "Price": 4.0}
     ]
   },
   {
@@ -66,7 +66,7 @@
     "FoodCategory": "italian",
     "Stars": 3.0,
     "NoOfVotes": 12,
-    "StoreLogo": "/usr/bin/images/pasta_place.png",
+    "StoreLogo": "app/src/main/assets/logos/pasta_place.png",
     "PriceCategory": "$$",
     "Products": [
       {"ProductName": "Spaghetti Bolognese", "ProductType": "pasta", "Available Amount": 2500, "Price": 11.0},
@@ -81,7 +81,7 @@
     "FoodCategory": "seafood",
     "Stars": 3.0,
     "NoOfVotes": 15,
-    "StoreLogo": "/usr/bin/images/seafood_shack.png",
+    "StoreLogo": "app/src/main/assets/logos/seafood_shack.png",
     "PriceCategory": "$$",
     "Products": [
       {"ProductName": "Fish and Chips", "ProductType": "seafood", "Available Amount": 2000, "Price": 13.0},
@@ -97,7 +97,7 @@
     "FoodCategory": "sushi",
     "Stars": 5.0,
     "NoOfVotes": 30,
-    "StoreLogo": "/usr/bin/images/sushi_spot.png",
+    "StoreLogo": "app/src/main/assets/logos/sushi_spot.png",
     "PriceCategory": "$$$",
     "Products": [
       {"ProductName": "California Roll", "ProductType": "sushi", "Available Amount": 800, "Price": 120.0},
@@ -112,7 +112,7 @@
     "FoodCategory": "mexican",
     "Stars": 4.0,
     "NoOfVotes": 22,
-    "StoreLogo": "/usr/bin/images/taco_town.png",
+    "StoreLogo": "app/src/main/assets/logos/taco_town.png",
     "PriceCategory": "$",
     "Products": [
       {"ProductName": "Beef Taco", "ProductType": "taco", "Available Amount": 3000, "Price": 5.5},
@@ -125,14 +125,14 @@
     "Latitude": 37.995678,
     "Longitude": 23.738901,
     "FoodCategory": "vegetarian",
-    "Stars": 4.89,
-    "NoOfVotes": 36,
-    "StoreLogo": "/usr/bin/images/veggie_vibes.png",
+    "Stars": 5.0,
+    "NoOfVotes": 35,
+    "StoreLogo": "app/src/main/assets/logos/veggie_vibes.png",
     "PriceCategory": "$$",
     "Products": [
       {"ProductName": "Veggie Burger", "ProductType": "burger", "Available Amount": 1000, "Price": 9.0},
       {"ProductName": "Falafel Wrap", "ProductType": "wrap", "Available Amount": 800, "Price": 8.5},
-      {"ProductName": "Quinoa Salad", "ProductType": "salad", "Available Amount": 149, "Price": 6.5}
+      {"ProductName": "Quinoa Salad", "ProductType": "salad", "Available Amount": 150, "Price": 6.5}
     ]
   }
 ]
