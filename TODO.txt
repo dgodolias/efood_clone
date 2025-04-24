@@ -1,7 +1,7 @@
--na kanw dynamica workers k oxi Master 2 from cmd
 -na dw to rolo paizei to workerconneciton k an einai na ot vgalw
 -na dw an prepei na mpei kwdikas sto managerconsoleapp anti twn master/worker
 -na aferesw to buy apo ton manager
 -dyo ksehorista arxeia reducer,master
+-na dw an kanei map reduce
 -na to treksw se pollous ypologistes
 -na TO vgalw

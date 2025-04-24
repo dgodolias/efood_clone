@@ -64,7 +64,7 @@ public class StoreActivity extends AppCompatActivity implements CartUpdateListen
         ImageView ivStoreLogo = findViewById(R.id.ivStoreLogo);
 
         currencyFormat = NumberFormat.getCurrencyInstance(Locale.US);
-        tcpClient = new TCPClient();
+        tcpClient = TCPClient.getInstance();
 
         if (getIntent().hasExtra("store")) {
             store = (Store) getIntent().getSerializableExtra("store");
@@ -211,7 +211,7 @@ public class StoreActivity extends AppCompatActivity implements CartUpdateListen
                 Log.d("Checkout", summary.toString());
                 Log.d("Checkout", "Compact format: " + compactFormat.toString());
 
-                TCPClient client = new TCPClient();
+                TCPClient client = TCPClient.getInstance();
                 client.buy(compactFormat.toString());
 
                 Toast.makeText(StoreActivity.this,

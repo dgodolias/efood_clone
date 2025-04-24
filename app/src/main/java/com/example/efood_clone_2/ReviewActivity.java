@@ -51,7 +51,7 @@ public class ReviewActivity extends AppCompatActivity {
 
         btnSubmitReview.setOnClickListener(v -> {
 
-            TCPClient client = new TCPClient();
+            TCPClient client = TCPClient.getInstance();
             client.sendReview(storeName, selectedRating);
 
             Intent intent = new Intent(ReviewActivity.this, HomeActivity.class);

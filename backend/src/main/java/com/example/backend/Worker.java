@@ -42,6 +42,7 @@ public class Worker {
     }
 
     public static void main(String[] args) {
+
         if (args.length < 1) {
             System.err.println("Usage: java Worker <port>");
             System.exit(1);

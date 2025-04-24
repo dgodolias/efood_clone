@@ -44,7 +44,7 @@ public class BootingActivity extends AppCompatActivity {
 
         StoreDataManager.getInstance().setLoading(true);
 
-        TCPClient client = new TCPClient();
+        TCPClient client = TCPClient.getInstance();
         client.getNearbyStores(latitude, longitude, new TCPClient.StoreListCallback() {
             @Override
             public void onStoresReceived(List<Store> stores) {

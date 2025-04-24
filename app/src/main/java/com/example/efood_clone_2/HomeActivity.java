@@ -78,7 +78,7 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     private void loadStoreData() {
-        TCPClient client = new TCPClient();
+        TCPClient client = TCPClient.getInstance();
         client.getNearbyStores(latitude, longitude, new TCPClient.StoreListCallback() {
             @Override
             public void onStoresReceived(List<Store> stores) {
@@ -122,7 +122,7 @@ public class HomeActivity extends AppCompatActivity {
         Button applyButton = popupView.findViewById(R.id.applyButton);
         applyButton.setOnClickListener(v -> {
             Log.d("FilterSelected", "Applying filters through TCP client");
-            TCPClient client = new TCPClient();
+            TCPClient client = TCPClient.getInstance();
 
             client.getFilteredStores(selectedFilters, latitude, longitude, new TCPClient.StoreListCallback() {
                 @Override

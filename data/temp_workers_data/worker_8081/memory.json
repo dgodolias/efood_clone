@@ -9,9 +9,9 @@
     "StoreLogo": "app/src/main/assets/logos/burger_bonanza.png",
     "PriceCategory": "$$",
     "Products": [
-      {"ProductName": "Classic Burger", "ProductType": "burger", "Available Amount": 2000, "Price": 7.5},
+      {"ProductName": "Classic Burger", "ProductType": "burger", "Available Amount": 1999, "Price": 7.5},
       {"ProductName": "Cheeseburger", "ProductType": "burger", "Available Amount": 1500, "Price": 8.5},
-      {"ProductName": "Fries", "ProductType": "side", "Available Amount": 999, "Price": 3.0}
+      {"ProductName": "Fries", "ProductType": "side", "Available Amount": 1000, "Price": 3.0}
     ]
   },
   {
@@ -80,14 +80,14 @@
     "Latitude": 37.998765,
     "Longitude": 23.735432,
     "FoodCategory": "mexican",
-    "Stars": 3.87,
-    "NoOfVotes": 23,
+    "Stars": 4.0,
+    "NoOfVotes": 22,
     "StoreLogo": "app/src/main/assets/logos/taco_town.png",
     "PriceCategory": "$",
     "Products": [
       {"ProductName": "Beef Taco", "ProductType": "taco", "Available Amount": 3000, "Price": 5.5},
       {"ProductName": "Chicken Taco", "ProductType": "taco", "Available Amount": 2800, "Price": 5.5},
-      {"ProductName": "Guacamole", "ProductType": "side", "Available Amount": 399, "Price": 3.5}
+      {"ProductName": "Guacamole", "ProductType": "side", "Available Amount": 400, "Price": 3.5}
     ]
   },
   {

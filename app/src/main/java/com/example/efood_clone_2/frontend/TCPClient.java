@@ -33,6 +33,21 @@ public class TCPClient {
     private final Handler mainHandler;
     private final ExecutorService executor;
 
+    // Private constructor to prevent direct instantiation
+    private TCPClient() {
+        mainHandler = new Handler(Looper.getMainLooper());
+        executor = Executors.newSingleThreadExecutor();
+    }
+
+    // Static holder class for lazy initialization and thread safety
+    private static class Holder {
+        private static final TCPClient INSTANCE = new TCPClient();
+    }
+
+    public static TCPClient getInstance() {
+        return Holder.INSTANCE;
+    }
+
     public interface StoreListCallback {
         void onStoresReceived(List<Store> stores);
         void onError(String error);
@@ -41,11 +56,6 @@ public class TCPClient {
     public interface ResultCallback {
         void onSuccess(String message);
         void onError(String error);
-    }
-
-    public TCPClient() {
-        mainHandler = new Handler(Looper.getMainLooper());
-        executor = Executors.newSingleThreadExecutor();
     }
 
     private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
