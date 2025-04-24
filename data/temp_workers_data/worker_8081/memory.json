@@ -10,7 +10,7 @@
     "PriceCategory": "$$",
     "Products": [
       {"ProductName": "Classic Burger", "ProductType": "burger", "Available Amount": 2000, "Price": 7.5},
-      {"ProductName": "Cheeseburger", "ProductType": "burger", "Available Amount": 1496, "Price": 8.5},
+      {"ProductName": "Cheeseburger", "ProductType": "burger", "Available Amount": 1495, "Price": 8.5},
       {"ProductName": "Fries", "ProductType": "side", "Available Amount": 994, "Price": 3.0}
     ]
   },
@@ -56,7 +56,7 @@
     "Products": [
       {"ProductName": "Lamb Kebab", "ProductType": "kebab", "Available Amount": 1500, "Price": 8.0},
       {"ProductName": "Chicken Kebab", "ProductType": "kebab", "Available Amount": 1200, "Price": 7.5},
-      {"ProductName": "Hummus", "ProductType": "side", "Available Amount": 200, "Price": 4.0}
+      {"ProductName": "Hummus", "ProductType": "side", "Available Amount": 199, "Price": 4.0}
     ]
   },
   {
@@ -70,7 +70,7 @@
     "PriceCategory": "$$",
     "Products": [
       {"ProductName": "Spaghetti Bolognese", "ProductType": "pasta", "Available Amount": 2500, "Price": 11.0},
-      {"ProductName": "Carbonara", "ProductType": "pasta", "Available Amount": 2000, "Price": 12.5},
+      {"ProductName": "Carbonara", "ProductType": "pasta", "Available Amount": 1999, "Price": 12.5},
       {"ProductName": "Caesar Salad", "ProductType": "salad", "Available Amount": 300, "Price": 7.0}
     ]
   },

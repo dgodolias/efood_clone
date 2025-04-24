@@ -447,7 +447,7 @@ public void getNearbyStores(double latitude, double longitude, StoreListCallback
 
     public void sendReview(String storeName, int rating) {
         String command = "REVIEW " + storeName + "," + rating;
-        Log.d("TCPClient", "Sending review command: " + command);
+        System.out.println("TCPClient "+ "Sending review command: " + command);
 
         // Log to console but don't actually send until backend is ready
         // When ready, uncomment the actual network code
