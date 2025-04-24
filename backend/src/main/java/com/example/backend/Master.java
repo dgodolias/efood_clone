@@ -16,11 +16,14 @@ public class Master {
     private List<Process> workerProcesses;
     private Map<String, List<WorkerConnection>> storeToWorkers;
     private ScheduledExecutorService heartbeatScheduler;
+    private PrintWriter out;
 
     public Master(int workerCount, int startPort) throws IOException {
         workers = new ArrayList<>();
         workerProcesses = new ArrayList<>();
         storeToWorkers = new HashMap<>();
+
+        out = new PrintWriter(System.out, true);
 
         deleteDirectory(new File("data/temp_workers_data"));
 
@@ -58,7 +61,7 @@ public class Master {
             StringBuilder content = new StringBuilder();
             String line;
             while ((line = reader.readLine()) != null) content.append(line).append("\n");
-            System.out.println("Content of stores.json:\n" + content.toString());
+
         }
 
         if (!storesFile.exists()) {

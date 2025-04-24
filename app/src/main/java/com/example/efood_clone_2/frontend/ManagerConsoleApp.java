@@ -97,11 +97,6 @@ public class ManagerConsoleApp {
                         data = scanner.nextLine();
                         out.println("GET_SALES_BY_PRODUCT " + data);
                         break;
-                    case "BUY":
-                        System.out.println("Enter store name, product name, and quantity (comma-separated):");
-                        data = scanner.nextLine();
-                        out.println("BUY " + data);
-                        break;
                     default:
                         System.out.println("Unknown command: " + command);
                         continue;

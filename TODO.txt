@@ -1,8 +1,7 @@
--na vgalw ta comments ektos twn ||#### ####||
 -na kanw dynamica workers k oxi Master 2 from cmd
--na TO vgalw
--na valw logos
--na fortononte ta stores apo main oxi home
 -na dw to rolo paizei to workerconneciton k an einai na ot vgalw
 -na dw an prepei na mpei kwdikas sto managerconsoleapp anti twn master/worker
 -na aferesw to buy apo ton manager
+-dyo ksehorista arxeia reducer,master
+-na to treksw se pollous ypologistes
+-na TO vgalw

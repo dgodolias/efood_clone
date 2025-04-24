@@ -69,7 +69,9 @@ class WorkerThread extends Thread {
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
             String request;
             while ((request = in.readLine()) != null) {
-                System.out.println("Worker on port " + socket.getLocalPort() + " received request: " + request);
+                System.out.println("Worker on port " + socket.getLocalPort() + " received request: " + request.split(" ")[0]);
+                System.out.flush();
+
                 String[] parts = request.split(" ", 2);
                 String command = parts[0];
                 String data = parts.length > 1 ? parts[1] : "";
@@ -269,7 +271,9 @@ class WorkerThread extends Thread {
                                 }
 
                                 nearbyStoresJson.append("]");
-                                System.out.println("Sending nearby stores as JSON array: " + nearbyStoresJson.toString());
+                                System.out.println("Sending nearby stores as JSON array: " + nearbyStoresJson.toString().substring(0, Math.min(35, nearbyStoresJson.length())));
+                                System.out.flush();
+
                                 out.println(nearbyStoresJson.toString());
                                 break;
                         case "GET_STORE_DETAILS":
