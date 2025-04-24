@@ -7,7 +7,9 @@ import android.util.Log;
 import com.example.efood_clone_2.model.Product;
 import com.example.efood_clone_2.model.Store;
 
+import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -50,6 +52,22 @@ public class TCPClient {
         executor = Executors.newSingleThreadExecutor();
     }
 
+    private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+        // Haversine formula
+        final int R = 6371; // Earth radius in kilometers
+
+        double latDistance = Math.toRadians(lat2 - lat1);
+        double lonDistance = Math.toRadians(lon2 - lon1);
+
+        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
+
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return R * c;
+    }
+
     public void getNearbyStores(double latitude, double longitude, StoreListCallback callback) {
         executor.execute(() -> {
             try {
@@ -72,6 +90,12 @@ public class TCPClient {
                     // Parse each line as a store
                     Store store = parseSingleStore(line);
                     if (store != null) {
+                        // Calculate distance if not already set
+                        if (store.getDistance() == 0) {
+                            double distance = calculateDistance(latitude, longitude,
+                                store.getLatitude(), store.getLongitude());
+                            store.setDistance(distance);
+                        }
                         stores.add(store);
                     }
                 }
@@ -114,62 +138,103 @@ public class TCPClient {
         return null;
     }
 
-    public void getFilteredStores(Map<String, List<String>> filters, double latitude, double longitude, StoreListCallback callback) {
-        executor.execute(() -> {
-            try (Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
-                 PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+    public void getFilteredStores(Map<String, List<String>> filters, double latitude, double longitude,
+                                StoreListCallback callback) {
+        new Thread(() -> {
+            try {
+                // Create connection
+                Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
+                PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+                BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-                Log.d(TAG, "Connected to server for filtered stores");
+                // Prepare filter string
+                StringBuilder request = new StringBuilder("FILTER_STORES ");
 
-                // Build filter string including coordinates
-                StringBuilder filterString = new StringBuilder("FILTER_STORES ");
-                // Add coordinates first
-                filterString.append(latitude).append(",").append(longitude).append(";");
+                // Append location
+                request.append(latitude).append(",").append(longitude).append(";");
 
-                // Add the rest of the filters
+                // Append filters
                 for (Map.Entry<String, List<String>> entry : filters.entrySet()) {
-                    if (entry.getValue().isEmpty()) continue;
-
-                    filterString.append(entry.getKey()).append(":");
-                    for (int i = 0; i < entry.getValue().size(); i++) {
-                        filterString.append(entry.getValue().get(i));
-                        if (i < entry.getValue().size() - 1) {
-                            filterString.append(",");
+                    if (!entry.getValue().isEmpty()) {
+                        request.append(entry.getKey()).append(":");
+                        for (int i = 0; i < entry.getValue().size(); i++) {
+                            request.append(entry.getValue().get(i));
+                            if (i < entry.getValue().size() - 1) {
+                                request.append(",");
+                            }
                         }
+                        request.append(";");
                     }
-                    filterString.append(";");
                 }
 
-                out.println(filterString.toString());
-                Log.d(TAG, "Sent filter command: " + filterString);
+                // Send request
+                out.println(request.toString());
 
-                // Read response
-                List<Store> storeList = new ArrayList<>();
+                // Parse the response
+                StringBuilder responseBuilder = new StringBuilder();
                 String line;
-                while ((line = in.readLine()) != null && !line.equals("END")) {
-                    if (line.equals("No stores found with the specified filters.")) {
-                        mainHandler.post(() -> callback.onStoresReceived(new ArrayList<>()));
-                        return;
-                    }
+                while ((line = in.readLine()) != null) {
+                    if (line.equals("END")) break;
+                    responseBuilder.append(line).append("\n");
+                }
 
-                    // Use parseSingleStore to create store objects
-                    Store store = parseSingleStore(line);
-                    if (store != null) {
-                        storeList.add(store);
+                // Check if response is a JSON array
+                String response = responseBuilder.toString().trim();
+                List<Store> stores = new ArrayList<>();
+
+                if (response.startsWith("[") && response.endsWith("]")) {
+                    // Parse JSON array
+                    JSONArray jsonArray = new JSONArray(response);
+                    for (int i = 0; i < jsonArray.length(); i++) {
+                        JSONObject storeJson = jsonArray.getJSONObject(i);
+                        Store store = Store.JsonToStore(storeJson.toString());
+
+                        // Ensure distance is calculated
+                        if (store.getDistance() == 0) {
+                            double distance = calculateDistance(latitude, longitude,
+                                store.getLatitude(), store.getLongitude());
+                            store.setDistance(distance);
+                        }
+                        stores.add(store);
+                    }
+                } else if (!response.equals("No stores found with the specified filters.")) {
+                    // Handle old format (individual store JSON objects)
+                    String[] storeJsons = response.split("\n");
+                    for (String storeJson : storeJsons) {
+                        if (!storeJson.trim().isEmpty()) {
+                            Store store = Store.JsonToStore(storeJson);
+                            // Calculate distance
+                            double distance = calculateDistance(latitude, longitude,
+                                store.getLatitude(), store.getLongitude());
+                            store.setDistance(distance);
+                            stores.add(store);
+                        }
                     }
                 }
 
                 // Sort stores by distance
-                Collections.sort(storeList, (s1, s2) -> Double.compare(s1.getDistance(), s2.getDistance()));
+                Collections.sort(stores, (s1, s2) -> Double.compare(s1.getDistance(), s2.getDistance()));
 
-                mainHandler.post(() -> callback.onStoresReceived(storeList));
+                // Log store distances
+                for (Store store : stores) {
+                    Log.d(TAG, "Store: " + store.getStoreName() + ", Distance: " + store.getFormattedDistance());
+                }
 
-            } catch (IOException e) {
-                Log.e(TAG, "Error connecting to server: " + e.getMessage(), e);
-                mainHandler.post(() -> callback.onError("Network error: " + e.getMessage()));
+                // Close resources
+                in.close();
+                out.close();
+                socket.close();
+
+                // Return results on the main thread
+                Handler mainHandler = new Handler(Looper.getMainLooper());
+                mainHandler.post(() -> callback.onStoresReceived(stores));
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                Handler mainHandler = new Handler(Looper.getMainLooper());
+                mainHandler.post(() -> callback.onError("Error: " + e.getMessage()));
             }
-        });
+        }).start();
     }
 
     public interface StoreDetailsCallback {
@@ -217,10 +282,9 @@ public class TCPClient {
                 mainHandler.post(() -> callback.onError("Network error: " + e.getMessage()));
             }
         });
-
     }
 
-    // Also add this method to make a purchase
+    // Method to make a purchase
     public void purchaseProduct(String storeName, String productName, int quantity, ResultCallback callback) {
         executor.execute(() -> {
             try (Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
@@ -252,7 +316,6 @@ public class TCPClient {
             }
         });
     }
-
 
     public void buy(String compactFormString) {
         // Convert the compact format to a map of store name -> (product name -> quantity)
@@ -341,4 +404,6 @@ public class TCPClient {
 
         return purchaseMap;
     }
+
+
 }

@@ -257,25 +257,38 @@ class WorkerThread extends Thread {
 
                             Map<String, List<String>> filters = parseFilterString(filterData);
 
-                            List<String> matchingStores = new ArrayList<>();
+                            // Using StringBuilder to construct the JSON array of stores
+                            StringBuilder jsonStoresArray = new StringBuilder("[");
+                            boolean firstStore = true;
+
                             for (Store storee : stores.values()) {
                                 if (matchesFilters(storee, filters)) {
-                                    double distance = calculateDistance(filterUserLat, filterUserLon, storee.getLatitude(), storee.getLongitude());
-                                    // Use the same format as FIND_STORES_WITHIN_RANGE
-                                    String storeData = String.format("%s^%f^%f^%s^%d^%s^%f",
-                                        storee.getStoreName(),
-                                        storee.getLatitude(),
-                                        storee.getLongitude(),
-                                        storee.getFoodCategory(),
-                                        storee.getStars(),
-                                        storee.getPriceCategory(),
-                                        distance);
-                                    matchingStores.add(storeData);
+                                    // Calculate distance and set it in the store object
+                                    double distance = calculateDistance(filterUserLat, filterUserLon,
+                                            storee.getLatitude(), storee.getLongitude());
+                                    storee.setDistance(distance);
+
+                                    try {
+                                        String storeJson = Store.StoreToJson(storee);
+                                        // Compact the JSON
+                                        storeJson = storeJson.replaceAll("\\s*\\n\\s*", "").replaceAll("\\s+", " ").trim();
+
+                                        if (!firstStore) {
+                                            jsonStoresArray.append(",");
+                                        } else {
+                                            firstStore = false;
+                                        }
+
+                                        jsonStoresArray.append(storeJson);
+                                    } catch (Exception e) {
+                                        System.err.println("Error serializing store to JSON: " + e.getMessage());
+                                    }
                                 }
                             }
 
-                            System.out.println("Filter data: " + matchingStores);
-                            out.println(String.join("|", matchingStores));
+                            jsonStoresArray.append("]");
+                            System.out.println("Sending filtered stores as JSON array"+ ": " + jsonStoresArray.toString());
+                            out.println(jsonStoresArray.toString());
                             break;
                         case "GET_STORE_DETAILS":
                             String requestedStoreName = parts.length > 1 ? parts[1].trim() : "";

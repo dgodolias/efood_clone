@@ -1,6 +1,7 @@
 package com.example.efood_clone_2.adapter;
 
 import android.content.Intent;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -31,13 +32,19 @@ public class StoreAdapter extends RecyclerView.Adapter<StoreAdapter.ViewHolder> 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Store store = storeList.get(position);
-
         holder.tvName.setText(store.getStoreName());
-        holder.tvStars.setText("★ " + store.getStars());
-        holder.tvCoordinates.setText(store.getCoordinates());
+        holder.tvStars.setText(store.getStars() + "★");
         holder.tvType.setText(store.getFoodCategory());
-        holder.tvPrice.setText(store.getPriceCategory());
         holder.tvDistance.setText(store.getFormattedDistance());
+        holder.tvCoordinates.setText(store.getCoordinates());
+
+        // In your StoreAdapter's onBindViewHolder method
+        Log.d("PriceCategory", "Store: " + store.getStoreName() +
+              ", Price: " + store.getPriceCategory() +
+              ", Products: " + store.getProducts().size());
+
+        // Make sure to use the dynamic price category here
+        holder.tvPrice.setText(store.getPriceCategory());
 
         // Set click listener
         holder.itemView.setOnClickListener(v -> {
