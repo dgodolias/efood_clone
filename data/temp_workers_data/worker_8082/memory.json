@@ -4,14 +4,14 @@
     "Latitude": 37.9932963,
     "Longitude": 23.733413,
     "FoodCategory": "pizza",
-    "Stars": 4.0,
-    "NoOfVotes": 25,
+    "Stars": 3.96,
+    "NoOfVotes": 26,
     "StoreLogo": "app/src/main/assets/logos/pizza_palace.png",
     "PriceCategory": "$$",
     "Products": [
       {"ProductName": "Margherita", "ProductType": "pizza", "Available Amount": 5000, "Price": 8.5},
       {"ProductName": "Pepperoni", "ProductType": "pizza", "Available Amount": 3000, "Price": 10.0},
-      {"ProductName": "Greek Salad", "ProductType": "salad", "Available Amount": 150, "Price": 6.0}
+      {"ProductName": "Greek Salad", "ProductType": "salad", "Available Amount": 149, "Price": 6.0}
     ]
   },
   {

@@ -19,6 +19,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.efood_clone_2.adapter.StoreAdapter;
 import com.example.efood_clone_2.frontend.TCPClient;
 import com.example.efood_clone_2.model.Store;
+import com.example.efood_clone_2.model.StoreDataManager;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -58,6 +59,25 @@ public class HomeActivity extends AppCompatActivity {
         ImageView locationIcon = findViewById(R.id.locationIcon);
         locationIcon.setOnClickListener(v -> showLocationPopup(v));
 
+        // Check if we have preloaded data
+        if (StoreDataManager.getInstance().hasStores()) {
+            storeList.clear();
+            storeList.addAll(StoreDataManager.getInstance().getStores());
+            storeAdapter.notifyDataSetChanged();
+            Log.d("HomeActivity", "Using preloaded store data (" + storeList.size() + " stores)");
+        }
+        // If data is still loading, wait for it
+        else if (StoreDataManager.getInstance().isLoading()) {
+            Log.d("HomeActivity", "Waiting for preloaded data to complete...");
+            // Could show a loading indicator here
+        }
+        // Otherwise load the data now
+        else {
+            loadStoreData();
+        }
+    }
+
+    private void loadStoreData() {
         TCPClient client = new TCPClient();
         client.getNearbyStores(latitude, longitude, new TCPClient.StoreListCallback() {
             @Override
@@ -65,6 +85,8 @@ public class HomeActivity extends AppCompatActivity {
                 storeList.clear();
                 storeList.addAll(stores);
                 storeAdapter.notifyDataSetChanged();
+                // Also update the singleton for future use
+                StoreDataManager.getInstance().setStores(stores);
             }
 
             @Override

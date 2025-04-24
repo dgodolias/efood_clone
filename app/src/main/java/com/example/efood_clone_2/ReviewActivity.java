@@ -50,11 +50,6 @@ public class ReviewActivity extends AppCompatActivity {
         }
 
         btnSubmitReview.setOnClickListener(v -> {
-            String reviewCommand = "REVIEW " + storeName + "," + selectedRating;
-
-            Toast.makeText(ReviewActivity.this,
-                    "Sending: " + reviewCommand,
-                    Toast.LENGTH_LONG).show();
 
             TCPClient client = new TCPClient();
             client.sendReview(storeName, selectedRating);
