@@ -6,7 +6,9 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.TextView; import android.widget.ProgressBar; import android.widget.Toast;
+import android.widget.TextView;
+import android.widget.ProgressBar;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
@@ -47,7 +49,6 @@ public class StoreActivity extends AppCompatActivity implements CartUpdateListen
 
         orderSummary = new StringBuilder();
 
-        // Initialize views
         tvStoreName = findViewById(R.id.tvStoreName);
         tvStoreStars = findViewById(R.id.tvStoreStars);
         tvStoreType = findViewById(R.id.tvStoreType);
@@ -60,30 +61,24 @@ public class StoreActivity extends AppCompatActivity implements CartUpdateListen
         currencyFormat = NumberFormat.getCurrencyInstance(Locale.US);
         tcpClient = new TCPClient();
 
-        // Get store from intent
         if (getIntent().hasExtra("store")) {
             store = (Store) getIntent().getSerializableExtra("store");
 
-            // Set basic store information first
             tvStoreName.setText(store.getStoreName());
             tvStoreStars.setText("★ " + store.getStars());
             tvStoreType.setText(store.getFoodCategory());
             tvStorePrice.setText(store.getPriceCategory());
 
-            // Show loading indicator
             loadingProgressBar.setVisibility(View.VISIBLE);
             productsRecyclerView.setVisibility(View.GONE);
 
-            // Get full store details including products
             tcpClient.getStoreDetails(store.getStoreName(), new StoreDetailsCallback() {
                 @Override
                 public void onStoreDetailsReceived(Store fullStore) {
-                    store = fullStore; // Update store with full details
+                    store = fullStore;
 
-                    // Setup products recycler view with the products from full store
                     setupProductsRecyclerView(store.getProducts());
 
-                    // Hide loading indicator
                     loadingProgressBar.setVisibility(View.GONE);
                     productsRecyclerView.setVisibility(View.VISIBLE);
 
@@ -101,13 +96,10 @@ public class StoreActivity extends AppCompatActivity implements CartUpdateListen
             });
         }
 
-        // Set up back button
         backButton.setOnClickListener(v -> finish());
 
-        // Set up cart button click listener
         btnCart.setOnClickListener(v -> showCartBottomSheet());
 
-        // Update cart button
         updateCartButton();
     }
 
@@ -127,15 +119,12 @@ public class StoreActivity extends AppCompatActivity implements CartUpdateListen
         Button btnClearCart = bottomSheetView.findViewById(R.id.btnClearCart);
         Button btnCheckout = bottomSheetView.findViewById(R.id.btnCheckout);
 
-        // Setup cart recyclerview
         cartRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         CartAdapter cartAdapter = new CartAdapter(Cart.getInstance().getItems());
         cartRecyclerView.setAdapter(cartAdapter);
 
-        // Display total price
         tvTotalPrice.setText(currencyFormat.format(Cart.getInstance().getTotalPrice()));
 
-        // Clear cart button
         btnClearCart.setOnClickListener(v -> {
 
             Cart.getInstance().clear();
@@ -144,23 +133,18 @@ public class StoreActivity extends AppCompatActivity implements CartUpdateListen
 
         });
 
-        // Checkout button
         btnCheckout.setOnClickListener(v -> {
             List<CartItem> items = Cart.getInstance().getItems();
             if (items.isEmpty()) {
                 Toast.makeText(StoreActivity.this, "Your cart is empty", Toast.LENGTH_SHORT).show();
             } else {
-                // Keep the existing order summary
                 StringBuilder summary = new StringBuilder("Order Summary:\n\n");
                 StringBuilder compactFormat = new StringBuilder();
                 boolean firstItem = true;
 
-                // Add store name at the beginning of compact format
                 compactFormat.append(store.getStoreName());
 
-                // Loop through cart items
                 for (CartItem item : Cart.getInstance().getItems()) {
-                    // Add to existing summary format
                     summary.append(item.getQuantity())
                            .append(" x ")
                            .append(item.getProduct().getProductName())
@@ -168,7 +152,6 @@ public class StoreActivity extends AppCompatActivity implements CartUpdateListen
                            .append(currencyFormat.format(item.getSubtotal()))
                            .append("\n");
 
-                    // Add to new compact format
                     if (firstItem) {
                         compactFormat.append("|");
                     } else {
@@ -184,20 +167,16 @@ public class StoreActivity extends AppCompatActivity implements CartUpdateListen
                 summary.append("\nTotal: ")
                        .append(currencyFormat.format(Cart.getInstance().getTotalPrice()));
 
-                // Log both formats
                 Log.d("Checkout", summary.toString());
                 Log.d("Checkout", "Compact format: " + compactFormat.toString());
 
-                // Call the new method to parse and print the items
                 TCPClient client = new TCPClient();
                 client.buy(compactFormat.toString());
 
-                // Show the order summary to the user
                 Toast.makeText(StoreActivity.this,
                         "Order placed!\n" + summary.toString(),
                         Toast.LENGTH_LONG).show();
 
-                // Clear cart after checkout
                 Cart.getInstance().clear();
                 updateCartButton();
                 bottomSheetDialog.dismiss();
@@ -229,7 +208,6 @@ public class StoreActivity extends AppCompatActivity implements CartUpdateListen
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        // Clear the cart when leaving the activity
         Cart.getInstance().clear();
     }
 }

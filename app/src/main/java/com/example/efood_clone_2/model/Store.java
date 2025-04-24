@@ -36,7 +36,6 @@ public class Store implements Serializable {
         this.storeLogo = storeLogo;
         this.products = new ArrayList<>();
         this.sales = new ConcurrentHashMap<>();
-        // Price category will be calculated on demand
     }
 
     // Simplified constructor
@@ -51,8 +50,6 @@ public class Store implements Serializable {
         this.storeLogo = "";
         this.products = new ArrayList<>();
         this.sales = new ConcurrentHashMap<>();
-        // Still accept priceCategory parameter for backward compatibility
-        // but it will be overridden when getPriceCategory() is called
     }
 
     public synchronized void removeProduct(String productName) {
@@ -98,14 +95,12 @@ public class Store implements Serializable {
     public void setLongitude(double longitude) { this.longitude = longitude; }
 
     public String getPriceCategory() {
-        // Calculate average price of all products
         if (products.isEmpty()) {
-            return "$"; // Default when no products
+            return "$";
         }
 
         double totalPrice = 0;
-        for (Product p : products) {
-            totalPrice += p.getPrice();
+        for (Product p : products) { totalPrice += p.getPrice();
         }
 
         double averagePrice = totalPrice / products.size();
@@ -146,24 +141,18 @@ public class Store implements Serializable {
     public static Store JsonToStore(String jsonString) throws JSONException {
         JSONObject json = new JSONObject(jsonString);
 
-        // Extract basic store information
         String storeName = json.optString("StoreName", "");
         double latitude = json.optDouble("Latitude", 0.0);
         double longitude = json.optDouble("Longitude", 0.0);
         String foodCategory = json.optString("FoodCategory", "");
         float stars = (float)json.optDouble("Stars", 0.0);
         int noOfVotes = json.optInt("NoOfVotes", 0);
-        String storeLogo = json.optString("StoreLogo", "");
-
-        // Create store instance using the full constructor
+        String storeLogo = json.optString("StoreLogo", "");;
         Store store = new Store(storeName, latitude, longitude, foodCategory, stars, noOfVotes, storeLogo);
 
-        // Set distance if available
         if (json.has("Distance")) {
             store.setDistance(json.getDouble("Distance"));
         }
-
-        // Parse products if available
         if (json.has("Products") && !json.isNull("Products")) {
             JSONArray productsArray = json.getJSONArray("Products");
             for (int i = 0; i < productsArray.length(); i++) {
@@ -213,9 +202,7 @@ public class Store implements Serializable {
 
     private static String sanitizeJsonValue(String value) {
         if (value == null) return "";
-        // Remove any surrounding quotes
         value = value.replaceAll("^\"|\"$", "");
-        // Escape any quotes inside the value
         return value.replace("\"", "\\\"");
     }
 }

@@ -24,7 +24,7 @@ public class Store implements Serializable {
     private Map<String, Integer> sales;
     private double distance;
 
-    // Full constructor
+
     public Store(String storeName, double latitude, double longitude, String foodCategory,
                  float stars, int noOfVotes, String storeLogo) {
         this.storeName = storeName;
@@ -36,10 +36,9 @@ public class Store implements Serializable {
         this.storeLogo = storeLogo;
         this.products = new ArrayList<>();
         this.sales = new ConcurrentHashMap<>();
-        // Price category will be calculated on demand
+
     }
 
-    // Simplified constructor
     public Store(String storeName, double latitude, double longitude, String foodCategory,
                  int stars, String priceCategory) {
         this.storeName = storeName;
@@ -51,8 +50,7 @@ public class Store implements Serializable {
         this.storeLogo = "";
         this.products = new ArrayList<>();
         this.sales = new ConcurrentHashMap<>();
-        // Still accept priceCategory parameter for backward compatibility
-        // but it will be overridden when getPriceCategory() is called
+
     }
 
     public synchronized void removeProduct(String productName) {
@@ -75,7 +73,6 @@ public class Store implements Serializable {
         return new ConcurrentHashMap<>(sales);
     }
 
-    // Getters and setters
     public String getStoreName() { return storeName; }
     public void setStoreName(String storeName) { this.storeName = storeName; }
 
@@ -98,9 +95,9 @@ public class Store implements Serializable {
     public void setLongitude(double longitude) { this.longitude = longitude; }
 
     public String getPriceCategory() {
-        // Calculate average price of all products
+
         if (products.isEmpty()) {
-            return "$"; // Default when no products
+            return "$";
         }
 
         double totalPrice = 0;
@@ -110,7 +107,7 @@ public class Store implements Serializable {
 
         double averagePrice = totalPrice / products.size();
 
-        // Determine price category based on average price
+
         if (averagePrice <= 5.0) {
             return "$";
         } else if (averagePrice <= 15.0) {
@@ -146,7 +143,7 @@ public class Store implements Serializable {
     public static Store JsonToStore(String jsonString) throws JSONException {
         JSONObject json = new JSONObject(jsonString);
 
-        // Extract basic store information
+
         String storeName = json.optString("StoreName", "");
         double latitude = json.optDouble("Latitude", 0.0);
         double longitude = json.optDouble("Longitude", 0.0);
@@ -155,15 +152,15 @@ public class Store implements Serializable {
         int noOfVotes = json.optInt("NoOfVotes", 0);
         String storeLogo = json.optString("StoreLogo", "");
 
-        // Create store instance using the full constructor
+
         Store store = new Store(storeName, latitude, longitude, foodCategory, stars, noOfVotes, storeLogo);
 
-        // Set distance if available
+
         if (json.has("Distance")) {
             store.setDistance(json.getDouble("Distance"));
         }
 
-        // Parse products if available
+
         if (json.has("Products") && !json.isNull("Products")) {
             JSONArray productsArray = json.getJSONArray("Products");
             for (int i = 0; i < productsArray.length(); i++) {
@@ -213,9 +210,7 @@ public class Store implements Serializable {
 
     private static String sanitizeJsonValue(String value) {
         if (value == null) return "";
-        // Remove any surrounding quotes
         value = value.replaceAll("^\"|\"$", "");
-        // Escape any quotes inside the value
         return value.replace("\"", "\\\"");
     }
 }

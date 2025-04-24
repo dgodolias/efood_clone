@@ -1,4 +1,4 @@
-package com.example.efood.frontend;
+package com.example.efood_clone_2.frontend;
 
 import java.io.*;
 import java.net.*;
@@ -107,7 +107,6 @@ public class ManagerConsoleApp {
                         continue;
                 }
 
-                // Modified response handling to read multiple lines
                 System.out.println("Response:");
                 String line;
                 while ((line = in.readLine()) != null) {

@@ -244,6 +244,7 @@ class MasterThread extends Thread {
                 Map<String, Integer> salesByStore = new HashMap<>();
 
                 switch (command) {
+                    // ########################### MANAGER COMMANDS ###########################
                     case "ADD_STORE":
                         String storeName = extractField(data, "StoreName");
                         System.out.println("ADD_STORE storeName: [" + storeName + "]");
@@ -275,10 +276,10 @@ class MasterThread extends Thread {
                         }
                         String storeNameProd = productParts[0].trim();
 
-                        // Check the store name with and without quotes
+
                         List<WorkerConnection> prodWorkers = storeToWorkers.get(storeNameProd);
                         if (prodWorkers == null) {
-                            // Try with quotes
+
                             prodWorkers = storeToWorkers.get("\"" + storeNameProd + "\"");
                         }
 
@@ -309,10 +310,10 @@ class MasterThread extends Thread {
                         }
                         String removeStoreName = removeParts[0].trim();
 
-                        // Check the store name with and without quotes
+
                         List<WorkerConnection> removeWorkers = storeToWorkers.get(removeStoreName);
                         if (removeWorkers == null) {
-                            // Try with quotes
+
                             removeWorkers = storeToWorkers.get("\"" + removeStoreName + "\"");
                         }
 
@@ -321,7 +322,7 @@ class MasterThread extends Thread {
                             out.println("END");
                             continue;
                         }
-                        // Rest of the code remains the same...
+
                         for (WorkerConnection worker : removeWorkers) {
                             try {
                                 worker.sendRequest(request);
@@ -338,7 +339,7 @@ class MasterThread extends Thread {
                             String foodCategory = parts.length > 1 ? parts[1].trim() : "";
                             System.out.println("Processing GET_SALES_BY_STORE_TYPE_CATEGORY request for category: " + foodCategory);
 
-                            // Use MapReduce to get and aggregate sales data by store type category
+                            //MapReduce
 
                             Set<String> processedStores = new HashSet<>();
                             int total = 0;
@@ -358,7 +359,6 @@ class MasterThread extends Thread {
                                                     String store = storeParts[0];
                                                     int amount = Integer.parseInt(storeParts[1]);
 
-                                                    // Only process this store if we haven't seen it before
                                                     if (!processedStores.contains(store)) {
                                                         salesByStore.put(store, amount);
                                                         total += amount;
@@ -394,7 +394,7 @@ class MasterThread extends Thread {
                                 String productCategory = parts.length > 1 ? parts[1].trim() : "";
                                 System.out.println("Processing GET_SALES_BY_PRODUCT_CATEGORY request for category: " + productCategory);
 
-                                // Use MapReduce to get and aggregate sales data by product category
+                                //MapReduce
                                 Map<String, Integer> salesByStoreProdCat = new HashMap<>();
                                 Set<String> processedStoresProdCat = new HashSet<>();
                                 int totalProdCat = 0;
@@ -412,7 +412,6 @@ class MasterThread extends Thread {
                                                         String store = storeParts[0];
                                                         int amount = Integer.parseInt(storeParts[1]);
 
-                                                        // Only process this store if we haven't seen it before
                                                         if (!processedStoresProdCat.contains(store)) {
                                                             salesByStoreProdCat.put(store, amount);
                                                             totalProdCat += amount;
@@ -444,60 +443,60 @@ class MasterThread extends Thread {
                                 out.println("END");
                                 break;
 
-                        case "GET_SALES_BY_PRODUCT":
-                                String productName = parts.length > 1 ? parts[1].trim() : "";
-                                System.out.println("Processing GET_SALES_BY_PRODUCT request for product: " + productName);
+                    case "GET_SALES_BY_PRODUCT":
+                        String productName = parts.length > 1 ? parts[1].trim() : "";
+                        System.out.println("Processing GET_SALES_BY_PRODUCT request for product: " + productName);
 
-                                // Use MapReduce to get and aggregate sales data by product
-                                Map<String, Integer> salesByStoreProd = new HashMap<>();
-                                Set<String> processedStoresProd = new HashSet<>();
-                                int totalProd = 0;
+                        //MapReduce
+                        Map<String, Integer> salesByStoreProd = new HashMap<>();
+                        Set<String> processedStoresProd = new HashSet<>();
+                        int totalProd = 0;
 
-                                for (WorkerConnection worker : workers) {
-                                    try {
-                                        String response = worker.sendRequest("GET_SALES_BY_PRODUCT " + productName);
+                        for (WorkerConnection worker : workers) {
+                            try {
+                                String response = worker.sendRequest("GET_SALES_BY_PRODUCT " + productName);
 
-                                        if (!response.isEmpty()) {
-                                            String[] storesSales = response.split("\\|");
-                                            for (String storeSale : storesSales) {
-                                                if (!storeSale.isEmpty()) {
-                                                    String[] storeParts = storeSale.split(":");
-                                                    if (storeParts.length == 2) {
-                                                        String store = storeParts[0];
-                                                        int amount = Integer.parseInt(storeParts[1]);
+                                if (!response.isEmpty()) {
+                                    String[] storesSales = response.split("\\|");
+                                    for (String storeSale : storesSales) {
+                                        if (!storeSale.isEmpty()) {
+                                            String[] storeParts = storeSale.split(":");
+                                            if (storeParts.length == 2) {
+                                                String store = storeParts[0];
+                                                int amount = Integer.parseInt(storeParts[1]);
 
-                                                        // Only process this store if we haven't seen it before
-                                                        if (!processedStoresProd.contains(store)) {
-                                                            salesByStoreProd.put(store, amount);
-                                                            totalProd += amount;
-                                                            processedStoresProd.add(store);
-                                                        }
-                                                    }
+                                                if (!processedStoresProd.contains(store)) {
+                                                    salesByStoreProd.put(store, amount);
+                                                    totalProd += amount;
+                                                    processedStoresProd.add(store);
                                                 }
                                             }
                                         }
-                                    } catch (IOException e) {
-                                        System.err.println("Error communicating with worker for sales by product: " + e.getMessage());
                                     }
                                 }
+                            } catch (IOException e) {
+                                System.err.println("Error communicating with worker for sales by product: " + e.getMessage());
+                            }
+                        }
 
-                                StringBuilder resultProd = new StringBuilder();
-                                for (Map.Entry<String, Integer> entry : salesByStoreProd.entrySet()) {
-                                    if (resultProd.length() > 0) {
-                                        resultProd.append("\n");
-                                    }
-                                    resultProd.append("\"").append(entry.getKey()).append("\": ").append(entry.getValue());
-                                }
-                                if (!salesByStoreProd.isEmpty()) {
-                                    resultProd.append("\n");
-                                }
-                                resultProd.append("\"total\": ").append(totalProd);
+                        StringBuilder resultProd = new StringBuilder();
+                        for (Map.Entry<String, Integer> entry : salesByStoreProd.entrySet()) {
+                            if (resultProd.length() > 0) {
+                                resultProd.append("\n");
+                            }
+                            resultProd.append("\"").append(entry.getKey()).append("\": ").append(entry.getValue());
+                        }
+                        if (!salesByStoreProd.isEmpty()) {
+                            resultProd.append("\n");
+                        }
+                        resultProd.append("\"total\": ").append(totalProd);
 
-                                System.out.println("Sending sales by product results: " + resultProd);
-                                out.println(resultProd.toString());
-                                out.println("END");
-                                break;
+                        System.out.println("Sending sales by product results: " + resultProd);
+                        out.println(resultProd.toString());
+                        out.println("END");
+                        break;
 
+                    // ########################### CLIENT COMMANDS ###########################
                     case "FIND_STORES_WITHIN_RANGE":
                         String[] coords = data.split(",");
                         if (coords.length != 2) {
@@ -506,12 +505,8 @@ class MasterThread extends Thread {
                             continue;
                         }
 
-                        double lat = Double.parseDouble(coords[0]);
-                        double lon = Double.parseDouble(coords[1]);
-
                         Set<String> nearbyStores = new HashSet<>();
 
-                        // Send request to all workers and collect results
                         for (WorkerConnection worker : workers) {
                             try {
                                 String response = worker.sendRequest("FIND_STORES_WITHIN_RANGE " + data);
@@ -528,7 +523,6 @@ class MasterThread extends Thread {
                             }
                         }
 
-                        // Return results to client
                         if (nearbyStores.isEmpty()) {
                             out.println("No stores found within 5km of your location.");
                         } else {
@@ -542,10 +536,9 @@ class MasterThread extends Thread {
                     case "FILTER_STORES":
                         System.out.println("Processing filter request: " + data);
 
-                        // Parse filter data
+
                         Map<String, List<String>> filters = parseFilterString(data);
 
-                        // Send the filter request to all workers
                         List<String> filteredStores = new ArrayList<>();
                         Set<String> processedStoreNames = new HashSet<>();
 
@@ -586,7 +579,6 @@ class MasterThread extends Thread {
                         String buyProductName = buyParts[1].trim();
                         int buyQuantity = Integer.parseInt(buyParts[2].trim());
 
-                        // Find the appropriate workers
                         List<WorkerConnection> buyWorkers = storeToWorkers.get(buyStoreName);
                         if (buyWorkers == null) {
                             buyWorkers = storeToWorkers.get("\"" + buyStoreName + "\"");
@@ -598,7 +590,6 @@ class MasterThread extends Thread {
                             continue;
                         }
 
-                        // Forward purchase request to all relevant workers
                         for (WorkerConnection worker : buyWorkers) {
                             try {
                                 worker.sendRequest("BUY " + data);
@@ -614,10 +605,9 @@ class MasterThread extends Thread {
                         String detailsStoreName = data.trim();
                         System.out.println("Processing GET_STORE_DETAILS for: " + detailsStoreName);
 
-                        // Find the store
+
                         List<WorkerConnection> storeWorkers = storeToWorkers.get(detailsStoreName);
                         if (storeWorkers == null) {
-                            // Try with quotes
                             storeWorkers = storeToWorkers.get("\"" + detailsStoreName + "\"");
                         }
 
@@ -627,13 +617,12 @@ class MasterThread extends Thread {
                             continue;
                         }
 
-                        // Forward the request to the first worker that has this store
                         String storeDetails = null;
                         for (WorkerConnection worker : storeWorkers) {
                             try {
                                 storeDetails = worker.sendRequest("GET_STORE_DETAILS " + detailsStoreName);
                                 if (storeDetails != null && !storeDetails.isEmpty()) {
-                                    break;  // Found the store details
+                                    break;
                                 }
                             } catch (IOException e) {
                                 System.err.println("Failed to get store details from worker: " + e.getMessage());
@@ -658,10 +647,8 @@ class MasterThread extends Thread {
                         String reviewStoreName = reviewParts[0].trim();
                         int rating = Integer.parseInt(reviewParts[1].trim());
 
-                        // Find the store workers
                         List<WorkerConnection> reviewWorkers = storeToWorkers.get(reviewStoreName);
                         if (reviewWorkers == null) {
-                            // Try with quotes
                             reviewWorkers = storeToWorkers.get("\"" + reviewStoreName + "\"");
                         }
 
@@ -671,7 +658,6 @@ class MasterThread extends Thread {
                             continue;
                         }
 
-                        // Forward review to all workers that have this store
                         for (WorkerConnection worker : reviewWorkers) {
                             try {
                                 worker.sendRequest(request);

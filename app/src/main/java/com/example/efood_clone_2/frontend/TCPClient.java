@@ -28,7 +28,7 @@ import java.util.concurrent.Executors;
 
 public class TCPClient {
     private static final String TAG = "TCPClient";
-    private static final String SERVER_HOST = "10.0.2.2"; // localhost from Android emulator
+    private static final String SERVER_HOST = "10.0.2.2";
     private static final int SERVER_PORT = 8080;
     private final Handler mainHandler;
     private final ExecutorService executor;
@@ -54,127 +54,91 @@ public class TCPClient {
     }
 
     private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
-        // Haversine formula
-        final int R = 6371; // Earth radius in kilometers
-
+        final int R = 6371;
         double latDistance = Math.toRadians(lat2 - lat1);
         double lonDistance = Math.toRadians(lon2 - lon1);
-
         double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
                 + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
                 * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
-
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
         return R * c;
     }
 
-public void getNearbyStores(double latitude, double longitude, StoreListCallback callback) {
-    executor.execute(() -> {
-        try {
-            // Connect to the server
-            Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
-            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-
-            // Send the request
-            String request = String.format("FIND_STORES_WITHIN_RANGE %f,%f", latitude, longitude);
-            out.println(request);
-
-            // Read and parse the JSON response
-            StringBuilder responseBuilder = new StringBuilder();
-            String line;
-            while ((line = in.readLine()) != null) {
-                if (line.equals("END")) break;
-                responseBuilder.append(line);
-            }
-
-            String response = responseBuilder.toString();
-            List<Store> stores = new ArrayList<>();
-
-            // Check if response is a JSON array
-            if (response.startsWith("[") && response.endsWith("]")) {
-                try {
-                    // Parse the JSON array of stores
-                    JSONArray storesArray = new JSONArray(response);
-                    for (int i = 0; i < storesArray.length(); i++) {
-                        JSONObject storeJson = storesArray.getJSONObject(i);
-                        Store store = Store.JsonToStore(storeJson.toString());
-
-                        // Ensure distance is calculated if not set
-                        if (store.getDistance() == 0) {
-                            double distance = calculateDistance(latitude, longitude,
-                                    store.getLatitude(), store.getLongitude());
-                            store.setDistance(distance);
-                        }
-
-                        stores.add(store);
-                    }
-                } catch (JSONException e) {
-                    Log.e(TAG, "Error parsing JSON: " + e.getMessage(), e);
-                    mainHandler.post(() -> callback.onError("Error parsing store data"));
-                    socket.close();
-                    return;
+    public void getNearbyStores(double latitude, double longitude, StoreListCallback callback) {
+        executor.execute(() -> {
+            try {
+                Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
+                PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+                BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                String request = String.format("FIND_STORES_WITHIN_RANGE %f,%f", latitude, longitude);
+                out.println(request);
+                StringBuilder responseBuilder = new StringBuilder();
+                String line;
+                while ((line = in.readLine()) != null) {
+                    if (line.equals("END")) break;
+                    responseBuilder.append(line);
                 }
-            } else {
-                // Legacy format: parse individual store JSON objects
-                String[] storeJsonStrings = response.split("\\|");
-                for (String storeStr : storeJsonStrings) {
-                    if (!storeStr.isEmpty()) {
-                        try {
-                            Store store = Store.JsonToStore(storeStr);
-
-                            // Calculate distance if not set
+                String response = responseBuilder.toString();
+                List<Store> stores = new ArrayList<>();
+                if (response.startsWith("[") && response.endsWith("]")) {
+                    try {
+                        JSONArray storesArray = new JSONArray(response);
+                        for (int i = 0; i < storesArray.length(); i++) {
+                            JSONObject storeJson = storesArray.getJSONObject(i);
+                            Store store = Store.JsonToStore(storeJson.toString());
                             if (store.getDistance() == 0) {
                                 double distance = calculateDistance(latitude, longitude,
                                         store.getLatitude(), store.getLongitude());
                                 store.setDistance(distance);
                             }
-
                             stores.add(store);
-                        } catch (JSONException e) {
-                            Log.e(TAG, "Error parsing store: " + e.getMessage());
+                        }
+                    } catch (JSONException e) {
+                        Log.e(TAG, "Error parsing JSON: " + e.getMessage(), e);
+                        mainHandler.post(() -> callback.onError("Error parsing store data"));
+                        socket.close();
+                        return;
+                    }
+                } else {
+                    String[] storeJsonStrings = response.split("\\|");
+                    for (String storeStr : storeJsonStrings) {
+                        if (!storeStr.isEmpty()) {
+                            try {
+                                Store store = Store.JsonToStore(storeStr);
+                                if (store.getDistance() == 0) {
+                                    double distance = calculateDistance(latitude, longitude,
+                                            store.getLatitude(), store.getLongitude());
+                                    store.setDistance(distance);
+                                }
+                                stores.add(store);
+                            } catch (JSONException e) {
+                                Log.e(TAG, "Error parsing store: " + e.getMessage());
+                            }
                         }
                     }
                 }
+                Collections.sort(stores, (s1, s2) -> Double.compare(s1.getDistance(), s2.getDistance()));
+                for (Store store : stores) {
+                    Log.d(TAG, "Store: " + store.getStoreName() + ", Distance: " + store.getFormattedDistance());
+                }
+                mainHandler.post(() -> callback.onStoresReceived(stores));
+                socket.close();
+            } catch (IOException e) {
+                Log.e(TAG, "Error connecting to server: " + e.getMessage(), e);
+                mainHandler.post(() -> callback.onError("Network error: " + e.getMessage()));
             }
-
-            // Sort stores by distance
-            Collections.sort(stores, (s1, s2) -> Double.compare(s1.getDistance(), s2.getDistance()));
-
-            // Log store distances for debugging
-            for (Store store : stores) {
-                Log.d(TAG, "Store: " + store.getStoreName() + ", Distance: " + store.getFormattedDistance());
-            }
-
-            // Send the result back to the main thread
-            mainHandler.post(() -> callback.onStoresReceived(stores));
-
-            // Clean up
-            socket.close();
-        } catch (IOException e) {
-            Log.e(TAG, "Error connecting to server: " + e.getMessage(), e);
-            mainHandler.post(() -> callback.onError("Network error: " + e.getMessage()));
-        }
-    });
-}
+        });
+    }
 
     public void getFilteredStores(Map<String, List<String>> filters, double latitude, double longitude,
                                   StoreListCallback callback) {
         new Thread(() -> {
             try {
-                // Create connection
                 Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
                 PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-
-                // Prepare filter string
                 StringBuilder request = new StringBuilder("FILTER_STORES ");
-
-                // Append location
                 request.append(latitude).append(",").append(longitude).append(";");
-
-                // Append filters
                 for (Map.Entry<String, List<String>> entry : filters.entrySet()) {
                     if (!entry.getValue().isEmpty()) {
                         request.append(entry.getKey()).append(":");
@@ -187,42 +151,28 @@ public void getNearbyStores(double latitude, double longitude, StoreListCallback
                         request.append(";");
                     }
                 }
-
                 String requestStr = request.toString();
                 Log.d(TAG, "Sending filter request: " + requestStr);
-
-                // Send request
                 out.println(requestStr);
-
-                // Parse the response
                 StringBuilder responseBuilder = new StringBuilder();
                 String line;
                 while ((line = in.readLine()) != null) {
                     if (line.equals("END")) break;
                     responseBuilder.append(line).append("\n");
                 }
-
-                // Check if response is a JSON array
                 String response = responseBuilder.toString().trim();
                 Log.d(TAG, "Filter response: " + response);
-
                 List<Store> stores = new ArrayList<>();
-
                 if (response.isEmpty() || response.equals("No stores found with the specified filters.")) {
-                    // Empty result, just return empty list
-                    Log.d(TAG, "No stores found");
                 } else if (response.startsWith("[") && response.endsWith("]")) {
-                    // Parse JSON array
                     try {
                         JSONArray jsonArray = new JSONArray(response);
                         for (int i = 0; i < jsonArray.length(); i++) {
                             JSONObject storeJson = jsonArray.getJSONObject(i);
                             Store store = Store.JsonToStore(storeJson.toString());
-
-                            // Ensure distance is calculated
                             if (store.getDistance() == 0) {
                                 double distance = calculateDistance(latitude, longitude,
-                                    store.getLatitude(), store.getLongitude());
+                                        store.getLatitude(), store.getLongitude());
                                 store.setDistance(distance);
                             }
                             stores.add(store);
@@ -231,17 +181,14 @@ public void getNearbyStores(double latitude, double longitude, StoreListCallback
                         Log.e(TAG, "Error parsing JSON array: " + e.getMessage());
                     }
                 } else {
-                    // Try to parse individual store JSON objects (one per line)
                     String[] storeJsons = response.split("\n");
                     for (String storeJson : storeJsons) {
                         if (!storeJson.trim().isEmpty()) {
                             try {
-                                // Check if it looks like JSON before trying to parse
                                 if (storeJson.trim().startsWith("{") && storeJson.trim().endsWith("}")) {
                                     Store store = Store.JsonToStore(storeJson);
-                                    // Calculate distance
                                     double distance = calculateDistance(latitude, longitude,
-                                        store.getLatitude(), store.getLongitude());
+                                            store.getLatitude(), store.getLongitude());
                                     store.setDistance(distance);
                                     stores.add(store);
                                 } else {
@@ -253,27 +200,18 @@ public void getNearbyStores(double latitude, double longitude, StoreListCallback
                         }
                     }
                 }
-
-                // Sort stores by distance
                 if (!stores.isEmpty()) {
                     Collections.sort(stores, (s1, s2) -> Double.compare(s1.getDistance(), s2.getDistance()));
-
-                    // Log store distances
                     for (Store store : stores) {
                         Log.d(TAG, "Store: " + store.getStoreName() + ", Distance: " + store.getFormattedDistance());
                     }
                 }
-
-                // Close resources
                 in.close();
                 out.close();
                 socket.close();
-
-                // Return results on the main thread
                 Handler mainHandler = new Handler(Looper.getMainLooper());
                 List<Store> finalStores = stores;
                 mainHandler.post(() -> callback.onStoresReceived(finalStores));
-
             } catch (Exception e) {
                 Log.e(TAG, "Error in getFilteredStores: " + e.getMessage(), e);
                 Handler mainHandler = new Handler(Looper.getMainLooper());
@@ -287,36 +225,26 @@ public void getNearbyStores(double latitude, double longitude, StoreListCallback
             try (Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
                  PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
                  BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
-
                 Log.d(TAG, "Requesting store details for: " + storeName);
-
-                // Request store details with GET_STORE_DETAILS command
                 out.println("GET_STORE_DETAILS " + storeName);
-
-                // Read the response which should be a JSON store object
                 StringBuilder response = new StringBuilder();
                 String line;
                 while ((line = in.readLine()) != null && !line.equals("END")) {
                     response.append(line);
                 }
-
                 String jsonResponse = response.toString();
                 Log.d(TAG, "Received store details: " + jsonResponse);
-
                 if (jsonResponse.isEmpty() || jsonResponse.contains("Store not found")) {
                     mainHandler.post(() -> callback.onError("Store details not found: " + storeName));
                     return;
                 }
-
                 try {
-                    // Parse the JSON into a Store object with products
                     Store store = Store.JsonToStore(jsonResponse);
                     mainHandler.post(() -> callback.onStoreDetailsReceived(store));
                 } catch (JSONException e) {
                     Log.e(TAG, "Error parsing store JSON: " + e.getMessage(), e);
                     mainHandler.post(() -> callback.onError("Error parsing store data: " + e.getMessage()));
                 }
-
             } catch (IOException e) {
                 Log.e(TAG, "Network error getting store details: " + e.getMessage(), e);
                 mainHandler.post(() -> callback.onError("Network error: " + e.getMessage()));
@@ -324,32 +252,23 @@ public void getNearbyStores(double latitude, double longitude, StoreListCallback
         });
     }
 
-    // Method to make a purchase
     public void purchaseProduct(String storeName, String productName, int quantity, ResultCallback callback) {
         executor.execute(() -> {
             try (Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
                  PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
                  BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
-
                 Log.d(TAG, "Sending purchase request - Store: " + storeName +
-                            ", Product: " + productName + ", Quantity: " + quantity);
-
-                // Format: BUY storeName,productName,quantity
+                        ", Product: " + productName + ", Quantity: " + quantity);
                 String buyCommand = String.format("BUY %s,%s,%d", storeName, productName, quantity);
                 out.println(buyCommand);
-
-                // Read response
                 StringBuilder response = new StringBuilder();
                 String line;
                 while ((line = in.readLine()) != null && !line.equals("END")) {
                     response.append(line).append("\n");
                 }
-
                 String result = response.toString().trim();
                 Log.d(TAG, "Purchase result: " + result);
-
                 mainHandler.post(() -> callback.onSuccess(result));
-
             } catch (IOException e) {
                 Log.e(TAG, "Error during purchase: " + e.getMessage(), e);
                 mainHandler.post(() -> callback.onError("Network error: " + e.getMessage()));
@@ -358,13 +277,8 @@ public void getNearbyStores(double latitude, double longitude, StoreListCallback
     }
 
     public void buy(String compactFormString) {
-        // Convert the compact format to a map of store name -> (product name -> quantity)
         Map<String, Map<String, Integer>> purchaseMap = compactToBuyFormat(compactFormString);
-
-        // Debug log
         Log.d(TAG, "Processing purchases from: " + compactFormString);
-
-        // Create a simple callback for purchase results
         ResultCallback callback = new ResultCallback() {
             @Override
             public void onSuccess(String message) {
@@ -376,22 +290,14 @@ public void getNearbyStores(double latitude, double longitude, StoreListCallback
                 Log.e(TAG, "Purchase error: " + error);
             }
         };
-
-        // Process each store's purchases
         for (Map.Entry<String, Map<String, Integer>> storeEntry : purchaseMap.entrySet()) {
             String storeName = storeEntry.getKey();
             Map<String, Integer> products = storeEntry.getValue();
-
-            // Process each product in this store
             for (Map.Entry<String, Integer> productEntry : products.entrySet()) {
                 String productName = productEntry.getKey();
                 int quantity = productEntry.getValue();
-
-                // Log the purchase being made
                 Log.d(TAG, "Purchasing - Store: " + storeName +
-                      ", Product: " + productName + ", Quantity: " + quantity);
-
-                // Call the purchaseProduct method to send the BUY command
+                        ", Product: " + productName + ", Quantity: " + quantity);
                 purchaseProduct(storeName, productName, quantity, callback);
             }
         }
@@ -399,34 +305,21 @@ public void getNearbyStores(double latitude, double longitude, StoreListCallback
 
     private Map<String, Map<String, Integer>> compactToBuyFormat(String compactForm) {
         Map<String, Map<String, Integer>> purchaseMap = new HashMap<>();
-
-        // Add debug log to see the input string
         System.out.println("Parsing: " + compactForm);
-
-        // Split by store delimiter |
         String[] storeEntries = compactForm.split("\\|");
         if (storeEntries.length < 2) {
             System.out.println("Invalid format: Not enough segments in " + compactForm);
-            return purchaseMap; // Return empty map if format invalid
+            return purchaseMap;
         }
-
         String storeName = storeEntries[0].trim();
         Map<String, Integer> productMap = new HashMap<>();
-
-        // Get the product segment (everything after the first |)
         String productSegment = storeEntries[1].trim();
-
-        // Split products by # delimiter
         String[] productEntries = productSegment.split("#");
-
-        // Process each product entry (format: quantity*"productName")
         for (String productEntry : productEntries) {
             String[] parts = productEntry.split("\\*");
-
             if (parts.length == 2) {
                 try {
                     int quantity = Integer.parseInt(parts[0].trim());
-                    // Remove surrounding quotes if present
                     String productName = parts[1].trim().replaceAll("^\"|\"$", "");
                     productMap.put(productName, quantity);
                 } catch (NumberFormatException e) {
@@ -434,31 +327,22 @@ public void getNearbyStores(double latitude, double longitude, StoreListCallback
                 }
             }
         }
-
         if (!productMap.isEmpty()) {
             purchaseMap.put(storeName, productMap);
         }
-
-        // Debug log the result
         System.out.println("Parsed map size: " + purchaseMap.size());
-
         return purchaseMap;
     }
 
     public void sendReview(String storeName, int rating) {
         new Thread(() -> {
             try {
-                // Connect to master server
                 Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
                 PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-
-                // Send review command
                 String command = "REVIEW " + storeName + "," + rating;
                 System.out.println("TCPClient " + "Sending review command: " + command);
                 out.println(command);
-
-                // Read response
                 String response;
                 while ((response = in.readLine()) != null) {
                     if (response.equals("END")) {
@@ -466,13 +350,10 @@ public void getNearbyStores(double latitude, double longitude, StoreListCallback
                     }
                     System.out.println("TCPClient received: " + response);
                 }
-
-                // Close connection
                 socket.close();
             } catch (IOException e) {
                 System.err.println("Error sending review: " + e.getMessage());
             }
         }).start();
     }
-
 }

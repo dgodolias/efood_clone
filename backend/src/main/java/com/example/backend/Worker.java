@@ -211,7 +211,7 @@ class WorkerThread extends Thread {
                                 if (matchesFilters(s, filters)) {
                                     try {
                                         String storeJson = Store.StoreToJson(s);
-                                        // Compact the JSON
+
                                         storeJson = storeJson.replaceAll("\\s*\\n\\s*", "").replaceAll("\\s+", " ").trim();
 
                                         if (!firstStore) {
@@ -235,26 +235,24 @@ class WorkerThread extends Thread {
                         case "FIND_STORES_WITHIN_RANGE":
                                 String[] coordinates = data.split(",");
                                 if (coordinates.length != 2) {
-                                    out.println("[]");  // Return empty JSON array
+                                    out.println("[]");
                                     continue;
                                 }
 
                                 double latt = Double.parseDouble(coordinates[0]);
                                 double longt = Double.parseDouble(coordinates[1]);
 
-                                // Using StringBuilder to construct the JSON array of stores
                                 StringBuilder nearbyStoresJson = new StringBuilder("[");
                                 boolean firstNearbyStore = true;
 
                                 for (Store s : stores.values()) {
                                     double distance = calculateDistance(latt, longt, s.getLatitude(), s.getLongitude());
-                                    if (distance <= 5.0) { // 5km range
-                                        // Set the distance in the store object
+                                    if (distance <= 5.0) {
                                         s.setDistance(distance);
 
                                         try {
                                             String storeJson = Store.StoreToJson(s);
-                                            // Compact the JSON
+
                                             storeJson = storeJson.replaceAll("\\s*\\n\\s*", "").replaceAll("\\s+", " ").trim();
 
                                             if (!firstNearbyStore) {
@@ -278,7 +276,6 @@ class WorkerThread extends Thread {
                             String requestedStoreName = parts.length > 1 ? parts[1].trim() : "";
                             Store foundStore = null;
 
-                            // Find the store by name using the Map's values
                             for (Store s : stores.values()) {
                                 if (s.getStoreName().equals(requestedStoreName) ||
                                     ("\"" + s.getStoreName() + "\"").equals(requestedStoreName)) {
@@ -290,10 +287,9 @@ class WorkerThread extends Thread {
                             if (foundStore == null) {
                                 out.println("Error: Store not found");
                             } else {
-                                // Convert store to JSON and send it as a compact string
                                 try {
                                     String storeJson = Store.StoreToJson(foundStore);
-                                    // Compact the JSON by removing newlines and extra spaces
+
                                     storeJson = storeJson.replaceAll("\\s*\\n\\s*", "").replaceAll("\\s+", " ").trim();
                                     System.out.println("Sending store details from Worker: " + storeJson);
                                     out.println(storeJson);
@@ -312,7 +308,6 @@ class WorkerThread extends Thread {
                             String reviewStoreName = reviewParts[0].trim();
                             int reviewRating = Integer.parseInt(reviewParts[1].trim());
 
-                            // Find store
                             Store reviewStore = null;
                             for (Store s : stores.values()) {
                                 if (s.getStoreName().equals(reviewStoreName) ||
@@ -327,19 +322,17 @@ class WorkerThread extends Thread {
                                 continue;
                             }
 
-                            // Update store rating based on weighted average
+
                             float currentStars = reviewStore.getStars();
                             int currentVotes = reviewStore.getNoOfVotes();
 
-                            // Calculate new rating (weighted average)
                             double totalRatingPoints = currentStars * currentVotes + reviewRating;
                             int newVotes = currentVotes + 1;
                             double newRating = totalRatingPoints / newVotes;
 
-                            // Round to 2 decimal places and store as float
+
                             float roundedRating = (float) Math.round(newRating * 100) / 100;
 
-                            // Update store
                             reviewStore.setStars(roundedRating);
                             reviewStore.setNoOfVotes(newVotes);
 
@@ -417,7 +410,7 @@ class WorkerThread extends Thread {
             if (!starsMatch) return false;
         }
 
-        // Price filter
+
         if (filters.containsKey("price") && !filters.get("price").isEmpty()) {
             boolean priceMatch = false;
             for (String price : filters.get("price")) {
@@ -434,7 +427,7 @@ class WorkerThread extends Thread {
 
     private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
         // Haversine formula
-        final int R = 6371; // Earth radius in kilometers
+        final int R = 6371;
 
         double latDistance = Math.toRadians(lat2 - lat1);
         double lonDistance = Math.toRadians(lon2 - lon1);

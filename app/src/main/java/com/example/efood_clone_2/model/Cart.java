@@ -17,14 +17,12 @@ public class Cart {
     }
 
     public void addItem(Product product, int quantity) {
-        // Check if product already exists in cart
         for (CartItem item : items) {
             if (item.getProduct().getProductName().equals(product.getProductName())) {
                 item.setQuantity(item.getQuantity() + quantity);
                 return;
             }
         }
-        // If not found, add new item
         items.add(new CartItem(product, quantity));
     }
 

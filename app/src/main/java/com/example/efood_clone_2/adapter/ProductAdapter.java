@@ -53,21 +53,20 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ViewHold
         holder.tvProductType.setText(product.getProductType());
         holder.tvProductAvailability.setText("Available: " + product.getAvailableAmount());
 
-        // Reset quantity when binding
+
         holder.quantity = 1;
         holder.tvQuantity.setText(String.valueOf(holder.quantity));
 
-        // Check current quantity in cart for this product
         int quantityInCart = getQuantityInCart(product);
 
-        // Set initial state of plus button based on availability
+
         updatePlusButtonState(holder, product);
 
         holder.btnMinus.setOnClickListener(v -> {
             if (holder.quantity > 1) {
                 holder.quantity--;
                 holder.tvQuantity.setText(String.valueOf(holder.quantity));
-                // Enable plus button if it was disabled
+
                 updatePlusButtonState(holder, product);
             }
         });
@@ -77,7 +76,7 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ViewHold
             if (holder.quantity < availableForSelection) {
                 holder.quantity++;
                 holder.tvQuantity.setText(String.valueOf(holder.quantity));
-                // Check if we need to disable the plus button
+
                 updatePlusButtonState(holder, product);
             } else {
                 Toast.makeText(v.getContext(), "Cannot add more than available stock", Toast.LENGTH_SHORT).show();
@@ -85,18 +84,18 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ViewHold
         });
 
         holder.btnAddToCart.setOnClickListener(v -> {
-            // Validate against available quantity (considering cart)
+
             int quantityToAdd = holder.quantity;
             int totalRequestedQuantity = quantityInCart + quantityToAdd;
 
             if (totalRequestedQuantity <= product.getAvailableAmount()) {
-                // Add to cart
+
                 Cart.getInstance().addItem(product, quantityToAdd);
-                // Notify that cart was updated
+
                 cartUpdateListener.onCartUpdated();
-                // Collapse the expandable view
+
                 holder.expandableLayout.setVisibility(View.GONE);
-                // Show success message
+
                 Toast.makeText(v.getContext(),
                         quantityToAdd + " " + product.getProductName() + " added to cart",
                         Toast.LENGTH_SHORT).show();
@@ -107,7 +106,7 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ViewHold
             }
         });
 
-        // Handle item click to expand/collapse
+
         holder.itemView.setOnClickListener(v -> {
             if (holder.expandableLayout.getVisibility() == View.VISIBLE) {
                 holder.expandableLayout.setVisibility(View.GONE);
@@ -124,7 +123,7 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ViewHold
         int quantityInCart = getQuantityInCart(product);
         int availableForSelection = product.getAvailableAmount() - quantityInCart;
 
-        // Disable the plus button if current quantity equals max available
+
         holder.btnPlus.setEnabled(holder.quantity < availableForSelection);
         holder.btnPlus.setAlpha(holder.quantity < availableForSelection ? 1.0f : 0.5f);
     }

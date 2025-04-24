@@ -13,19 +13,17 @@ public class BootingActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_booting);
 
-        // Find the ImageView
+
         ImageView imageView = findViewById(R.id.imageView);
 
-        // Create fade-in animation
         AlphaAnimation fadeIn = new AlphaAnimation(0.0f, 1.0f);
-        fadeIn.setDuration(1500); // 1.5 seconds
+        fadeIn.setDuration(1500);
         imageView.startAnimation(fadeIn);
 
-        // Navigate to HomeActivity after 2.5 seconds
         new Handler().postDelayed(() -> {
             Intent intent = new Intent(BootingActivity.this, HomeActivity.class);
             startActivity(intent);
-            finish(); // Close splash screen
-        }, 2500); // 1.5s fade + 1s wait
+            finish();
+        }, 2500);
     }
 }
