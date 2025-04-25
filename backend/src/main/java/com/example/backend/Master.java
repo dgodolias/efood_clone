@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit;
 
 public class Master {
     private static final int PORT = 8080;
-    private static final int REPLICATION_FACTOR = 2;
+    private static final int REPLICATION_FACTOR = 3;
     private List<WorkerConnection> workers;
     private List<Process> workerProcesses;
     private Map<String, List<WorkerConnection>> storeToWorkers;

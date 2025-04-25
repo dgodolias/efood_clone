@@ -250,6 +250,8 @@ class WorkerThread extends Thread {
 
                                 for (Store s : stores.values()) {
                                     double distance = calculateDistance(latt, longt, s.getLatitude(), s.getLongitude());
+                                    // print stre and distance
+                                    //System.out.println("Store: " + s.getStoreName() + ", Distance: " + distance);
                                     if (distance <= 5.0) {
                                         s.setDistance(distance);
 

@@ -1,0 +1,168 @@
+[
+  {
+    "StoreName": "Dragon Wok",
+    "Latitude": 37.977777,
+    "Longitude": 23.717777,
+    "FoodCategory": "chinese",
+    "Stars": 3.0,
+    "NoOfVotes": 16,
+    "StoreLogo": "app/src/main/assets/logos/dragon_wok.png",
+    "PriceCategory": "$$",
+    "Products": [
+      {"ProductName": "Sweet and Sour Pork", "ProductType": "chinese", "Available Amount": 1600, "Price": 10.5},
+      {"ProductName": "Fried Rice", "ProductType": "rice", "Available Amount": 2000, "Price": 7.0},
+      {"ProductName": "Egg Roll", "ProductType": "appetizer", "Available Amount": 1500, "Price": 3.0}
+    ]
+  },
+  {
+    "StoreName": "Steak House Supreme",
+    "Latitude": 40.002345,
+    "Longitude": 20.742345,
+    "FoodCategory": "meat",
+    "Stars": 5.0,
+    "NoOfVotes": 38,
+    "StoreLogo": "app/src/main/assets/logos/steak_house.png",
+    "PriceCategory": "$$$",
+    "Products": [
+      {"ProductName": "Ribeye Steak", "ProductType": "steak", "Available Amount": 500, "Price": 25.0},
+      {"ProductName": "Filet Mignon", "ProductType": "steak", "Available Amount": 400, "Price": 30.0},
+      {"ProductName": "Baked Potato", "ProductType": "side", "Available Amount": 800, "Price": 4.0}
+    ]
+  },
+  {
+    "StoreName": "Burger Bonanza",
+    "Latitude": 37.987654,
+    "Longitude": 23.725678,
+    "FoodCategory": "burger",
+    "Stars": 3.0,
+    "NoOfVotes": 18,
+    "StoreLogo": "app/src/main/assets/logos/burger_bonanza.png",
+    "PriceCategory": "$$",
+    "Products": [
+      {"ProductName": "Classic Burger", "ProductType": "burger", "Available Amount": 2000, "Price": 7.5},
+      {"ProductName": "Cheeseburger", "ProductType": "burger", "Available Amount": 1500, "Price": 8.5},
+      {"ProductName": "Fries", "ProductType": "side", "Available Amount": 1000, "Price": 3.0}
+    ]
+  },
+  {
+    "StoreName": "Ice Cream Dream",
+    "Latitude": 40.988888,
+    "Longitude": 20.728888,
+    "FoodCategory": "icecream",
+    "Stars": 3.0,
+    "NoOfVotes": 14,
+    "StoreLogo": "app/src/main/assets/logos/ice_cream_dream.png",
+    "PriceCategory": "$",
+    "Products": [
+      {"ProductName": "Vanilla Scoop", "ProductType": "icecream", "Available Amount": 3000, "Price": 2.5},
+      {"ProductName": "Chocolate Scoop", "ProductType": "icecream", "Available Amount": 2800, "Price": 2.5},
+      {"ProductName": "Sundae", "ProductType": "icecream", "Available Amount": 1000, "Price": 6.0}
+    ]
+  },
+  {
+    "StoreName": "Salad Sensations",
+    "Latitude": 40.997777,
+    "Longitude": 20.737777,
+    "FoodCategory": "salad",
+    "Stars": 4.0,
+    "NoOfVotes": 27,
+    "StoreLogo": "app/src/main/assets/logos/salad_sensations.png",
+    "PriceCategory": "$$",
+    "Products": [
+      {"ProductName": "Chicken Caesar Salad", "ProductType": "salad", "Available Amount": 500, "Price": 8.0},
+      {"ProductName": "Cobb Salad", "ProductType": "salad", "Available Amount": 400, "Price": 9.0},
+      {"ProductName": "Soup of the Day", "ProductType": "soup", "Available Amount": 200, "Price": 5.0}
+    ]
+  },
+  {
+    "StoreName": "Pizza Palace",
+    "Latitude": 37.9932963,
+    "Longitude": 23.733413,
+    "FoodCategory": "pizza",
+    "Stars": 4.0,
+    "NoOfVotes": 25,
+    "StoreLogo": "app/src/main/assets/logos/pizza_palace.png",
+    "PriceCategory": "$$",
+    "Products": [
+      {"ProductName": "Margherita", "ProductType": "pizza", "Available Amount": 5000, "Price": 8.5},
+      {"ProductName": "Pepperoni", "ProductType": "pizza", "Available Amount": 3000, "Price": 10.0},
+      {"ProductName": "Greek Salad", "ProductType": "salad", "Available Amount": 150, "Price": 6.0}
+    ]
+  },
+  {
+    "StoreName": "Gyro Grill",
+    "Latitude": 37.975432,
+    "Longitude": 23.718901,
+    "FoodCategory": "souvlaki",
+    "Stars": 4.0,
+    "NoOfVotes": 20,
+    "StoreLogo": "app/src/main/assets/logos/gyro_grill.png",
+    "PriceCategory": "$",
+    "Products": [
+      {"ProductName": "Chicken Gyro", "ProductType": "gyro", "Available Amount": 4000, "Price": 6.0},
+      {"ProductName": "Pork Gyro", "ProductType": "gyro", "Available Amount": 3500, "Price": 6.5},
+      {"ProductName": "Tzatziki", "ProductType": "side", "Available Amount": 500, "Price": 2.5}
+    ]
+  },
+  {
+    "StoreName": "Seafood Shack",
+    "Latitude": 37.978901,
+    "Longitude": 23.715678,
+    "FoodCategory": "fish",
+    "Stars": 3.0,
+    "NoOfVotes": 15,
+    "StoreLogo": "app/src/main/assets/logos/seafood_shack.png",
+    "PriceCategory": "$$",
+    "Products": [
+      {"ProductName": "Fish and Chips", "ProductType": "seafood", "Available Amount": 2000, "Price": 13.0},
+      {"ProductName": "Shrimp Cocktail", "ProductType": "seafood", "Available Amount": 1000, "Price": 15.0},
+      {"ProductName": "Coleslaw", "ProductType": "side", "Available Amount": 300, "Price": 3.5},
+      {"ProductName": "Quinoa Salad", "ProductType": "salad", "Available Amount": 10, "Price": 8.5}
+    ]
+  },
+  {
+    "StoreName": "Juice Junction",
+    "Latitude": 37.999999,
+    "Longitude": 23.739999,
+    "FoodCategory": "juice",
+    "Stars": 4.0,
+    "NoOfVotes": 26,
+    "StoreLogo": "app/src/main/assets/logos/juice_junction.png",
+    "PriceCategory": "$$",
+    "Products": [
+      {"ProductName": "Green Detox Juice", "ProductType": "juice", "Available Amount": 800, "Price": 5.5},
+      {"ProductName": "Berry Blast Smoothie", "ProductType": "smoothie", "Available Amount": 700, "Price": 6.0},
+      {"ProductName": "Acai Bowl", "ProductType": "bowl", "Available Amount": 500, "Price": 8.0}
+    ]
+  },
+  {
+    "StoreName": "Veggie Vibes",
+    "Latitude": 37.995678,
+    "Longitude": 23.738901,
+    "FoodCategory": "salad",
+    "Stars": 5.0,
+    "NoOfVotes": 35,
+    "StoreLogo": "app/src/main/assets/logos/veggie_vibes.png",
+    "PriceCategory": "$$",
+    "Products": [
+      {"ProductName": "Veggie Burger", "ProductType": "burger", "Available Amount": 1000, "Price": 9.0},
+      {"ProductName": "Falafel Wrap", "ProductType": "wrap", "Available Amount": 800, "Price": 8.5},
+      {"ProductName": "Quinoa Salad", "ProductType": "salad", "Available Amount": 150, "Price": 6.5}
+    ]
+  },
+  {
+    "StoreName": "Burger Barn",
+    "Latitude": 37.992222,
+    "Longitude": 23.732222,
+    "FoodCategory": "burger",
+    "Stars": 4.0,
+    "NoOfVotes": 23,
+    "StoreLogo": "app/src/main/assets/logos/burger_barn.png",
+    "PriceCategory": "$$",
+    "Products": [
+      {"ProductName": "Bacon Cheeseburger", "ProductType": "burger", "Available Amount": 1800, "Price": 9.0},
+      {"ProductName": "Mushroom Swiss Burger", "ProductType": "burger", "Available Amount": 1200, "Price": 9.5},
+      {"ProductName": "Onion Rings", "ProductType": "side", "Available Amount": 800, "Price": 3.5}
+    ]
+  }
+]

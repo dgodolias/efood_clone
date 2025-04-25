@@ -108,9 +108,10 @@ public class HomeActivity extends AppCompatActivity {
         LinearLayout starsGroup = popupView.findViewById(R.id.starsGroup);
         LinearLayout priceGroup = popupView.findViewById(R.id.priceGroup);
 
-        String[] types = {"pizza", "burger", "souvlaki", "sweet", "cooked", "coffee", "sushi",
-                          "grilled", "fish", "salad", "kebab", "chinese", "mexican", "snacks",
-                          "brunch", "sandwich", "juices"};
+        String[] types = {"pizza", "burger", "sushi", "souvlaki", "italian", "mexican",
+                "kebab", "salad", "fish", "indian", "thai", "coffee", "sweets", "icecream",
+                "chinese", "meat", "brunch", "sandwich", "juice"};
+
         addCheckboxesToGroup(typeGroup, types, "type");
 
         String[] stars = {"above 1.5", "above 2.5", "above 3.5", "above 4.5"};
