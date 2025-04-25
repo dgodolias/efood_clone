@@ -206,32 +206,63 @@ class WorkerThread extends Thread {
                             break;
 
                         case "FILTER_STORES":
-                            Map<String, List<String>> filters = parseFilterString(data);
+                            // Expected format: lat,lon;filterKey1:value1,value2;filterKey2:value3
+                            String[] filterParts = data.split(";", 2);
+                            if (filterParts.length < 2) {
+                                out.println("[]"); // Invalid format, return empty
+                                System.err.println("Worker received invalid FILTER_STORES format (missing coordinates or filters): " + data);
+                                continue;
+                            }
+                            String[] coordsPart = filterParts[0].split(",");
+                            String filterData = filterParts[1];
+
+                            if (coordsPart.length != 2) {
+                                out.println("[]"); // Invalid coordinates format
+                                System.err.println("Worker received invalid coordinates in FILTER_STORES: " + filterParts[0]);
+                                continue;
+                            }
+
+                            double filterLat, filterLon;
+                            try {
+                                filterLat = Double.parseDouble(coordsPart[0].trim());
+                                filterLon = Double.parseDouble(coordsPart[1].trim());
+                            } catch (NumberFormatException e) {
+                                out.println("[]"); // Invalid coordinate numbers
+                                System.err.println("Worker could not parse coordinates in FILTER_STORES: " + filterParts[0]);
+                                continue;
+                            }
+
+
+                            Map<String, List<String>> filters = parseFilterString(filterData);
                             StringBuilder filteredStoresJson = new StringBuilder("[");
                             boolean firstStore = true;
 
                             for (Store s : stores.values()) {
-                                if (matchesFilters(s, filters)) {
-                                    try {
-                                        String storeJson = Store.StoreToJson(s);
+                                // Check distance first
+                                double distance = calculateDistance(filterLat, filterLon, s.getLatitude(), s.getLongitude());
+                                if (distance <= 5.0) {
+                                    // If within range, check other filters
+                                    if (matchesFilters(s, filters)) {
+                                        s.setDistance(distance); // Set distance for potential display
+                                        try {
+                                            String storeJson = Store.StoreToJson(s);
+                                            storeJson = storeJson.replaceAll("\\s*\\n\\s*", "").replaceAll("\\s+", " ").trim();
 
-                                        storeJson = storeJson.replaceAll("\\s*\\n\\s*", "").replaceAll("\\s+", " ").trim();
-
-                                        if (!firstStore) {
-                                            filteredStoresJson.append(",");
-                                        } else {
-                                            firstStore = false;
+                                            if (!firstStore) {
+                                                filteredStoresJson.append(",");
+                                            } else {
+                                                firstStore = false;
+                                            }
+                                            filteredStoresJson.append(storeJson);
+                                        } catch (Exception e) {
+                                            System.err.println("Error serializing store to JSON during filtering: " + e.getMessage());
                                         }
-
-                                        filteredStoresJson.append(storeJson);
-                                    } catch (Exception e) {
-                                        System.err.println("Error serializing store to JSON: " + e.getMessage());
                                     }
                                 }
                             }
 
                             filteredStoresJson.append("]");
-                            System.out.println("Sending filtered stores as JSON array: " + filteredStoresJson.toString());
+                            System.out.println("Sending filtered (with distance) stores as JSON array: " + filteredStoresJson.toString().substring(0, Math.min(35, filteredStoresJson.length())));
                             out.println(filteredStoresJson.toString());
                             break;
 

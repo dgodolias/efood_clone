@@ -1,3 +1,9 @@
+Terminal:
 cd C:\Users\USER\Desktop\PROJECTS\efood_clone_2
 gradlew build
-java -cp backend/build/classes/java/main com.example.backend.Master 2
+java -cp backend/build/classes/java/main com.example.backend.Master
+
+Bash:
+cd /c/Users/USER/Desktop/PROJECTS/efood_clone_2
+./gradlew build
+java -cp backend/build/classes/java/main com.example.backend.Master

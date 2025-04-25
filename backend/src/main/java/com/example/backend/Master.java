@@ -224,7 +224,8 @@ private int countStoresInJsonFile() {
         heartbeatScheduler.scheduleAtFixedRate(() -> {
             for (WorkerConnection w : workers) {
                 try {
-                    w.sendRequest("PING");
+                    String response = w.sendRequest("PING"); // Capture the response
+                    System.out.println("Master received from worker " + w.getPort() + ": " + response); // Print the response
                 } catch (IOException e) {
                     System.err.println("Worker at " + w.getPort() + " is down");
                 }
