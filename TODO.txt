@@ -1,5 +1,6 @@
 -na dw to rolo paizei to workerconneciton k an einai na ot vgalw
 -na dw an prepei na mpei kwdikas sto managerconsoleapp anti twn master/worker
+-na treksw to manager
 -na aferesw to buy apo ton manager
 -dyo ksehorista arxeia reducer,master
 -na dw an kanei map reduce

@@ -4,12 +4,12 @@
     "Latitude": 37.987654,
     "Longitude": 23.725678,
     "FoodCategory": "burger",
-    "Stars": 3.11,
-    "NoOfVotes": 19,
+    "Stars": 3.0,
+    "NoOfVotes": 18,
     "StoreLogo": "app/src/main/assets/logos/burger_bonanza.png",
     "PriceCategory": "$$",
     "Products": [
-      {"ProductName": "Classic Burger", "ProductType": "burger", "Available Amount": 1999, "Price": 7.5},
+      {"ProductName": "Classic Burger", "ProductType": "burger", "Available Amount": 2000, "Price": 7.5},
       {"ProductName": "Cheeseburger", "ProductType": "burger", "Available Amount": 1500, "Price": 8.5},
       {"ProductName": "Fries", "ProductType": "side", "Available Amount": 1000, "Price": 3.0}
     ]

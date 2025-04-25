@@ -527,87 +527,93 @@ class MasterThread extends Thread {
                         break;
 
                     // ########################### CLIENT COMMANDS ###########################
-case "FIND_STORES_WITHIN_RANGE":
-    String[] coords = data.split(",");
-    if (coords.length != 2) {
-        out.println("Invalid coordinates format");
-        out.println("END");
-        continue;
-    }
-
-    StringBuilder combinedStoresJson = new StringBuilder("[");
-    boolean firstStore = true;
-    Set<String> addedStoreNames = new HashSet<>(); // Track stores we've already added
-
-    for (WorkerConnection worker : workers) {
-        try {
-            String response = worker.sendRequest("FIND_STORES_WITHIN_RANGE " + data);
-            if (response != null && !response.isEmpty() && response.startsWith("[") && response.endsWith("]")) {
-                // Extract store objects from the JSON array
-                String storesContent = response.substring(1, response.length() - 1).trim();
-                if (!storesContent.isEmpty()) {
-                    // Split by valid JSON objects
-                    List<String> storeObjects = splitJsonObjects(storesContent);
-
-                    for (String storeJson : storeObjects) {
-                        // Extract store name to check for duplicates
-                        String sName = extractField(storeJson, "StoreName");
-                        if (!addedStoreNames.contains(sName)) {
-                            if (!firstStore) {
-                                combinedStoresJson.append(",");
-                            } else {
-                                firstStore = false;
-                            }
-                            combinedStoresJson.append(storeJson);
-                            addedStoreNames.add(sName);
+                    case "FIND_STORES_WITHIN_RANGE":
+                        String[] coords = data.split(",");
+                        if (coords.length != 2) {
+                            out.println("Invalid coordinates format");
+                            out.println("END");
+                            continue;
                         }
-                    }
-                }
-            }
-        } catch (IOException e) {
-            System.err.println("Error communicating with worker: " + e.getMessage());
-        }
-    }
 
-    combinedStoresJson.append("]");
-    out.println(combinedStoresJson.toString());
-    out.println("END");
-    break;
-                    case "FILTER_STORES":
-                        System.out.println("Processing filter request: " + data);
-
-
-                        Map<String, List<String>> filters = parseFilterString(data);
-
-                        List<String> filteredStores = new ArrayList<>();
-                        Set<String> processedStoreNames = new HashSet<>();
+                        StringBuilder combinedStoresJson = new StringBuilder("[");
+                        boolean firstStore = true;
+                        Set<String> addedStoreNames = new HashSet<>(); // Track stores we've already added
 
                         for (WorkerConnection worker : workers) {
                             try {
-                                String response = worker.sendRequest(request);
-                                if (response != null && !response.isEmpty()) {
-                                    String[] stores = response.split("\\|");
-                                    for (String store : stores) {
-                                        if (!store.isEmpty() && !processedStoreNames.contains(store)) {
-                                            filteredStores.add(store);
-                                            processedStoreNames.add(store);
+                                String response = worker.sendRequest("FIND_STORES_WITHIN_RANGE " + data);
+                                if (response != null && !response.isEmpty() && response.startsWith("[") && response.endsWith("]")) {
+                                    // Extract store objects from the JSON array
+                                    String storesContent = response.substring(1, response.length() - 1).trim();
+                                    if (!storesContent.isEmpty()) {
+                                        // Split by valid JSON objects
+                                        List<String> storeObjects = splitJsonObjects(storesContent);
+
+                                        for (String storeJson : storeObjects) {
+                                            // Extract store name to check for duplicates
+                                            String sName = extractField(storeJson, "StoreName");
+                                            if (!addedStoreNames.contains(sName)) {
+                                                if (!firstStore) {
+                                                    combinedStoresJson.append(",");
+                                                } else {
+                                                    firstStore = false;
+                                                }
+                                                combinedStoresJson.append(storeJson);
+                                                addedStoreNames.add(sName);
+                                            }
                                         }
                                     }
                                 }
                             } catch (IOException e) {
-                                System.err.println("Error communicating with worker for filter: " + e.getMessage());
+                                System.err.println("Error communicating with worker: " + e.getMessage());
                             }
                         }
 
-                        if (filteredStores.isEmpty()) {
-                            out.println("No stores found with the specified filters.");
-                        } else {
-                            for (String store : filteredStores) {
-                                out.println(store);
-                            }
-                        }
+                        combinedStoresJson.append("]");
+                        out.println(combinedStoresJson.toString());
                         out.println("END");
                         break;
+                    case "FILTER_STORES":
+                            System.out.println("Processing filter request: " + data);
+                            Map<String, List<String>> filters = parseFilterString(data);
+
+                            List<String> individualStores = new ArrayList<>();
+                            Set<String> processedStoreNames = new HashSet<>();
+
+                            for (WorkerConnection worker : workers) {
+                                try {
+                                    String response = worker.sendRequest(request);
+                                    if (response != null && !response.isEmpty()) {
+                                        // Check if response is a JSON array
+                                        if (response.startsWith("[") && response.endsWith("]")) {
+                                            // Extract individual store objects from the array
+                                            List<String> storeObjects = splitJsonObjects(
+                                                response.substring(1, response.length() - 1).trim()
+                                            );
+
+                                            for (String storeJson : storeObjects) {
+                                                String sName = extractField(storeJson, "StoreName");
+                                                if (!processedStoreNames.contains(sName)) {
+                                                    individualStores.add(storeJson);
+                                                    processedStoreNames.add(sName);
+                                                }
+                                            }
+                                        }
+                                    }
+                                } catch (IOException e) {
+                                    System.err.println("Error communicating with worker for filter: " + e.getMessage());
+                                }
+                            }
+
+                            if (individualStores.isEmpty()) {
+                                out.println("No stores found with the specified filters.");
+                            } else {
+                                for (String store : individualStores) {
+                                    out.println(store);
+                                }
+                            }
+                            out.println("END");
+                            break;
                     case "BUY":
                         String[] buyParts = data.split(",");
                         if (buyParts.length < 3) {

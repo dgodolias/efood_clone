@@ -388,11 +388,13 @@ class WorkerThread extends Thread {
     }
 
     private boolean matchesFilters(Store store, Map<String, List<String>> filters) {
-        // Type filter
+
         if (filters.containsKey("type") && !filters.get("type").isEmpty()) {
             boolean typeMatch = false;
             for (String type : filters.get("type")) {
-                if (store.getFoodCategory().equalsIgnoreCase(type)) {
+
+                String foodCategory = store.getFoodCategory().replaceAll("^\"|\"$", "");
+                if (foodCategory.equalsIgnoreCase(type)) {
                     typeMatch = true;
                     break;
                 }
@@ -400,7 +402,7 @@ class WorkerThread extends Thread {
             if (!typeMatch) return false;
         }
 
-        // Stars filter
+
         if (filters.containsKey("stars") && !filters.get("stars").isEmpty()) {
             boolean starsMatch = false;
             for (String starsFilter : filters.get("stars")) {
