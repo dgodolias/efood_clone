@@ -19,13 +19,13 @@
     "Latitude": 37.987654,
     "Longitude": 23.725678,
     "FoodCategory": "burger",
-    "Stars": 3.11,
+    "Stars": 3.0,
     "NoOfVotes": 19,
     "StoreLogo": "app/src/main/assets/logos/burger_bonanza.png",
     "PriceCategory": "$$",
     "Products": [
       {"ProductName": "Classic Burger", "ProductType": "burger", "Available Amount": 1999, "Price": 7.5},
-      {"ProductName": "Cheeseburger", "ProductType": "burger", "Available Amount": 1500, "Price": 8.5},
+      {"ProductName": "Cheeseburger", "ProductType": "burger", "Available Amount": 1499, "Price": 8.5},
       {"ProductName": "Fries", "ProductType": "side", "Available Amount": 1000, "Price": 3.0}
     ]
   },
@@ -82,11 +82,11 @@
     "Stars": 5.0,
     "NoOfVotes": 30,
     "StoreLogo": "app/src/main/assets/logos/sushi_spot.png",
-    "PriceCategory": "$$",
+    "PriceCategory": "$$$",
     "Products": [
       {"ProductName": "California Roll", "ProductType": "sushi", "Available Amount": 800, "Price": 12.0},
       {"ProductName": "Spicy Tuna", "ProductType": "sushi", "Available Amount": 600, "Price": 14.0},
-      {"ProductName": "Miso Soup", "ProductType": "soup", "Available Amount": 200, "Price": 4.5}
+      {"ProductName": "Miso Soup", "ProductType": "soup", "Available Amount": 200, "Price": 24.5}
     ]
   },
   {
@@ -181,6 +181,21 @@
     ]
   },
   {
+    "StoreName": "Dessert Delight",
+    "Latitude": 37.989012,
+    "Longitude": 23.731234,
+    "FoodCategory": "desserts",
+    "Stars": 4.0,
+    "NoOfVotes": 28,
+    "StoreLogo": "/usr/bin/images/dessert_delight.png",
+    "PriceCategory": "$",
+    "Products": [
+      {"ProductName": "Chocolate Cake", "ProductType": "dessert", "Available Amount": 500, "Price": 5.0},
+      {"ProductName": "Cheesecake", "ProductType": "dessert", "Available Amount": 400, "Price": 6.0},
+      {"ProductName": "Ice Cream", "ProductType": "dessert", "Available Amount": 600, "Price": 4.0}
+    ]
+  },
+  {
     "StoreName": "Pizza Planet",
     "Latitude": 37.981111,
     "Longitude": 23.721111,
@@ -245,14 +260,16 @@
     "Latitude": 37.992222,
     "Longitude": 23.732222,
     "FoodCategory": "burger",
-    "Stars": 4.0,
-    "NoOfVotes": 23,
+    "Stars": 4.08,
+    "NoOfVotes": 27,
     "StoreLogo": "app/src/main/assets/logos/burger_barn.png",
     "PriceCategory": "$$",
     "Products": [
       {"ProductName": "Bacon Cheeseburger", "ProductType": "burger", "Available Amount": 1800, "Price": 9.0},
       {"ProductName": "Mushroom Swiss Burger", "ProductType": "burger", "Available Amount": 1200, "Price": 9.5},
-      {"ProductName": "Onion Rings", "ProductType": "side", "Available Amount": 800, "Price": 3.5}
+      {"ProductName": "Onion Rings", "ProductType": "side", "Available Amount": 796, "Price": 3.5},
+      {"ProductName": "Burger Jack Daniel's", "ProductType": "burger", "Available Amount": 15, "Price": 15.0},
+      {"ProductName": "Cheeseburger", "ProductType": "burger", "Available Amount": 19, "Price": 9.0}
     ]
   }
 ]

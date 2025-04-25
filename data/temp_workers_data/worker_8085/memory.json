@@ -37,11 +37,11 @@
     "Stars": 4.0,
     "NoOfVotes": 24,
     "StoreLogo": "app/src/main/assets/logos/thai_orchid.png",
-    "PriceCategory": "$$",
+    "PriceCategory": "$$$",
     "Products": [
       {"ProductName": "Pad Thai", "ProductType": "noodles", "Available Amount": 1500, "Price": 11.5},
       {"ProductName": "Green Curry", "ProductType": "curry", "Available Amount": 1200, "Price": 13.0},
-      {"ProductName": "Spring Rolls", "ProductType": "appetizer", "Available Amount": 800, "Price": 6.0}
+      {"ProductName": "Spring Rolls", "ProductType": "appetizer", "Available Amount": 800, "Price": 26.0}
     ]
   },
   {
@@ -132,6 +132,21 @@
       {"ProductName": "Green Detox Juice", "ProductType": "juice", "Available Amount": 800, "Price": 5.5},
       {"ProductName": "Berry Blast Smoothie", "ProductType": "smoothie", "Available Amount": 700, "Price": 6.0},
       {"ProductName": "Acai Bowl", "ProductType": "bowl", "Available Amount": 500, "Price": 8.0}
+    ]
+  },
+  {
+    "StoreName": "Dessert Delight",
+    "Latitude": 37.989012,
+    "Longitude": 23.731234,
+    "FoodCategory": "desserts",
+    "Stars": 4.0,
+    "NoOfVotes": 28,
+    "StoreLogo": "/usr/bin/images/dessert_delight.png",
+    "PriceCategory": "$",
+    "Products": [
+      {"ProductName": "Chocolate Cake", "ProductType": "dessert", "Available Amount": 500, "Price": 5.0},
+      {"ProductName": "Cheesecake", "ProductType": "dessert", "Available Amount": 400, "Price": 6.0},
+      {"ProductName": "Ice Cream", "ProductType": "dessert", "Available Amount": 600, "Price": 4.0}
     ]
   },
   {

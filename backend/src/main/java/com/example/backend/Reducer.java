@@ -3,6 +3,7 @@ package com.example.backend;
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Reducer {
     private static final int REDUCER_PORT = 8090; // Port for Reducer
@@ -14,7 +15,7 @@ public class Reducer {
 
     public void start() {
         try (ServerSocket serverSocket = new ServerSocket(REDUCER_PORT)) {
-            System.out.println("Reducer Server running on port " + REDUCER_PORT);
+            System.out.println("Reducer running on port " + REDUCER_PORT);
             while (true) {
                 Socket masterSocket = serverSocket.accept();
                 System.out.println("Master connected to Reducer: " + masterSocket.getInetAddress());
@@ -89,10 +90,39 @@ class ReducerThread extends Thread {
 
                 String result;
                 switch (command) {
+                    // ANALYTICS OPERATIONS - REDUCE PHASE
                     case "GET_SALES_BY_STORE_TYPE_CATEGORY":
                     case "GET_SALES_BY_PRODUCT_CATEGORY":
                     case "GET_SALES_BY_PRODUCT":
-                        result = processMapReduce(command, data);
+                        result = processSalesAnalytics(command, data);
+                        break;
+                        
+                    // MANAGER OPERATIONS - REDUCE PHASE
+                    case "ADD_STORE":
+                        result = processAddStoreResults(data);
+                        break;
+                    case "ADD_PRODUCT":
+                        result = processAddProductResults(data);
+                        break;
+                    case "REMOVE_PRODUCT":
+                        result = processRemoveProductResults(data);
+                        break;
+                        
+                    // CLIENT OPERATIONS - REDUCE PHASE
+                    case "FILTER_STORES":
+                        result = processFilterStoresResults(data);
+                        break;
+                    case "FIND_STORES_WITHIN_RANGE":
+                        result = processFindStoresResults(data);
+                        break;
+                    case "GET_STORE_DETAILS":
+                        result = processGetStoreDetailsResults(data);
+                        break;
+                    case "BUY":
+                        result = processPurchaseResults(data);
+                        break;
+                    case "REVIEW":
+                        result = processReviewResults(data);
                         break;
                     default:
                         result = "Reducer Error: Unknown command " + command;
@@ -116,8 +146,8 @@ class ReducerThread extends Thread {
         }
     }
 
-    // This method encapsulates the MapReduce logic for all relevant commands
-    private String processMapReduce(String command, String data) {
+    // This method encapsulates the MapReduce logic for sales analytics
+    private String processSalesAnalytics(String command, String data) {
         Map<String, Integer> salesByStore = new HashMap<>();
         Set<String> processedStores = new HashSet<>(); // Use Set to avoid duplicates from replicas
         int total = 0;
@@ -175,5 +205,290 @@ class ReducerThread extends Thread {
         resultBuilder.append("\"total\": ").append(total);
 
         return resultBuilder.toString();
+    }
+
+    // Process manager operation results
+    private String processAddStoreResults(String data) {
+        boolean anySuccess = false;
+        String successStoreName = "";
+        StringBuilder errorMessages = new StringBuilder();
+        
+        for (WorkerConnection worker : workers) {
+            try {
+                String response = worker.sendRequest("ADD_STORE " + data);
+                if (response != null && response.startsWith("SUCCESS|")) {
+                    anySuccess = true;
+                    successStoreName = response.split("\\|")[1];
+                } else if (response != null && response.startsWith("ERROR|")) {
+                    if (errorMessages.length() > 0) errorMessages.append("; ");
+                    errorMessages.append(response.substring(6));
+                }
+            } catch (IOException e) {
+                System.err.println("Reducer: Error communicating with worker " + worker.getPort() + ": " + e.getMessage());
+            }
+        }
+        
+        if (anySuccess) {
+            return "Store added: " + successStoreName;
+        } else {
+            return "Error adding store: " + (errorMessages.length() > 0 ? errorMessages.toString() : "Unknown error");
+        }
+    }
+    
+    private String processAddProductResults(String data) {
+        boolean anySuccess = false;
+        String successStoreName = "";
+        String successProductName = "";
+        StringBuilder errorMessages = new StringBuilder();
+        
+        for (WorkerConnection worker : workers) {
+            try {
+                String response = worker.sendRequest("ADD_PRODUCT " + data);
+                if (response != null && response.startsWith("SUCCESS|")) {
+                    anySuccess = true;
+                    String[] parts = response.split("\\|");
+                    successStoreName = parts[1];
+                    successProductName = parts.length > 2 ? parts[2] : "";
+                } else if (response != null && response.startsWith("ERROR|")) {
+                    if (errorMessages.length() > 0) errorMessages.append("; ");
+                    errorMessages.append(response.substring(6));
+                }
+            } catch (IOException e) {
+                System.err.println("Reducer: Error communicating with worker " + worker.getPort() + ": " + e.getMessage());
+            }
+        }
+        
+        if (anySuccess) {
+            return "Product added to store: " + successStoreName;
+        } else {
+            return "Error adding product: " + (errorMessages.length() > 0 ? errorMessages.toString() : "Unknown error");
+        }
+    }
+    
+    private String processRemoveProductResults(String data) {
+        boolean anySuccess = false;
+        String successStoreName = "";
+        String successProductName = "";
+        StringBuilder errorMessages = new StringBuilder();
+        
+        for (WorkerConnection worker : workers) {
+            try {
+                String response = worker.sendRequest("REMOVE_PRODUCT " + data);
+                if (response != null && response.startsWith("SUCCESS|")) {
+                    anySuccess = true;
+                    String[] parts = response.split("\\|");
+                    successStoreName = parts[1];
+                    successProductName = parts.length > 2 ? parts[2] : "";
+                } else if (response != null && response.startsWith("ERROR|")) {
+                    if (errorMessages.length() > 0) errorMessages.append("; ");
+                    errorMessages.append(response.substring(6));
+                }
+            } catch (IOException e) {
+                System.err.println("Reducer: Error communicating with worker " + worker.getPort() + ": " + e.getMessage());
+            }
+        }
+        
+        if (anySuccess) {
+            return "Product removed from store: " + successStoreName;
+        } else {
+            return "Error removing product: " + (errorMessages.length() > 0 ? errorMessages.toString() : "Unknown error");
+        }
+    }
+    
+    // Process client operation results
+    private String processFilterStoresResults(String data) {
+        // Combine store results from all workers, remove duplicates
+        Map<String, String> storeMap = new HashMap<>(); // StoreName -> StoreJSON
+        
+        for (WorkerConnection worker : workers) {
+            try {
+                String response = worker.sendRequest("FILTER_STORES " + data);
+                if (response != null && response.startsWith("[") && response.endsWith("]")) {
+                    String content = response.substring(1, response.length() - 1).trim();
+                    if (!content.isEmpty()) {
+                        List<String> storeObjects = splitJsonObjects(content);
+                        for (String storeJson : storeObjects) {
+                            String storeName = extractField(storeJson, "StoreName");
+                            if (!storeMap.containsKey(storeName)) {
+                                storeMap.put(storeName, storeJson);
+                            }
+                        }
+                    }
+                }
+            } catch (IOException e) {
+                System.err.println("Reducer: Error communicating with worker " + worker.getPort() + ": " + e.getMessage());
+            }
+        }
+        
+        // Build the combined response
+        StringBuilder result = new StringBuilder("[");
+        boolean first = true;
+        for (String storeJson : storeMap.values()) {
+            if (!first) result.append(",");
+            result.append(storeJson);
+            first = false;
+        }
+        result.append("]");
+        
+        return result.toString();
+    }
+    
+    private String processFindStoresResults(String data) {
+        // Similar to filter stores, combine results and remove duplicates
+        Map<String, String> storeMap = new HashMap<>(); // StoreName -> StoreJSON
+        
+        for (WorkerConnection worker : workers) {
+            try {
+                String response = worker.sendRequest("FIND_STORES_WITHIN_RANGE " + data);
+                if (response != null && response.startsWith("[") && response.endsWith("]")) {
+                    String content = response.substring(1, response.length() - 1).trim();
+                    if (!content.isEmpty()) {
+                        List<String> storeObjects = splitJsonObjects(content);
+                        for (String storeJson : storeObjects) {
+                            String storeName = extractField(storeJson, "StoreName");
+                            if (!storeMap.containsKey(storeName)) {
+                                storeMap.put(storeName, storeJson);
+                            }
+                        }
+                    }
+                }
+            } catch (IOException e) {
+                System.err.println("Reducer: Error communicating with worker " + worker.getPort() + ": " + e.getMessage());
+            }
+        }
+        
+        // Build the combined response
+        StringBuilder result = new StringBuilder("[");
+        boolean first = true;
+        for (String storeJson : storeMap.values()) {
+            if (!first) result.append(",");
+            result.append(storeJson);
+            first = false;
+        }
+        result.append("]");
+        
+        return result.toString();
+    }
+    
+    private String processGetStoreDetailsResults(String storeName) {
+        // Pick the first valid response from any replica
+        for (WorkerConnection worker : workers) {
+            try {
+                String response = worker.sendRequest("GET_STORE_DETAILS " + storeName);
+                if (response != null && !response.isEmpty() && !response.startsWith("ERROR|")) {
+                    return response; // Return first valid store details
+                }
+            } catch (IOException e) {
+                System.err.println("Reducer: Error communicating with worker " + worker.getPort() + ": " + e.getMessage());
+            }
+        }
+        
+        return "Error: Store not found or could not retrieve store details.";
+    }
+    
+    private String processPurchaseResults(String data) {
+        boolean anySuccess = false;
+        String successStoreName = "";
+        String successProductName = "";
+        int successQuantity = 0;
+        StringBuilder errorMessages = new StringBuilder();
+        
+        for (WorkerConnection worker : workers) {
+            try {
+                String response = worker.sendRequest("BUY " + data);
+                if (response != null && response.startsWith("SUCCESS|")) {
+                    anySuccess = true;
+                    String[] parts = response.split("\\|");
+                    successStoreName = parts[1];
+                    successProductName = parts.length > 2 ? parts[2] : "";
+                    successQuantity = parts.length > 3 ? Integer.parseInt(parts[3]) : 0;
+                } else if (response != null && response.startsWith("ERROR|")) {
+                    if (errorMessages.length() > 0) errorMessages.append("; ");
+                    errorMessages.append(response.substring(6));
+                }
+            } catch (IOException e) {
+                System.err.println("Reducer: Error communicating with worker " + worker.getPort() + ": " + e.getMessage());
+            }
+        }
+        
+        if (anySuccess) {
+            return "Purchase completed: " + successQuantity + " of " + successProductName + " from " + successStoreName;
+        } else {
+            return "Error: Purchase failed - " + (errorMessages.length() > 0 ? errorMessages.toString() : "Unknown error");
+        }
+    }
+    
+    private String processReviewResults(String data) {
+        boolean anySuccess = false;
+        String successStoreName = "";
+        float newRating = 0;
+        int newVotes = 0;
+        StringBuilder errorMessages = new StringBuilder();
+        
+        for (WorkerConnection worker : workers) {
+            try {
+                String response = worker.sendRequest("REVIEW " + data);
+                if (response != null && response.startsWith("SUCCESS|")) {
+                    anySuccess = true;
+                    String[] parts = response.split("\\|");
+                    successStoreName = parts[1];
+                    newRating = parts.length > 2 ? Float.parseFloat(parts[2]) : 0;
+                    newVotes = parts.length > 3 ? Integer.parseInt(parts[3]) : 0;
+                } else if (response != null && response.startsWith("ERROR|")) {
+                    if (errorMessages.length() > 0) errorMessages.append("; ");
+                    errorMessages.append(response.substring(6));
+                }
+            } catch (IOException e) {
+                System.err.println("Reducer: Error communicating with worker " + worker.getPort() + ": " + e.getMessage());
+            }
+        }
+        
+        if (anySuccess) {
+            return "Review submitted for store: " + successStoreName + " (new rating: " + newRating + " from " + newVotes + " votes)";
+        } else {
+            return "Error: Failed to submit review - " + (errorMessages.length() > 0 ? errorMessages.toString() : "Unknown error");
+        }
+    }
+    
+    // Helper methods
+    private List<String> splitJsonObjects(String jsonContent) {
+        List<String> objects = new ArrayList<>();
+        int braceCount = 0;
+        int startIndex = -1;
+
+        for (int i = 0; i < jsonContent.length(); i++) {
+            char c = jsonContent.charAt(i);
+
+            if (c == '{') {
+                if (braceCount == 0) {
+                    startIndex = i;
+                }
+                braceCount++;
+            } else if (c == '}') {
+                braceCount--;
+                if (braceCount == 0 && startIndex != -1) {
+                    objects.add(jsonContent.substring(startIndex, i+1));
+                    startIndex = -1;
+                }
+            }
+        }
+
+        return objects;
+    }
+    
+    private String extractField(String json, String field) {
+        String search = "\"" + field + "\":";
+        int start = json.indexOf(search);
+        if (start == -1) return "";
+        start += search.length();
+        if (json.charAt(start) == '"') {
+            start++;
+            int end = json.indexOf("\"", start);
+            return json.substring(start, end);
+        } else {
+            int end = json.indexOf(",", start);
+            if (end == -1) end = json.indexOf("}", start);
+            return json.substring(start, end).trim();
+        }
     }
 }

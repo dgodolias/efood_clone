@@ -42,7 +42,6 @@ public class Worker {
     }
 
     public static void main(String[] args) {
-
         if (args.length < 1) {
             System.err.println("Usage: java Worker <port>");
             System.exit(1);
@@ -77,311 +76,51 @@ class WorkerThread extends Thread {
                 String command = parts[0];
                 String data = parts.length > 1 ? parts[1] : "";
 
-                List<String> salesList = new ArrayList<>();
-
                 synchronized (stores) {
-                    Map<String, Integer> salesByStore = new HashMap<>();
                     switch (command) {
+                        // MANAGER OPERATIONS - MAP PHASE
                         case "ADD_STORE":
-                            String storeName = extractField(data, "StoreName");
-                            if (storeName.isEmpty()) {
-                                out.println("Error: Invalid store JSON - missing StoreName");
-                                break;
-                            }
-                            storeName = storeName.replaceAll("^\"|\"$", "");
-                            double latitude = Double.parseDouble(extractField(data, "Latitude"));
-                            double longitude = Double.parseDouble(extractField(data, "Longitude"));
-                            String foodCategory = extractField(data, "FoodCategory");
-                            int stars = Integer.parseInt(extractField(data, "Stars"));
-                            int noOfVotes = Integer.parseInt(extractField(data, "NoOfVotes"));
-                            String storeLogo = extractField(data, "StoreLogo");
-                            Store store = new Store(storeName, latitude, longitude, foodCategory, stars, noOfVotes, storeLogo);
-                            String productsJson = extractProductsJson(data);
-                            List<Product> products = parseProducts(productsJson);
-                            for (Product p : products) {
-                                store.addProduct(p);
-                            }
-                            stores.put(storeName, store);
-                            updateStoresFile();
-                            out.println("Store added: " + storeName);
+                            processAddStore(data, out);
                             break;
                         case "ADD_PRODUCT":
-                            String[] productParts = data.split(",");
-                            if (productParts.length < 5) {
-                                out.println("Invalid ADD_PRODUCT format");
-                                continue;
-                            }
-                            String storeNameProd = productParts[0].trim();
-                            String productNameAdd = productParts[1].trim();
-                            String productType = productParts[2].trim();
-                            int amount = Integer.parseInt(productParts[3].trim());
-                            double price = Double.parseDouble(productParts[4].trim());
-                            Store storeAdd = stores.get(storeNameProd);
-                            if (storeAdd != null) {
-                                Product newProduct = new Product(productNameAdd, productType, amount, price);
-                                storeAdd.addProduct(newProduct);
-                                updateStoresFile();
-                                out.println("Product added to store: " + storeNameProd);
-                            } else {
-                                out.println("Store not found: " + storeNameProd);
-                            }
+                            processAddProduct(data, out);
                             break;
                         case "REMOVE_PRODUCT":
-                            String[] removeParts = data.split(",");
-                            if (removeParts.length < 2) {
-                                out.println("Invalid REMOVE_PRODUCT format");
-                                continue;
-                            }
-                            String removeStoreName = removeParts[0].trim();
-                            String removeProductName = removeParts[1].trim();
-                            Store removeStore = stores.get(removeStoreName);
-                            if (removeStore != null) {
-                                removeStore.removeProduct(removeProductName);
-                                updateStoresFile();
-                                out.println("Product removed from store: " + removeStoreName);
-                            } else {
-                                out.println("Store not found: " + removeStoreName);
-                            }
+                            processRemoveProduct(data, out);
                             break;
+                            
+                        // ANALYTICS OPERATIONS - MAP PHASE
                         case "GET_SALES_BY_STORE_TYPE_CATEGORY":
-                            String category = data;
-
-                            for (Store s : stores.values()) {
-                                if (s.getFoodCategory().replaceAll("^\"|\"$", "").equalsIgnoreCase(category)) {
-                                    int totalSales = s.getSales().values().stream().mapToInt(Integer::intValue).sum();
-                                    salesList.add(s.getStoreName() + ":" + totalSales);
-                                }
-                            }
-                            out.println(String.join("|", salesList));
+                            processSalesByStoreCategory(data, out);
                             break;
-
                         case "GET_SALES_BY_PRODUCT_CATEGORY":
-                            String productCategory = data;
-
-                            for (Store s : stores.values()) {
-                                int storeTotal = 0;
-                                for (Product p : s.getProducts()) {
-                                    if (p.getProductType().equals(productCategory)) {
-                                        storeTotal += s.getSales().getOrDefault(p.getProductName(), 0);
-                                    }
-                                }
-                                if (storeTotal > 0) {
-                                    salesList.add(s.getStoreName() + ":" + storeTotal);
-                                }
-                            }
-                            System.out.println(String.join("|", salesList));
-                            out.println(String.join("|", salesList));
+                            processSalesByProductCategory(data, out);
                             break;
                         case "GET_SALES_BY_PRODUCT":
-                            String productName = data;
-
-                            for (Store s : stores.values()) {
-                                int storeTotal = s.getSales().getOrDefault(productName, 0);
-                                if (storeTotal > 0) {
-                                    salesList.add(s.getStoreName() + ":" + storeTotal);
-                                }
-                            }
-                            System.out.println(String.join("|", salesList));
-                            out.println(String.join("|", salesList));
+                            processSalesByProduct(data, out);
                             break;
+                            
+                        // CLIENT OPERATIONS - MAP PHASE
                         case "BUY":
-                            String[] buyParts = data.split(",");
-                            if (buyParts.length < 3) {
-                                out.println("Invalid BUY format");
-                                continue;
-                            }
-                            String buyStoreName = buyParts[0].trim();
-                            String buyProductName = buyParts[1].trim();
-                            int buyQuantity = Integer.parseInt(buyParts[2].trim());
-
-                            Store buyStore = stores.get(buyStoreName);
-                            if (buyStore == null) {
-                                out.println("Store not found: " + buyStoreName);
-                                continue;
-                            }
-
-                            buyStore.purchaseProduct(buyProductName, buyQuantity);
-                            updateStoresFile();
-                            out.println("Purchase processed");
+                            processPurchase(data, out);
                             break;
-
                         case "FILTER_STORES":
-                            // Expected format: lat,lon;filterKey1:value1,value2;filterKey2:value3
-                            String[] filterParts = data.split(";", 2);
-                            if (filterParts.length < 2) {
-                                out.println("[]"); // Invalid format, return empty
-                                System.err.println("Worker received invalid FILTER_STORES format (missing coordinates or filters): " + data);
-                                continue;
-                            }
-                            String[] coordsPart = filterParts[0].split(",");
-                            String filterData = filterParts[1];
-
-                            if (coordsPart.length != 2) {
-                                out.println("[]"); // Invalid coordinates format
-                                System.err.println("Worker received invalid coordinates in FILTER_STORES: " + filterParts[0]);
-                                continue;
-                            }
-
-                            double filterLat, filterLon;
-                            try {
-                                filterLat = Double.parseDouble(coordsPart[0].trim());
-                                filterLon = Double.parseDouble(coordsPart[1].trim());
-                            } catch (NumberFormatException e) {
-                                out.println("[]"); // Invalid coordinate numbers
-                                System.err.println("Worker could not parse coordinates in FILTER_STORES: " + filterParts[0]);
-                                continue;
-                            }
-
-
-                            Map<String, List<String>> filters = parseFilterString(filterData);
-                            StringBuilder filteredStoresJson = new StringBuilder("[");
-                            boolean firstStore = true;
-
-                            for (Store s : stores.values()) {
-                                // Check distance first
-                                double distance = calculateDistance(filterLat, filterLon, s.getLatitude(), s.getLongitude());
-                                if (distance <= 5.0) {
-                                    // If within range, check other filters
-                                    if (matchesFilters(s, filters)) {
-                                        s.setDistance(distance); // Set distance for potential display
-                                        try {
-                                            String storeJson = Store.StoreToJson(s);
-                                            storeJson = storeJson.replaceAll("\\s*\\n\\s*", "").replaceAll("\\s+", " ").trim();
-
-                                            if (!firstStore) {
-                                                filteredStoresJson.append(",");
-                                            } else {
-                                                firstStore = false;
-                                            }
-                                            filteredStoresJson.append(storeJson);
-                                        } catch (Exception e) {
-                                            System.err.println("Error serializing store to JSON during filtering: " + e.getMessage());
-                                        }
-                                    }
-                                }
-                            }
-
-                            filteredStoresJson.append("]");
-                            System.out.println("Sending filtered (with distance) stores as JSON array: " + filteredStoresJson.toString().substring(0, Math.min(35, filteredStoresJson.length())));
-                            out.println(filteredStoresJson.toString());
+                            processFilterStores(data, out);
                             break;
-
                         case "FIND_STORES_WITHIN_RANGE":
-                                String[] coordinates = data.split(",");
-                                if (coordinates.length != 2) {
-                                    out.println("[]");
-                                    continue;
-                                }
-
-                                double latt = Double.parseDouble(coordinates[0]);
-                                double longt = Double.parseDouble(coordinates[1]);
-
-                                StringBuilder nearbyStoresJson = new StringBuilder("[");
-                                boolean firstNearbyStore = true;
-
-                                for (Store s : stores.values()) {
-                                    double distance = calculateDistance(latt, longt, s.getLatitude(), s.getLongitude());
-                                    // print stre and distance
-                                    //System.out.println("Store: " + s.getStoreName() + ", Distance: " + distance);
-                                    if (distance <= 5.0) {
-                                        s.setDistance(distance);
-
-                                        try {
-                                            String storeJson = Store.StoreToJson(s);
-
-                                            storeJson = storeJson.replaceAll("\\s*\\n\\s*", "").replaceAll("\\s+", " ").trim();
-
-                                            if (!firstNearbyStore) {
-                                                nearbyStoresJson.append(",");
-                                            } else {
-                                                firstNearbyStore = false;
-                                            }
-
-                                            nearbyStoresJson.append(storeJson);
-                                        } catch (Exception e) {
-                                            System.err.println("Error serializing store to JSON: " + e.getMessage());
-                                        }
-                                    }
-                                }
-
-                                nearbyStoresJson.append("]");
-                                System.out.println("Sending nearby stores as JSON array: " + nearbyStoresJson.toString().substring(0, Math.min(35, nearbyStoresJson.length())));
-                                System.out.flush();
-
-                                out.println(nearbyStoresJson.toString());
-                                break;
+                            processFindStoresWithinRange(data, out);
+                            break;
                         case "GET_STORE_DETAILS":
-                            String requestedStoreName = parts.length > 1 ? parts[1].trim() : "";
-                            Store foundStore = null;
-
-                            for (Store s : stores.values()) {
-                                if (s.getStoreName().equals(requestedStoreName) ||
-                                    ("\"" + s.getStoreName() + "\"").equals(requestedStoreName)) {
-                                    foundStore = s;
-                                    break;
-                                }
-                            }
-
-                            if (foundStore == null) {
-                                out.println("Error: Store not found");
-                            } else {
-                                try {
-                                    String storeJson = Store.StoreToJson(foundStore);
-
-                                    storeJson = storeJson.replaceAll("\\s*\\n\\s*", "").replaceAll("\\s+", " ").trim();
-                                    System.out.println("Sending store details from Worker: " + storeJson);
-                                    out.println(storeJson);
-                                } catch (Exception e) {
-                                    System.err.println("Error serializing store to JSON: " + e.getMessage());
-                                    out.println("Error: Failed to serialize store data");
-                                }
-                            }
+                            processGetStoreDetails(parts.length > 1 ? parts[1].trim() : "", out);
                             break;
                         case "REVIEW":
-                            String[] reviewParts = data.split(",");
-                            if (reviewParts.length < 2) {
-                                out.println("Invalid REVIEW format");
-                                continue;
-                            }
-                            String reviewStoreName = reviewParts[0].trim();
-                            int reviewRating = Integer.parseInt(reviewParts[1].trim());
-
-                            Store reviewStore = null;
-                            for (Store s : stores.values()) {
-                                if (s.getStoreName().equals(reviewStoreName) ||
-                                    ("\"" + s.getStoreName() + "\"").equals(reviewStoreName)) {
-                                    reviewStore = s;
-                                    break;
-                                }
-                            }
-
-                            if (reviewStore == null) {
-                                out.println("Store not found: " + reviewStoreName);
-                                continue;
-                            }
-
-
-                            float currentStars = reviewStore.getStars();
-                            int currentVotes = reviewStore.getNoOfVotes();
-
-                            double totalRatingPoints = currentStars * currentVotes + reviewRating;
-                            int newVotes = currentVotes + 1;
-                            double newRating = totalRatingPoints / newVotes;
-
-
-                            float roundedRating = (float) Math.round(newRating * 100) / 100;
-
-                            reviewStore.setStars(roundedRating);
-                            reviewStore.setNoOfVotes(newVotes);
-
-                            updateStoresFile();
-                            out.println("Review processed");
+                            processReview(data, out);
                             break;
                         case "PING":
                             out.println("PONG");
                             break;
                         default:
-                            out.println("Unknown command: " + command);
+                            out.println("ERROR|Unknown command: " + command);
                     }
                 }
             }
@@ -395,7 +134,343 @@ class WorkerThread extends Thread {
             }
         }
     }
+    
+    // MANAGER OPERATIONS IMPLEMENTATIONS
+    private void processAddStore(String data, PrintWriter out) throws IOException {
+        String storeName = extractField(data, "StoreName");
+        if (storeName.isEmpty()) {
+            out.println("ERROR|Invalid store JSON - missing StoreName");
+            return;
+        }
+        storeName = storeName.replaceAll("^\"|\"$", "");
+        
+        try {
+            double latitude = Double.parseDouble(extractField(data, "Latitude"));
+            double longitude = Double.parseDouble(extractField(data, "Longitude"));
+            String foodCategory = extractField(data, "FoodCategory");
+            int stars = Integer.parseInt(extractField(data, "Stars"));
+            int noOfVotes = Integer.parseInt(extractField(data, "NoOfVotes"));
+            String storeLogo = extractField(data, "StoreLogo");
+            
+            Store store = new Store(storeName, latitude, longitude, foodCategory, stars, noOfVotes, storeLogo);
+            String productsJson = extractProductsJson(data);
+            List<Product> products = parseProducts(productsJson);
+            for (Product p : products) {
+                store.addProduct(p);
+            }
+            stores.put(storeName, store);
+            updateStoresFile();
+            
+            // Format for Map-Reduce: SUCCESS|details
+            out.println("SUCCESS|" + storeName);
+        } catch (NumberFormatException e) {
+            out.println("ERROR|Invalid numeric value in store data: " + e.getMessage());
+        }
+    }
 
+    private void processAddProduct(String data, PrintWriter out) throws IOException {
+        String[] productParts = data.split(",");
+        if (productParts.length < 5) {
+            out.println("ERROR|Invalid ADD_PRODUCT format");
+            return;
+        }
+        
+        try {
+            String storeNameProd = productParts[0].trim();
+            String productNameAdd = productParts[1].trim();
+            String productType = productParts[2].trim();
+            int amount = Integer.parseInt(productParts[3].trim());
+            double price = Double.parseDouble(productParts[4].trim());
+            
+            Store storeAdd = stores.get(storeNameProd);
+            if (storeAdd != null) {
+                Product newProduct = new Product(productNameAdd, productType, amount, price);
+                storeAdd.addProduct(newProduct);
+                updateStoresFile();
+                
+                // Format for Map-Reduce: SUCCESS|details
+                out.println("SUCCESS|" + storeNameProd + "|" + productNameAdd);
+            } else {
+                out.println("ERROR|Store not found: " + storeNameProd);
+            }
+        } catch (NumberFormatException e) {
+            out.println("ERROR|Invalid numeric value: " + e.getMessage());
+        }
+    }
+
+    private void processRemoveProduct(String data, PrintWriter out) throws IOException {
+        String[] removeParts = data.split(",");
+        if (removeParts.length < 2) {
+            out.println("ERROR|Invalid REMOVE_PRODUCT format");
+            return;
+        }
+        
+        String removeStoreName = removeParts[0].trim();
+        String removeProductName = removeParts[1].trim();
+        Store removeStore = stores.get(removeStoreName);
+        
+        if (removeStore != null) {
+            boolean removed = (boolean) removeStore.removeProduct(removeProductName);
+            updateStoresFile();
+            
+            if (removed) {
+                // Format for Map-Reduce: SUCCESS|details
+                out.println("SUCCESS|" + removeStoreName + "|" + removeProductName);
+            } else {
+                out.println("ERROR|Product not found in store: " + removeProductName);
+            }
+        } else {
+            out.println("ERROR|Store not found: " + removeStoreName);
+        }
+    }
+    
+    // ANALYTICS OPERATIONS IMPLEMENTATIONS
+    private void processSalesByStoreCategory(String category, PrintWriter out) {
+        List<String> salesList = new ArrayList<>();
+        int totalSales = 0;
+        
+        for (Store s : stores.values()) {
+            if (s.getFoodCategory().replaceAll("^\"|\"$", "").equalsIgnoreCase(category)) {
+                int storeTotalSales = s.getSales().values().stream().mapToInt(Integer::intValue).sum();
+                salesList.add(s.getStoreName() + ":" + storeTotalSales);
+                totalSales += storeTotalSales;
+            }
+        }
+        
+        // Format for Map-Reduce: Join with pipe for easy parsing by reducer
+        out.println(String.join("|", salesList));
+    }
+
+    private void processSalesByProductCategory(String productCategory, PrintWriter out) {
+        List<String> salesList = new ArrayList<>();
+        int totalSales = 0;
+        
+        for (Store s : stores.values()) {
+            int storeTotal = 0;
+            for (Product p : s.getProducts()) {
+                if (p.getProductType().equals(productCategory)) {
+                    storeTotal += s.getSales().getOrDefault(p.getProductName(), 0);
+                }
+            }
+            
+            if (storeTotal > 0) {
+                salesList.add(s.getStoreName() + ":" + storeTotal);
+                totalSales += storeTotal;
+            }
+        }
+        
+        // Format for Map-Reduce: Join with pipe for easy parsing by reducer
+        out.println(String.join("|", salesList));
+    }
+
+    private void processSalesByProduct(String productName, PrintWriter out) {
+        List<String> salesList = new ArrayList<>();
+        int totalSales = 0;
+        
+        for (Store s : stores.values()) {
+            int storeTotal = s.getSales().getOrDefault(productName, 0);
+            if (storeTotal > 0) {
+                salesList.add(s.getStoreName() + ":" + storeTotal);
+                totalSales += storeTotal;
+            }
+        }
+        
+        // Format for Map-Reduce: Join with pipe for easy parsing by reducer
+        out.println(String.join("|", salesList));
+    }
+    
+    // CLIENT OPERATIONS IMPLEMENTATIONS
+    private void processPurchase(String data, PrintWriter out) throws IOException {
+        String[] buyParts = data.split(",");
+        if (buyParts.length < 3) {
+            out.println("ERROR|Invalid BUY format");
+            return;
+        }
+        
+        try {
+            String buyStoreName = buyParts[0].trim();
+            String buyProductName = buyParts[1].trim();
+            int buyQuantity = Integer.parseInt(buyParts[2].trim());
+
+            Store buyStore = stores.get(buyStoreName);
+            if (buyStore == null) {
+                out.println("ERROR|Store not found: " + buyStoreName);
+                return;
+            }
+
+            boolean success = (boolean) buyStore.purchaseProduct(buyProductName, buyQuantity);
+            updateStoresFile();
+            
+            if (success) {
+                out.println("SUCCESS|" + buyStoreName + "|" + buyProductName + "|" + buyQuantity);
+            } else {
+                out.println("ERROR|Insufficient quantity or product not found");
+            }
+        } catch (NumberFormatException e) {
+            out.println("ERROR|Invalid quantity: " + e.getMessage());
+        }
+    }
+
+    private void processFilterStores(String data, PrintWriter out) {
+        String[] filterParts = data.split(";", 2);
+        if (filterParts.length < 2) {
+            out.println("ERROR|Invalid filter format");
+            return;
+        }
+        
+        String[] coordsPart = filterParts[0].split(",");
+        String filterData = filterParts[1];
+
+        if (coordsPart.length != 2) {
+            out.println("ERROR|Invalid coordinates format");
+            return;
+        }
+
+        try {
+            double filterLat = Double.parseDouble(coordsPart[0].trim());
+            double filterLon = Double.parseDouble(coordsPart[1].trim());
+            Map<String, List<String>> filters = parseFilterString(filterData);
+            
+            List<String> filteredStoreJsons = new ArrayList<>();
+            
+            for (Store s : stores.values()) {
+                double distance = calculateDistance(filterLat, filterLon, s.getLatitude(), s.getLongitude());
+                if (distance <= 5.0) {
+                    if (matchesFilters(s, filters)) {
+                        s.setDistance(distance);
+                        try {
+                            String storeJson = Store.StoreToJson(s);
+                            storeJson = storeJson.replaceAll("\\s*\\n\\s*", "").replaceAll("\\s+", " ").trim();
+                            filteredStoreJsons.add(storeJson);
+                        } catch (Exception e) {
+                            System.err.println("Error serializing store: " + e.getMessage());
+                        }
+                    }
+                }
+            }
+            
+            // Format as JSON array for consistency
+            StringBuilder response = new StringBuilder("[");
+            for (int i = 0; i < filteredStoreJsons.size(); i++) {
+                if (i > 0) response.append(",");
+                response.append(filteredStoreJsons.get(i));
+            }
+            response.append("]");
+            
+            out.println(response.toString());
+        } catch (NumberFormatException e) {
+            out.println("ERROR|Invalid coordinate format: " + e.getMessage());
+        }
+    }
+
+    private void processFindStoresWithinRange(String data, PrintWriter out) {
+        String[] coordinates = data.split(",");
+        if (coordinates.length != 2) {
+            out.println("ERROR|Invalid coordinates format");
+            return;
+        }
+
+        try {
+            double lat = Double.parseDouble(coordinates[0]);
+            double lon = Double.parseDouble(coordinates[1]);
+            
+            List<String> nearbyStoreJsons = new ArrayList<>();
+            
+            for (Store s : stores.values()) {
+                double distance = calculateDistance(lat, lon, s.getLatitude(), s.getLongitude());
+                if (distance <= 5.0) {
+                    s.setDistance(distance);
+                    try {
+                        String storeJson = Store.StoreToJson(s);
+                        storeJson = storeJson.replaceAll("\\s*\\n\\s*", "").replaceAll("\\s+", " ").trim();
+                        nearbyStoreJsons.add(storeJson);
+                    } catch (Exception e) {
+                        System.err.println("Error serializing store: " + e.getMessage());
+                    }
+                }
+            }
+            
+            // Format as JSON array for consistency
+            StringBuilder response = new StringBuilder("[");
+            for (int i = 0; i < nearbyStoreJsons.size(); i++) {
+                if (i > 0) response.append(",");
+                response.append(nearbyStoreJsons.get(i));
+            }
+            response.append("]");
+            
+            out.println(response.toString());
+        } catch (NumberFormatException e) {
+            out.println("ERROR|Invalid coordinate format: " + e.getMessage());
+        }
+    }
+
+    private void processGetStoreDetails(String requestedStoreName, PrintWriter out) {
+        Store foundStore = null;
+        for (Store s : stores.values()) {
+            if (s.getStoreName().equals(requestedStoreName) ||
+                ("\"" + s.getStoreName() + "\"").equals(requestedStoreName)) {
+                foundStore = s;
+                break;
+            }
+        }
+
+        if (foundStore == null) {
+            out.println("ERROR|Store not found: " + requestedStoreName);
+        } else {
+            try {
+                String storeJson = Store.StoreToJson(foundStore);
+                storeJson = storeJson.replaceAll("\\s*\\n\\s*", "").replaceAll("\\s+", " ").trim();
+                out.println(storeJson);
+            } catch (Exception e) {
+                out.println("ERROR|Failed to serialize store data: " + e.getMessage());
+            }
+        }
+    }
+
+    private void processReview(String data, PrintWriter out) throws IOException {
+        String[] reviewParts = data.split(",");
+        if (reviewParts.length < 2) {
+            out.println("ERROR|Invalid REVIEW format");
+            return;
+        }
+        
+        try {
+            String reviewStoreName = reviewParts[0].trim();
+            int reviewRating = Integer.parseInt(reviewParts[1].trim());
+
+            Store reviewStore = null;
+            for (Store s : stores.values()) {
+                if (s.getStoreName().equals(reviewStoreName) ||
+                    ("\"" + s.getStoreName() + "\"").equals(reviewStoreName)) {
+                    reviewStore = s;
+                    break;
+                }
+            }
+
+            if (reviewStore == null) {
+                out.println("ERROR|Store not found: " + reviewStoreName);
+                return;
+            }
+
+            float currentStars = reviewStore.getStars();
+            int currentVotes = reviewStore.getNoOfVotes();
+
+            double totalRatingPoints = currentStars * currentVotes + reviewRating;
+            int newVotes = currentVotes + 1;
+            double newRating = totalRatingPoints / newVotes;
+            float roundedRating = (float) Math.round(newRating * 100) / 100;
+
+            reviewStore.setStars(roundedRating);
+            reviewStore.setNoOfVotes(newVotes);
+            updateStoresFile();
+            
+            out.println("SUCCESS|" + reviewStoreName + "|" + roundedRating + "|" + newVotes);
+        } catch (NumberFormatException e) {
+            out.println("ERROR|Invalid rating format: " + e.getMessage());
+        }
+    }
+
+    // HELPER METHODS
     private Map<String, List<String>> parseFilterString(String filterData) {
         Map<String, List<String>> filters = new HashMap<>();
         String[] filterGroups = filterData.split(";");
@@ -421,11 +496,9 @@ class WorkerThread extends Thread {
     }
 
     private boolean matchesFilters(Store store, Map<String, List<String>> filters) {
-
         if (filters.containsKey("type") && !filters.get("type").isEmpty()) {
             boolean typeMatch = false;
             for (String type : filters.get("type")) {
-
                 String foodCategory = store.getFoodCategory().replaceAll("^\"|\"$", "");
                 if (foodCategory.equalsIgnoreCase(type)) {
                     typeMatch = true;
@@ -434,7 +507,6 @@ class WorkerThread extends Thread {
             }
             if (!typeMatch) return false;
         }
-
 
         if (filters.containsKey("stars") && !filters.get("stars").isEmpty()) {
             boolean starsMatch = false;
@@ -449,7 +521,6 @@ class WorkerThread extends Thread {
             }
             if (!starsMatch) return false;
         }
-
 
         if (filters.containsKey("price") && !filters.get("price").isEmpty()) {
             boolean priceMatch = false;
@@ -561,5 +632,4 @@ class WorkerThread extends Thread {
             writer.println("\n]");
         }
     }
-
 }

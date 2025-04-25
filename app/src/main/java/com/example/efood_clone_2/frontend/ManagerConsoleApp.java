@@ -17,7 +17,7 @@ public class ManagerConsoleApp {
              Scanner scanner = new Scanner(System.in)) {
             System.out.println("Connected to Master at " + MASTER_HOST + ":" + MASTER_PORT);
             while (true) {
-                System.out.println("Enter command (ADD_STORE, ADD_PRODUCT, REMOVE_PRODUCT, GET_SALES_BY_STORE_TYPE_CATEGORY, GET_SALES_BY_PRODUCT_CATEGORY, GET_SALES_BY_PRODUCT, BUY, EXIT):");
+                System.out.println("Enter command (ADD_STORE, ADD_PRODUCT, REMOVE_PRODUCT, GET_SALES_BY_STORE_TYPE_CATEGORY, GET_SALES_BY_PRODUCT_CATEGORY, GET_SALES_BY_PRODUCT, EXIT):");
                 String command = scanner.nextLine();
                 if (command.equalsIgnoreCase("EXIT")) break;
                 String data = "";

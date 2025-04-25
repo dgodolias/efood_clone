@@ -53,8 +53,8 @@ public class Store implements Serializable {
 
     }
 
-    public synchronized void removeProduct(String productName) {
-        products.removeIf(p -> p.getProductName().equals(productName));
+    public synchronized boolean removeProduct(String productName) {
+        return products.removeIf(p -> p.getProductName().equals(productName));
     }
 
     public synchronized void addProduct(Product product) {
@@ -128,16 +128,22 @@ public class Store implements Serializable {
         return String.format("%.4f, %.4f", latitude, longitude);
     }
 
-    public void purchaseProduct(String productName, int quantity) {
-        int currentSales = sales.getOrDefault(productName, 0);
-        sales.put(productName, currentSales + quantity);
-
+    public boolean purchaseProduct(String productName, int quantity) {
         for (Product product : products) {
             if (product.getProductName().equals(productName)) {
-                product.setAvailableAmount(product.getAvailableAmount() - quantity);
-                break;
+                if (product.getAvailableAmount() >= quantity) {
+                    int currentSales = sales.getOrDefault(productName, 0);
+                    sales.put(productName, currentSales + quantity);
+                    product.setAvailableAmount(product.getAvailableAmount() - quantity);
+                    return true;
+                } else {
+                    // Not enough product available
+                    return false;
+                }
             }
         }
+        // Product not found
+        return false;
     }
 
     public static Store JsonToStore(String jsonString) throws JSONException {
