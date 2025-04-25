@@ -8,12 +8,16 @@ import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class Master {
     private static final int PORT = 8080;
+    private static final int REDUCER_PORT = 8090; // Port where Reducer listens
+    private static final String REDUCER_HOST = "localhost";
     private static final int REPLICATION_FACTOR = 3;
     private List<WorkerConnection> workers;
     private List<Process> workerProcesses;
+    private Process reducerProcess; // Keep track of the Reducer process
     private Map<String, List<WorkerConnection>> storeToWorkers;
     private ScheduledExecutorService heartbeatScheduler;
     private PrintWriter out;
@@ -33,13 +37,18 @@ public Master(int startPort) throws IOException {
 
     System.out.println("Initializing " + workerCount + " workers for " + storeCount + " stores");
 
+    List<String> workerAddresses = new ArrayList<>(); // Store worker addresses for Reducer
     for (int i = 0; i < workerCount; i++) {
         int workerPort = startPort + i;
         spawnWorker(workerPort);
         WorkerConnection wc = new WorkerConnection("localhost", workerPort);
         workers.add(wc);
+        workerAddresses.add("localhost:" + workerPort); // Add address for Reducer
         System.out.println("Started and connected to worker at localhost:" + workerPort);
     }
+
+    // Spawn the Reducer process
+    spawnReducer(workerAddresses);
 
     loadInitialStores();
     startHeartbeat();
@@ -179,18 +188,46 @@ private int countStoresInJsonFile() {
         }
     }
 
+    private void spawnReducer(List<String> workerAddresses) throws IOException {
+        String javaHome = System.getProperty("java.home");
+        String javaBin = javaHome + File.separator + "bin" + File.separator + "java";
+        String classpath = System.getProperty("java.class.path");
+        String className = Reducer.class.getName();
+
+        List<String> command = new ArrayList<>();
+        command.add(javaBin);
+        command.add("-cp");
+        command.add(classpath);
+        command.add(className);
+        command.addAll(workerAddresses); // Pass worker addresses as arguments
+
+        ProcessBuilder pb = new ProcessBuilder(command);
+        pb.inheritIO(); // Show Reducer output in the same console
+        reducerProcess = pb.start();
+        System.out.println("Started Reducer process.");
+
+        // Optional: Add a small delay to ensure Reducer is ready
+        try {
+            Thread.sleep(1000); // Give reducer time to start
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
     public void start() {
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
             System.out.println("Master Server running on port " + PORT);
             while (true) {
                 Socket socket = serverSocket.accept();
                 System.out.println("New client connected: " + socket.getInetAddress());
-                new MasterThread(socket, workers, storeToWorkers, REPLICATION_FACTOR).start();
+                // Pass Reducer host/port to the thread
+                new MasterThread(socket, workers, storeToWorkers, REPLICATION_FACTOR, REDUCER_HOST, REDUCER_PORT).start();
             }
         } catch (IOException e) {
             System.err.println("Master server failed: " + e.getMessage());
         } finally {
             shutdownWorkers();
+            shutdownReducer(); // Ensure Reducer is also shut down
         }
     }
 
@@ -206,6 +243,13 @@ private int countStoresInJsonFile() {
             }
         }
         heartbeatScheduler.shutdown();
+    }
+
+    private void shutdownReducer() {
+        if (reducerProcess != null) {
+            reducerProcess.destroy();
+            System.out.println("Stopped Reducer process.");
+        }
     }
 
     private List<WorkerConnection> getWorkersForStore(String storeName) {
@@ -249,12 +293,16 @@ class MasterThread extends Thread {
     private List<WorkerConnection> workers;
     private Map<String, List<WorkerConnection>> storeToWorkers;
     private final int replicationFactor;
+    private final String reducerHost;
+    private final int reducerPort;
 
-    public MasterThread(Socket socket, List<WorkerConnection> workers, Map<String, List<WorkerConnection>> storeToWorkers, int replicationFactor) {
+    public MasterThread(Socket socket, List<WorkerConnection> workers, Map<String, List<WorkerConnection>> storeToWorkers, int replicationFactor, String reducerHost, int reducerPort) {
         this.socket = socket;
         this.workers = workers;
         this.storeToWorkers = storeToWorkers;
         this.replicationFactor = replicationFactor;
+        this.reducerHost = reducerHost;
+        this.reducerPort = reducerPort;
     }
 
     @Override
@@ -266,17 +314,17 @@ class MasterThread extends Thread {
                 System.out.println("Received command: " + request);
                 if (workers.isEmpty()) {
                     out.println("No workers available to process request: " + request);
+                    out.println("END"); // Ensure client gets an end marker
                     continue;
                 }
                 String[] parts = request.split(" ", 2);
                 String command = parts[0];
                 String data = parts.length > 1 ? parts[1] : "";
 
-                Map<String, Integer> salesByStore = new HashMap<>();
-
                 switch (command) {
                     // ########################### MANAGER COMMANDS ###########################
                     case "ADD_STORE":
+                        // ...existing ADD_STORE logic...
                         String storeName = extractField(data, "StoreName");
                         System.out.println("ADD_STORE storeName: [" + storeName + "]");
                         if (storeName.isEmpty()) {
@@ -299,6 +347,7 @@ class MasterThread extends Thread {
                         break;
 
                     case "ADD_PRODUCT":
+                        // ...existing ADD_PRODUCT logic...
                         String[] productParts = data.split(",");
                         if (productParts.length < 5) {
                             out.println("Invalid ADD_PRODUCT format");
@@ -333,6 +382,7 @@ class MasterThread extends Thread {
                         break;
 
                     case "REMOVE_PRODUCT":
+                        // ...existing REMOVE_PRODUCT logic...
                         String[] removeParts = data.split(",");
                         if (removeParts.length < 2) {
                             out.println("Invalid REMOVE_PRODUCT format");
@@ -366,169 +416,26 @@ class MasterThread extends Thread {
                         removeResult.append("END");
                         out.println(removeResult.toString());
                         break;
+
+                    // ################# REDUCER COMMANDS ##################
                     case "GET_SALES_BY_STORE_TYPE_CATEGORY":
-                            String foodCategory = parts.length > 1 ? parts[1].trim() : "";
-                            System.out.println("Processing GET_SALES_BY_STORE_TYPE_CATEGORY request for category: " + foodCategory);
-
-                            //MapReduce
-
-                            Set<String> processedStores = new HashSet<>();
-                            int total = 0;
-
-
-                            for (WorkerConnection worker : workers) {
-                                try {
-                                    String response = worker.sendRequest("GET_SALES_BY_STORE_TYPE_CATEGORY " + foodCategory);
-
-
-                                    if (!response.isEmpty()) {
-                                        String[] storesSales = response.split("\\|");
-                                        for (String storeSale : storesSales) {
-                                            if (!storeSale.isEmpty()) {
-                                                String[] storeParts = storeSale.split(":");
-                                                if (storeParts.length == 2) {
-                                                    String store = storeParts[0];
-                                                    int amount = Integer.parseInt(storeParts[1]);
-
-                                                    if (!processedStores.contains(store)) {
-                                                        salesByStore.put(store, amount);
-                                                        total += amount;
-                                                        processedStores.add(store);
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                } catch (IOException e) {
-                                    System.err.println("Error communicating with worker for sales by store type: " + e.getMessage());
-                                }
-                            }
-
-
-                            StringBuilder result = new StringBuilder();
-                            for (Map.Entry<String, Integer> entry : salesByStore.entrySet()) {
-                                if (result.length() > 0) {
-                                    result.append("\n");
-                                }
-                                result.append("\"").append(entry.getKey()).append("\": ").append(entry.getValue());
-                            }
-                            if (!salesByStore.isEmpty()) {
-                                result.append("\n");
-                            }
-                            result.append("\"total\": ").append(total);
-
-                            System.out.println("Sending sales by store type category results: " + result);
-                            out.println(result.toString());
-                            out.println("END");
-                            break;
                     case "GET_SALES_BY_PRODUCT_CATEGORY":
-                                String productCategory = parts.length > 1 ? parts[1].trim() : "";
-                                System.out.println("Processing GET_SALES_BY_PRODUCT_CATEGORY request for category: " + productCategory);
-
-                                //MapReduce
-                                Map<String, Integer> salesByStoreProdCat = new HashMap<>();
-                                Set<String> processedStoresProdCat = new HashSet<>();
-                                int totalProdCat = 0;
-
-                                for (WorkerConnection worker : workers) {
-                                    try {
-                                        String response = worker.sendRequest("GET_SALES_BY_PRODUCT_CATEGORY " + productCategory);
-
-                                        if (!response.isEmpty()) {
-                                            String[] storesSales = response.split("\\|");
-                                            for (String storeSale : storesSales) {
-                                                if (!storeSale.isEmpty()) {
-                                                    String[] storeParts = storeSale.split(":");
-                                                    if (storeParts.length == 2) {
-                                                        String store = storeParts[0];
-                                                        int amount = Integer.parseInt(storeParts[1]);
-
-                                                        if (!processedStoresProdCat.contains(store)) {
-                                                            salesByStoreProdCat.put(store, amount);
-                                                            totalProdCat += amount;
-                                                            processedStoresProdCat.add(store);
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    } catch (IOException e) {
-                                        System.err.println("Error communicating with worker for sales by product category: " + e.getMessage());
-                                    }
-                                }
-
-                                StringBuilder resultProdCat = new StringBuilder();
-                                for (Map.Entry<String, Integer> entry : salesByStoreProdCat.entrySet()) {
-                                    if (resultProdCat.length() > 0) {
-                                        resultProdCat.append("\n");
-                                    }
-                                    resultProdCat.append("\"").append(entry.getKey()).append("\": ").append(entry.getValue());
-                                }
-                                if (!salesByStoreProdCat.isEmpty()) {
-                                    resultProdCat.append("\n");
-                                }
-                                resultProdCat.append("\"total\": ").append(totalProdCat);
-
-                                System.out.println("Sending sales by product category results: " + resultProdCat);
-                                out.println(resultProdCat.toString());
-                                out.println("END");
-                                break;
-
                     case "GET_SALES_BY_PRODUCT":
-                        String productName = parts.length > 1 ? parts[1].trim() : "";
-                        System.out.println("Processing GET_SALES_BY_PRODUCT request for product: " + productName);
-
-                        //MapReduce
-                        Map<String, Integer> salesByStoreProd = new HashMap<>();
-                        Set<String> processedStoresProd = new HashSet<>();
-                        int totalProd = 0;
-
-                        for (WorkerConnection worker : workers) {
-                            try {
-                                String response = worker.sendRequest("GET_SALES_BY_PRODUCT " + productName);
-
-                                if (!response.isEmpty()) {
-                                    String[] storesSales = response.split("\\|");
-                                    for (String storeSale : storesSales) {
-                                        if (!storeSale.isEmpty()) {
-                                            String[] storeParts = storeSale.split(":");
-                                            if (storeParts.length == 2) {
-                                                String store = storeParts[0];
-                                                int amount = Integer.parseInt(storeParts[1]);
-
-                                                if (!processedStoresProd.contains(store)) {
-                                                    salesByStoreProd.put(store, amount);
-                                                    totalProd += amount;
-                                                    processedStoresProd.add(store);
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            } catch (IOException e) {
-                                System.err.println("Error communicating with worker for sales by product: " + e.getMessage());
-                            }
+                        System.out.println("Forwarding command to Reducer: " + request);
+                        try {
+                            String reducerResponse = sendRequestToReducer(request);
+                            System.out.println("Master received from Reducer:\n" + reducerResponse);
+                            out.println(reducerResponse); // Send Reducer's response (already formatted) to client
+                        } catch (IOException e) {
+                            System.err.println("Master failed to communicate with Reducer: " + e.getMessage());
+                            out.println("Error: Could not process sales data.");
                         }
-
-                        StringBuilder resultProd = new StringBuilder();
-                        for (Map.Entry<String, Integer> entry : salesByStoreProd.entrySet()) {
-                            if (resultProd.length() > 0) {
-                                resultProd.append("\n");
-                            }
-                            resultProd.append("\"").append(entry.getKey()).append("\": ").append(entry.getValue());
-                        }
-                        if (!salesByStoreProd.isEmpty()) {
-                            resultProd.append("\n");
-                        }
-                        resultProd.append("\"total\": ").append(totalProd);
-
-                        System.out.println("Sending sales by product results: " + resultProd);
-                        out.println(resultProd.toString());
-                        out.println("END");
+                        out.println("END"); // Signal end to the original client
                         break;
 
                     // ########################### CLIENT COMMANDS ###########################
                     case "FIND_STORES_WITHIN_RANGE":
+                        // ...existing FIND_STORES_WITHIN_RANGE logic...
                         String[] coords = data.split(",");
                         if (coords.length != 2) {
                             out.println("Invalid coordinates format");
@@ -575,6 +482,7 @@ class MasterThread extends Thread {
                         out.println("END");
                         break;
                     case "FILTER_STORES":
+                        // ...existing FILTER_STORES logic...
                             System.out.println("Processing filter request: " + data);
                             Map<String, List<String>> filters = parseFilterString(data);
 
@@ -616,6 +524,7 @@ class MasterThread extends Thread {
                             out.println("END");
                             break;
                     case "BUY":
+                        // ...existing BUY logic...
                         String[] buyParts = data.split(",");
                         if (buyParts.length < 3) {
                             out.println("Invalid BUY format");
@@ -637,18 +546,34 @@ class MasterThread extends Thread {
                             continue;
                         }
 
+                        // Send BUY request to *all* replicas for consistency
+                        boolean buySuccess = false;
                         for (WorkerConnection worker : buyWorkers) {
                             try {
-                                worker.sendRequest("BUY " + data);
+                                // Assuming worker returns "OK" on success, or an error message
+                                String buyResponse = worker.sendRequest("BUY " + data);
+                                if (buyResponse != null && buyResponse.startsWith("OK")) { // Adjust based on actual worker response
+                                     buySuccess = true;
+                                     // Don't break; ensure all replicas process the buy
+                                } else {
+                                     System.err.println("Worker " + worker.getPort() + " failed BUY: " + buyResponse);
+                                     // Handle potential inconsistency if one replica fails
+                                }
                             } catch (IOException e) {
-                                System.err.println("Failed to send purchase to worker: " + e.getMessage());
+                                System.err.println("Failed to send purchase to worker " + worker.getPort() + ": " + e.getMessage());
+                                // Handle potential inconsistency
                             }
                         }
 
-                        out.println("Purchase completed: " + buyQuantity + " of " + buyProductName + " from " + buyStoreName);
+                        if (buySuccess) {
+                            out.println("Purchase completed: " + buyQuantity + " of " + buyProductName + " from " + buyStoreName);
+                        } else {
+                            out.println("Error: Purchase failed for " + buyProductName + " at " + buyStoreName);
+                        }
                         out.println("END");
                         break;
                     case "GET_STORE_DETAILS":
+                        // ...existing GET_STORE_DETAILS logic...
                         String detailsStoreName = data.trim();
                         System.out.println("Processing GET_STORE_DETAILS for: " + detailsStoreName);
 
@@ -658,25 +583,27 @@ class MasterThread extends Thread {
                             storeWorkers = storeToWorkers.get("\"" + detailsStoreName + "\"");
                         }
 
-                        if (storeWorkers == null) {
-                            out.println("Error: Store not found");
+                        if (storeWorkers == null || storeWorkers.isEmpty()) { // Check if list is empty after potential removals
+                            out.println("Error: Store not found or no available workers for it.");
                             out.println("END");
                             continue;
                         }
 
                         String storeDetails = null;
+                        // Try workers until one responds successfully
                         for (WorkerConnection worker : storeWorkers) {
                             try {
                                 storeDetails = worker.sendRequest("GET_STORE_DETAILS " + detailsStoreName);
-                                if (storeDetails != null && !storeDetails.isEmpty()) {
-                                    break;
+                                if (storeDetails != null && !storeDetails.isEmpty() && !storeDetails.startsWith("Error:")) { // Check for valid response
+                                    break; // Got details, no need to ask other replicas
                                 }
                             } catch (IOException e) {
-                                System.err.println("Failed to get store details from worker: " + e.getMessage());
+                                System.err.println("Failed to get store details from worker " + worker.getPort() + ": " + e.getMessage());
+                                // Continue to the next worker
                             }
                         }
 
-                        if (storeDetails == null || storeDetails.isEmpty()) {
+                        if (storeDetails == null || storeDetails.isEmpty() || storeDetails.startsWith("Error:")) {
                             out.println("Error: Could not retrieve store details");
                         } else {
                             out.println(storeDetails);
@@ -685,6 +612,7 @@ class MasterThread extends Thread {
                         out.println("END");
                         break;
                     case "REVIEW":
+                        // ...existing REVIEW logic...
                         String[] reviewParts = data.split(",");
                         if (reviewParts.length < 2) {
                             out.println("Invalid REVIEW format");
@@ -692,32 +620,45 @@ class MasterThread extends Thread {
                             continue;
                         }
                         String reviewStoreName = reviewParts[0].trim();
-                        int rating = Integer.parseInt(reviewParts[1].trim());
+                        // int rating = Integer.parseInt(reviewParts[1].trim()); // Rating not used here, just passed on
 
                         List<WorkerConnection> reviewWorkers = storeToWorkers.get(reviewStoreName);
                         if (reviewWorkers == null) {
                             reviewWorkers = storeToWorkers.get("\"" + reviewStoreName + "\"");
                         }
 
-                        if (reviewWorkers == null) {
-                            out.println("Store not found: " + reviewStoreName);
+                        if (reviewWorkers == null || reviewWorkers.isEmpty()) {
+                            out.println("Store not found or no available workers for it: " + reviewStoreName);
                             out.println("END");
                             continue;
                         }
 
+                        boolean reviewSuccess = false;
                         for (WorkerConnection worker : reviewWorkers) {
                             try {
-                                worker.sendRequest(request);
+                                // Assuming worker returns "OK" or similar on success
+                                String reviewResponse = worker.sendRequest(request);
+                                if (reviewResponse != null && reviewResponse.startsWith("OK")) { // Adjust as needed
+                                    reviewSuccess = true;
+                                    // Don't break; ensure all replicas get the review
+                                } else {
+                                    System.err.println("Worker " + worker.getPort() + " failed REVIEW: " + reviewResponse);
+                                }
                             } catch (IOException e) {
-                                System.err.println("Failed to send review to worker: " + e.getMessage());
+                                System.err.println("Failed to send review to worker " + worker.getPort() + ": " + e.getMessage());
                             }
                         }
 
-                        out.println("Review submitted for store: " + reviewStoreName);
+                        if (reviewSuccess) {
+                             out.println("Review submitted for store: " + reviewStoreName);
+                        } else {
+                             out.println("Error: Failed to submit review for store: " + reviewStoreName);
+                        }
                         out.println("END");
                         break;
                     default:
                         out.println("Unknown command: " + command);
+                        out.println("END"); // Send END even for unknown commands
                 }
             }
         } catch (IOException e) {
@@ -731,30 +672,53 @@ class MasterThread extends Thread {
         }
     }
 
-private List<String> splitJsonObjects(String jsonContent) {
-    List<String> objects = new ArrayList<>();
-    int braceCount = 0;
-    int startIndex = -1;
+    // Helper method to send a request to the Reducer and read its multi-line response
+    private String sendRequestToReducer(String request) throws IOException {
+        StringBuilder responseBuilder = new StringBuilder();
+        // Use try-with-resources for the Reducer socket and streams
+        try (Socket reducerSocket = new Socket(reducerHost, reducerPort);
+             PrintWriter reducerOut = new PrintWriter(reducerSocket.getOutputStream(), true);
+             BufferedReader reducerIn = new BufferedReader(new InputStreamReader(reducerSocket.getInputStream()))) {
 
-    for (int i = 0; i < jsonContent.length(); i++) {
-        char c = jsonContent.charAt(i);
+            reducerOut.println(request); // Send the command (e.g., GET_SALES_BY_PRODUCT productX)
 
-        if (c == '{') {
-            if (braceCount == 0) {
-                startIndex = i;
+            String line;
+            // Read lines until the Reducer sends its specific end marker
+            while ((line = reducerIn.readLine()) != null && !line.equals("END_REDUCER")) {
+                if (responseBuilder.length() > 0) {
+                    responseBuilder.append("\n");
+                }
+                responseBuilder.append(line);
             }
-            braceCount++;
-        } else if (c == '}') {
-            braceCount--;
-            if (braceCount == 0 && startIndex != -1) {
-                objects.add(jsonContent.substring(startIndex, i+1));
-                startIndex = -1;
-            }
-        }
+        } // Socket and streams are automatically closed here
+        return responseBuilder.toString();
     }
 
-    return objects;
-}
+    // ...existing helper methods (splitJsonObjects, parseFilterString, extractField, getWorkersForStore)...
+    private List<String> splitJsonObjects(String jsonContent) {
+        List<String> objects = new ArrayList<>();
+        int braceCount = 0;
+        int startIndex = -1;
+
+        for (int i = 0; i < jsonContent.length(); i++) {
+            char c = jsonContent.charAt(i);
+
+            if (c == '{') {
+                if (braceCount == 0) {
+                    startIndex = i;
+                }
+                braceCount++;
+            } else if (c == '}') {
+                braceCount--;
+                if (braceCount == 0 && startIndex != -1) {
+                    objects.add(jsonContent.substring(startIndex, i+1));
+                    startIndex = -1;
+                }
+            }
+        }
+
+        return objects;
+    }
 
     private Map<String, List<String>> parseFilterString(String filterData) {
         Map<String, List<String>> filters = new HashMap<>();
@@ -797,13 +761,21 @@ private List<String> splitJsonObjects(String jsonContent) {
     }
 
     private List<WorkerConnection> getWorkersForStore(String storeName) {
+        // Use computeIfAbsent for cleaner assignment logic
         return storeToWorkers.computeIfAbsent(storeName, k -> {
-            int primaryIndex = Math.abs(storeName.hashCode()) % workers.size();
+            // Ensure workers list isn't empty before calculating hash
+            if (workers.isEmpty()) {
+                System.err.println("Cannot assign workers for store '" + storeName + "': No workers available.");
+                return new ArrayList<>(); // Return empty list if no workers
+            }
+            int primaryIndex = Math.abs(k.hashCode()) % workers.size();
             List<WorkerConnection> assigned = new ArrayList<>();
             for (int i = 0; i < replicationFactor && i < workers.size(); i++) {
                 int index = (primaryIndex + i) % workers.size();
                 assigned.add(workers.get(index));
             }
+            System.out.println("Assigned workers for store '" + storeName + "': " +
+                               assigned.stream().map(wc -> String.valueOf(wc.getPort())).collect(Collectors.joining(", ")));
             return assigned;
         });
     }
