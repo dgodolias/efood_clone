@@ -1,5 +1,5 @@
 @echo off
-REM Start both the Master and Reducer in one script
+REM Start the Master
 
 REM Get current IP address automatically
 FOR /F "tokens=2 delims=:" %%a IN ('ipconfig ^| findstr /R /C:"IPv4 Address"') DO (
@@ -18,35 +18,21 @@ set REDUCER_PORT=8090
 set ROOT_DIR=..
 
 REM Parse command-line arguments
-if not "%1"=="" set WORKER_ADDRS=%1
+if not "%1"=="" set REDUCER_HOST=%1
 if not "%2"=="" set REDUCER_PORT=%2
+if not "%3"=="" set WORKER_ADDRS=%3
 
 REM Default worker addresses if not specified
 if "%WORKER_ADDRS%"=="" set WORKER_ADDRS=%CURRENT_IP%:8081,%CURRENT_IP%:8082,%CURRENT_IP%:8083,%CURRENT_IP%:8084,%CURRENT_IP%:8085
 
-REM Create main data directory if it doesn't exist
-if not exist "%ROOT_DIR%\data" mkdir "%ROOT_DIR%\data"
-
-echo Starting Master and Reducer on the same machine...
-echo - IP Address: %CURRENT_IP%
-echo - Connecting to Workers at: %WORKER_ADDRS%
-echo - Reducer will use port: %REDUCER_PORT%
-echo.
-
-REM Start the Reducer in a new window with custom port
-start "Reducer" cmd /K "java -Dreducer.port=%REDUCER_PORT% -cp "%ROOT_DIR%\classes" com.example.backend.Reducer %WORKER_ADDRS:,= %"
-
-REM Wait briefly for the Reducer to initialize
-timeout /t 2 /nobreak >nul
-
-REM Start the Master in the current window
 echo Starting Master in distributed mode...
+echo - IP Address: %CURRENT_IP%
 echo - Connecting to Reducer at: %REDUCER_HOST%:%REDUCER_PORT%
 echo - Worker addresses: %WORKER_ADDRS%
 echo.
 
 REM Start Master with all worker addresses
-java -cp "%ROOT_DIR%\classes" com.example.backend.Master --distributed --reducer %REDUCER_HOST% --workers %WORKER_ADDRS%
+java -cp "%ROOT_DIR%\classes" com.example.backend.Master --distributed --reducer %REDUCER_HOST%:%REDUCER_PORT% --workers %WORKER_ADDRS%
 
 if %ERRORLEVEL% NEQ 0 (
   echo Master failed to start! Error code: %ERRORLEVEL%
