@@ -79,13 +79,13 @@
     "Latitude": 38.001234,
     "Longitude": 23.740123,
     "FoodCategory": "sushi",
-    "Stars": 4.87,
-    "NoOfVotes": 31,
+    "Stars": 5.0,
+    "NoOfVotes": 30,
     "StoreLogo": "app/src/main/assets/logos/sushi_spot.png",
     "PriceCategory": "$$$",
     "Products": [
-      {"ProductName": "California Roll", "ProductType": "sushi", "Available Amount": 797, "Price": 12.0},
-      {"ProductName": "Spicy Tuna", "ProductType": "sushi", "Available Amount": 599, "Price": 14.0},
+      {"ProductName": "California Roll", "ProductType": "sushi", "Available Amount": 800, "Price": 12.0},
+      {"ProductName": "Spicy Tuna", "ProductType": "sushi", "Available Amount": 600, "Price": 14.0},
       {"ProductName": "Miso Soup", "ProductType": "soup", "Available Amount": 200, "Price": 24.5}
     ]
   },
@@ -178,6 +178,21 @@
       {"ProductName": "Green Detox Juice", "ProductType": "juice", "Available Amount": 800, "Price": 5.5},
       {"ProductName": "Berry Blast Smoothie", "ProductType": "smoothie", "Available Amount": 700, "Price": 6.0},
       {"ProductName": "Acai Bowl", "ProductType": "bowl", "Available Amount": 500, "Price": 8.0}
+    ]
+  },
+  {
+    "StoreName": "Dessert Delight",
+    "Latitude": 37.989012,
+    "Longitude": 23.731234,
+    "FoodCategory": "desserts",
+    "Stars": 4.0,
+    "NoOfVotes": 28,
+    "StoreLogo": "/usr/bin/images/dessert_delight.png",
+    "PriceCategory": "$",
+    "Products": [
+      {"ProductName": "Chocolate Cake", "ProductType": "dessert", "Available Amount": 500, "Price": 5.0},
+      {"ProductName": "Cheesecake", "ProductType": "dessert", "Available Amount": 400, "Price": 6.0},
+      {"ProductName": "Ice Cream", "ProductType": "dessert", "Available Amount": 600, "Price": 4.0}
     ]
   },
   {

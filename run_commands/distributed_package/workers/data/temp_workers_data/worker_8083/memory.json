@@ -4,13 +4,13 @@
     "Latitude": 37.985555,
     "Longitude": 23.731111,
     "FoodCategory": "indian",
-    "Stars": 4.0,
-    "NoOfVotes": 28,
+    "Stars": 4.03,
+    "NoOfVotes": 29,
     "StoreLogo": "app/src/main/assets/logos/indian_flavors.png",
     "PriceCategory": "$$",
     "Products": [
       {"ProductName": "Chicken Tikka Masala", "ProductType": "curry", "Available Amount": 1800, "Price": 12.5},
-      {"ProductName": "Vegetable Samosa", "ProductType": "appetizer", "Available Amount": 1000, "Price": 5.0},
+      {"ProductName": "Vegetable Samosa", "ProductType": "appetizer", "Available Amount": 999, "Price": 5.0},
       {"ProductName": "Naan Bread", "ProductType": "bread", "Available Amount": 2000, "Price": 2.5}
     ]
   },
