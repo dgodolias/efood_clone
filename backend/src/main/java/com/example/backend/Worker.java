@@ -210,7 +210,7 @@ class WorkerThread extends Thread {
         Store removeStore = stores.get(removeStoreName);
         
         if (removeStore != null) {
-            boolean removed = (boolean) removeStore.removeProduct(removeProductName);
+            boolean removed = removeStore.removeProduct(removeProductName);
             updateStoresFile();
             
             if (removed) {
@@ -298,7 +298,7 @@ class WorkerThread extends Thread {
                 return;
             }
 
-            boolean success = (boolean) buyStore.purchaseProduct(buyProductName, buyQuantity);
+            boolean success = buyStore.purchaseProduct(buyProductName, buyQuantity);
             updateStoresFile();
             
             if (success) {
