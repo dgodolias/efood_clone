@@ -4,6 +4,7 @@ REM Start both the Master and Reducer in one script
 REM Default settings
 set REDUCER_HOST=localhost
 set REDUCER_PORT=8090
+set ROOT_DIR=..
 
 REM Parse command-line arguments
 if not "%1"=="" set WORKER_ADDRS=%1
@@ -18,7 +19,7 @@ echo - Reducer will use port: %REDUCER_PORT%
 echo.
 
 REM Start the Reducer in a new window with custom port
-start "Reducer" cmd /K java -Dreducer.port=%REDUCER_PORT% -cp classes com.example.backend.Reducer %WORKER_ADDRS:,= %
+start "Reducer" cmd /K java -Dreducer.port=%REDUCER_PORT% -cp "%ROOT_DIR%\classes" com.example.backend.Reducer %WORKER_ADDRS:,= %
 
 REM Wait briefly for the Reducer to initialize
 timeout /t 2 /nobreak >nul
@@ -30,4 +31,4 @@ echo - Worker addresses: %WORKER_ADDRS%
 echo.
 
 REM Start Master with all worker addresses
-CMD /K java -cp classes com.example.backend.Master --distributed --reducer %REDUCER_HOST% --workers %WORKER_ADDRS%
+CMD /K java -cp "%ROOT_DIR%\classes" com.example.backend.Master --distributed --reducer %REDUCER_HOST% --workers %WORKER_ADDRS%
