@@ -28,18 +28,25 @@ import java.util.concurrent.Executors;
 
 public class TCPClient {
     private static final String TAG = "TCPClient";
-    private static final String SERVER_HOST = "10.0.2.2";
+    private static String SERVER_HOST = "10.0.2.2"; 
     private static final int SERVER_PORT = 8080;
     private final Handler mainHandler;
     private final ExecutorService executor;
 
-    // Private constructor to prevent direct instantiation
+
+    static {
+        String configuredHost = System.getProperty("master.host");
+        if (configuredHost != null && !configuredHost.isEmpty()) {
+            SERVER_HOST = configuredHost;
+            Log.d(TAG, "Using master host from system property: " + SERVER_HOST);
+        }
+    }
+
     private TCPClient() {
         mainHandler = new Handler(Looper.getMainLooper());
         executor = Executors.newSingleThreadExecutor();
     }
 
-    // Static holder class for lazy initialization and thread safety
     private static class Holder {
         private static final TCPClient INSTANCE = new TCPClient();
     }

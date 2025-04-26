@@ -12,21 +12,26 @@ import java.util.stream.Collectors;
 
 public class Master {
     private static final int PORT = 8080;
-    private static final int REDUCER_PORT = 8090; // Port where Reducer listens
-    private static final String DEFAULT_REDUCER_HOST = "localhost"; // Default for local testing
-    private String reducerHost; // Can be modified for remote execution
+    private static final int REDUCER_PORT = 8090; 
+    private static final String DEFAULT_REDUCER_HOST = "localhost"; 
+    private String reducerHost; 
     private static final int REPLICATION_FACTOR = 3;
     private List<WorkerConnection> workers;
-    private List<Process> workerProcesses; // Only used for local workers
-    private Process reducerProcess; // Only used for local reducer
+    private List<Process> workerProcesses; 
+    private Process reducerProcess; 
     private Map<String, List<WorkerConnection>> storeToWorkers;
     private ScheduledExecutorService heartbeatScheduler;
     private PrintWriter out;
-    private boolean isLocalMode = true; // Flag to determine if we're running in local or distributed mode
+    private boolean isLocalMode = true; 
+    private InetAddress bindAddress; 
 
     public Master(int startPort, boolean localMode, String reducerHost, List<String> remoteWorkerAddresses) throws IOException {
         this.isLocalMode = localMode;
         this.reducerHost = (reducerHost != null && !reducerHost.isEmpty()) ? reducerHost : DEFAULT_REDUCER_HOST;
+        
+        this.bindAddress = isLocalMode ? 
+                InetAddress.getByName("localhost") : 
+                null; 
         
         workers = new ArrayList<>();
         workerProcesses = new ArrayList<>();
@@ -34,21 +39,21 @@ public class Master {
 
         out = new PrintWriter(System.out, true);
 
-        // Only delete local data directory in local mode
+      
         if (isLocalMode) {
             deleteDirectory(new File("data/temp_workers_data"));
         }
 
-        // Count stores for informational purposes
+        
         int storeCount = countStoresInJsonFile();
         
-        List<String> workerAddresses = new ArrayList<>(); // Store worker addresses for Reducer
+        List<String> workerAddresses = new ArrayList<>(); 
 
         if (isLocalMode) {
-            // Calculate dynamic worker count for local mode
+            
             int workerCount = Math.max(1, (int)Math.sqrt(storeCount));
             
-            // Local mode: spawn workers locally
+            
             System.out.println("Starting in LOCAL mode with " + workerCount + " workers for " + storeCount + " stores");
             for (int i = 0; i < workerCount; i++) {
                 int workerPort = startPort + i;
@@ -59,10 +64,10 @@ public class Master {
                 System.out.println("Started and connected to worker at localhost:" + workerPort);
             }
             
-            // In local mode, spawn the Reducer process locally
+            
             spawnReducer(workerAddresses);
         } else {
-            // Distributed mode: connect to remote workers
+            
             System.out.println("Starting in DISTRIBUTED mode with " + remoteWorkerAddresses.size() + " remote workers");
             for (String address : remoteWorkerAddresses) {
                 String[] parts = address.split(":");
@@ -82,7 +87,7 @@ public class Master {
                 }
             }
             
-            // In distributed mode, Reducer is assumed to be started independently
+            
             System.out.println("Using remote Reducer at " + this.reducerHost + ":" + REDUCER_PORT);
         }
 
@@ -95,20 +100,20 @@ public class Master {
             File storesFile = new File("data/stores.json");
             if (!storesFile.exists()) {
                 System.out.println("No stores.json file found, using default worker count");
-                return 2; // Default if file not found
+                return 2; 
             }
 
             String jsonContent = new String(Files.readAllBytes(Paths.get("data/stores.json"))).trim();
             if (!jsonContent.startsWith("[") || !jsonContent.endsWith("]")) {
                 System.err.println("Invalid JSON format in stores.json");
-                return 2; // Default if invalid format
+                return 2; 
             }
 
             List<String> storeJsons = parseStoreJsons(jsonContent);
             return storeJsons.size();
         } catch (IOException e) {
             System.err.println("Error reading stores.json: " + e.getMessage());
-            return 2; // Default on error
+            return 2;
         }
     }
 
@@ -240,14 +245,14 @@ public class Master {
         command.add("-cp");
         command.add(classpath);
         command.add(className);
-        command.addAll(workerAddresses); // Pass worker addresses as arguments
+        command.addAll(workerAddresses); 
 
         ProcessBuilder pb = new ProcessBuilder(command);
-        pb.inheritIO(); // Show Reducer output in the same console
+        pb.inheritIO(); 
         reducerProcess = pb.start();
         System.out.println("Started Reducer process.");
 
-        // Optional: Add a small delay to ensure Reducer is ready
+        
         try {
             Thread.sleep(1000); // Give reducer time to start
         } catch (InterruptedException e) {
@@ -256,19 +261,27 @@ public class Master {
     }
 
     public void start() {
-        try (ServerSocket serverSocket = new ServerSocket(PORT)) {
-            System.out.println("Master Server running on port " + PORT);
+        try (ServerSocket serverSocket = bindAddress != null ? 
+                new ServerSocket(PORT, 50, bindAddress) : // Bind to localhost in local mode
+                new ServerSocket(PORT)) { // Bind to all interfaces (0.0.0.0) in distributed mode
+            
+            String bindInfo = bindAddress != null ? 
+                    "localhost:" + PORT : 
+                    "0.0.0.0:" + PORT + " (all interfaces)";
+            
+            System.out.println("Master Server running on " + bindInfo);
+            
             while (true) {
                 Socket socket = serverSocket.accept();
                 System.out.println("New client connected: " + socket.getInetAddress());
-                // Pass Reducer host/port to the thread
+                
                 new MasterThread(socket, workers, storeToWorkers, REPLICATION_FACTOR, reducerHost, REDUCER_PORT).start();
             }
         } catch (IOException e) {
             System.err.println("Master server failed: " + e.getMessage());
         } finally {
             shutdownWorkers();
-            shutdownReducer(); // Ensure Reducer is also shut down
+            shutdownReducer(); 
         }
     }
 
@@ -294,10 +307,10 @@ public class Master {
     }
 
     private List<WorkerConnection> getWorkersForStore(String storeName) {
-        // Check for empty workers list first to avoid division by zero
+        
         if (workers.isEmpty()) {
             System.err.println("Cannot assign workers for store '" + storeName + "': No workers available.");
-            return new ArrayList<>(); // Return empty list if no workers
+            return new ArrayList<>(); 
         }
         
         int primaryIndex = Math.abs(storeName.hashCode()) % workers.size();
@@ -315,8 +328,8 @@ public class Master {
         heartbeatScheduler.scheduleAtFixedRate(() -> {
             for (WorkerConnection w : workers) {
                 try {
-                    String response = w.sendRequest("PING"); // Capture the response
-                    System.out.println("Master received from worker " + w.getPort() + ": " + response); // Print the response
+                    String response = w.sendRequest("PING"); 
+                    System.out.println("Master received from worker " + w.getPort() + ": " + response); 
                 } catch (IOException e) {
                     System.err.println("Worker at " + w.getPort() + " is down");
                 }
@@ -327,11 +340,11 @@ public class Master {
     public static void main(String[] args) {
         try {
             int startPort = 8081;
-            boolean localMode = true; // Default to local mode
+            boolean localMode = true; 
             String reducerHost = DEFAULT_REDUCER_HOST;
             List<String> remoteWorkerAddresses = new ArrayList<>();
 
-            // Parse command-line arguments for distributed mode
+            
             for (int i = 0; i < args.length; i++) {
                 if (args[i].equals("--distributed")) {
                     localMode = false;
@@ -343,7 +356,7 @@ public class Master {
                     }
                 } else if (args[i].equals("--workers")) {
                     if (i + 1 < args.length) {
-                        // Process comma-separated worker addresses
+
                         String workersArg = args[++i];
                         String[] workers = workersArg.split(",");
                         for (String worker : workers) {
@@ -394,7 +407,7 @@ class MasterThread extends Thread {
                 System.out.println("Received command: " + request);
                 if (workers.isEmpty()) {
                     out.println("No workers available to process request: " + request);
-                    out.println("END"); // Ensure client gets an end marker
+                    out.println("END"); 
                     continue;
                 }
                 String[] parts = request.split(" ", 2);
@@ -427,7 +440,7 @@ class MasterThread extends Thread {
                         break;
 
                     case "ADD_PRODUCT":
-                        // ...existing ADD_PRODUCT logic...
+                        
                         String[] productParts = data.split(",");
                         if (productParts.length < 5) {
                             out.println("Invalid ADD_PRODUCT format");
@@ -462,7 +475,7 @@ class MasterThread extends Thread {
                         break;
 
                     case "REMOVE_PRODUCT":
-                        // ...existing REMOVE_PRODUCT logic...
+                        
                         String[] removeParts = data.split(",");
                         if (removeParts.length < 2) {
                             out.println("Invalid REMOVE_PRODUCT format");
@@ -505,17 +518,17 @@ class MasterThread extends Thread {
                         try {
                             String reducerResponse = sendRequestToReducer(request);
                             System.out.println("Master received from Reducer:\n" + reducerResponse);
-                            out.println(reducerResponse); // Send Reducer's response (already formatted) to client
+                            out.println(reducerResponse); 
                         } catch (IOException e) {
                             System.err.println("Master failed to communicate with Reducer: " + e.getMessage());
                             out.println("Error: Could not process sales data.");
                         }
-                        out.println("END"); // Signal end to the original client
+                        out.println("END");
                         break;
 
                     // ########################### CLIENT COMMANDS ###########################
                     case "FIND_STORES_WITHIN_RANGE":
-                        // ...existing FIND_STORES_WITHIN_RANGE logic...
+                        
                         String[] coords = data.split(",");
                         if (coords.length != 2) {
                             out.println("Invalid coordinates format");
@@ -525,20 +538,20 @@ class MasterThread extends Thread {
 
                         StringBuilder combinedStoresJson = new StringBuilder("[");
                         boolean firstStore = true;
-                        Set<String> addedStoreNames = new HashSet<>(); // Track stores we've already added
+                        Set<String> addedStoreNames = new HashSet<>(); 
 
                         for (WorkerConnection worker : workers) {
                             try {
                                 String response = worker.sendRequest("FIND_STORES_WITHIN_RANGE " + data);
                                 if (response != null && !response.isEmpty() && response.startsWith("[") && response.endsWith("]")) {
-                                    // Extract store objects from the JSON array
+                                    
                                     String storesContent = response.substring(1, response.length() - 1).trim();
                                     if (!storesContent.isEmpty()) {
-                                        // Split by valid JSON objects
+                                        
                                         List<String> storeObjects = splitJsonObjects(storesContent);
 
                                         for (String storeJson : storeObjects) {
-                                            // Extract store name to check for duplicates
+                                            
                                             String sName = extractField(storeJson, "StoreName");
                                             if (!addedStoreNames.contains(sName)) {
                                                 if (!firstStore) {
@@ -562,7 +575,7 @@ class MasterThread extends Thread {
                         out.println("END");
                         break;
                     case "FILTER_STORES":
-                        // ...existing FILTER_STORES logic...
+                        
                             System.out.println("Processing filter request: " + data);
                             Map<String, List<String>> filters = parseFilterString(data);
 
@@ -573,9 +586,9 @@ class MasterThread extends Thread {
                                 try {
                                     String response = worker.sendRequest(request);
                                     if (response != null && !response.isEmpty()) {
-                                        // Check if response is a JSON array
+                                        
                                         if (response.startsWith("[") && response.endsWith("]")) {
-                                            // Extract individual store objects from the array
+                                            
                                             List<String> storeObjects = splitJsonObjects(
                                                 response.substring(1, response.length() - 1).trim()
                                             );
@@ -604,7 +617,7 @@ class MasterThread extends Thread {
                             out.println("END");
                             break;
                     case "BUY":
-                        // ...existing BUY logic...
+                        
                         String[] buyParts = data.split(",");
                         if (buyParts.length < 3) {
                             out.println("Invalid BUY format");
@@ -630,18 +643,17 @@ class MasterThread extends Thread {
                         boolean buySuccess = false;
                         for (WorkerConnection worker : buyWorkers) {
                             try {
-                                // Assuming worker returns "OK" on success, or an error message
+                                
                                 String buyResponse = worker.sendRequest("BUY " + data);
-                                if (buyResponse != null && buyResponse.startsWith("OK")) { // Adjust based on actual worker response
+                                if (buyResponse != null && buyResponse.startsWith("OK")) { 
                                      buySuccess = true;
-                                     // Don't break; ensure all replicas process the buy
+                                     
                                 } else {
                                      System.err.println("Worker " + worker.getPort() + " failed BUY: " + buyResponse);
-                                     // Handle potential inconsistency if one replica fails
+                                     
                                 }
                             } catch (IOException e) {
                                 System.err.println("Failed to send purchase to worker " + worker.getPort() + ": " + e.getMessage());
-                                // Handle potential inconsistency
                             }
                         }
 
@@ -653,7 +665,7 @@ class MasterThread extends Thread {
                         out.println("END");
                         break;
                     case "GET_STORE_DETAILS":
-                        // ...existing GET_STORE_DETAILS logic...
+                        
                         String detailsStoreName = data.trim();
                         System.out.println("Processing GET_STORE_DETAILS for: " + detailsStoreName);
 
@@ -663,23 +675,23 @@ class MasterThread extends Thread {
                             storeWorkers = storeToWorkers.get("\"" + detailsStoreName + "\"");
                         }
 
-                        if (storeWorkers == null || storeWorkers.isEmpty()) { // Check if list is empty after potential removals
+                        if (storeWorkers == null || storeWorkers.isEmpty()) { 
                             out.println("Error: Store not found or no available workers for it.");
                             out.println("END");
                             continue;
                         }
 
                         String storeDetails = null;
-                        // Try workers until one responds successfully
+
                         for (WorkerConnection worker : storeWorkers) {
                             try {
                                 storeDetails = worker.sendRequest("GET_STORE_DETAILS " + detailsStoreName);
-                                if (storeDetails != null && !storeDetails.isEmpty() && !storeDetails.startsWith("Error:")) { // Check for valid response
-                                    break; // Got details, no need to ask other replicas
+                                if (storeDetails != null && !storeDetails.isEmpty() && !storeDetails.startsWith("Error:")) { 
+                                    break;
                                 }
                             } catch (IOException e) {
                                 System.err.println("Failed to get store details from worker " + worker.getPort() + ": " + e.getMessage());
-                                // Continue to the next worker
+                                
                             }
                         }
 
@@ -692,7 +704,7 @@ class MasterThread extends Thread {
                         out.println("END");
                         break;
                     case "REVIEW":
-                        // ...existing REVIEW logic...
+                       
                         String[] reviewParts = data.split(",");
                         if (reviewParts.length < 2) {
                             out.println("Invalid REVIEW format");
@@ -700,7 +712,7 @@ class MasterThread extends Thread {
                             continue;
                         }
                         String reviewStoreName = reviewParts[0].trim();
-                        // int rating = Integer.parseInt(reviewParts[1].trim()); // Rating not used here, just passed on
+
 
                         List<WorkerConnection> reviewWorkers = storeToWorkers.get(reviewStoreName);
                         if (reviewWorkers == null) {
@@ -716,11 +728,11 @@ class MasterThread extends Thread {
                         boolean reviewSuccess = false;
                         for (WorkerConnection worker : reviewWorkers) {
                             try {
-                                // Assuming worker returns "OK" or similar on success
+                                
                                 String reviewResponse = worker.sendRequest(request);
-                                if (reviewResponse != null && reviewResponse.startsWith("OK")) { // Adjust as needed
+                                if (reviewResponse != null && reviewResponse.startsWith("OK")) { 
                                     reviewSuccess = true;
-                                    // Don't break; ensure all replicas get the review
+                                    
                                 } else {
                                     System.err.println("Worker " + worker.getPort() + " failed REVIEW: " + reviewResponse);
                                 }
@@ -738,7 +750,7 @@ class MasterThread extends Thread {
                         break;
                     default:
                         out.println("Unknown command: " + command);
-                        out.println("END"); // Send END even for unknown commands
+                        out.println("END"); 
                 }
             }
         } catch (IOException e) {
@@ -752,29 +764,29 @@ class MasterThread extends Thread {
         }
     }
 
-    // Helper method to send a request to the Reducer and read its multi-line response
+    
     private String sendRequestToReducer(String request) throws IOException {
         StringBuilder responseBuilder = new StringBuilder();
-        // Use try-with-resources for the Reducer socket and streams
+        
         try (Socket reducerSocket = new Socket(reducerHost, reducerPort);
              PrintWriter reducerOut = new PrintWriter(reducerSocket.getOutputStream(), true);
              BufferedReader reducerIn = new BufferedReader(new InputStreamReader(reducerSocket.getInputStream()))) {
 
-            reducerOut.println(request); // Send the command (e.g., GET_SALES_BY_PRODUCT productX)
+            reducerOut.println(request); 
 
             String line;
-            // Read lines until the Reducer sends its specific end marker
+            
             while ((line = reducerIn.readLine()) != null && !line.equals("END_REDUCER")) {
                 if (responseBuilder.length() > 0) {
                     responseBuilder.append("\n");
                 }
                 responseBuilder.append(line);
             }
-        } // Socket and streams are automatically closed here
+        } 
         return responseBuilder.toString();
     }
 
-    // ...existing helper methods (splitJsonObjects, parseFilterString, extractField, getWorkersForStore)...
+    
     private List<String> splitJsonObjects(String jsonContent) {
         List<String> objects = new ArrayList<>();
         int braceCount = 0;
@@ -841,12 +853,12 @@ class MasterThread extends Thread {
     }
 
     private List<WorkerConnection> getWorkersForStore(String storeName) {
-        // Use computeIfAbsent for cleaner assignment logic
+        
         return storeToWorkers.computeIfAbsent(storeName, k -> {
-            // Ensure workers list isn't empty before calculating hash
+            
             if (workers.isEmpty()) {
                 System.err.println("Cannot assign workers for store '" + storeName + "': No workers available.");
-                return new ArrayList<>(); // Return empty list if no workers
+                return new ArrayList<>(); 
             }
             int primaryIndex = Math.abs(k.hashCode()) % workers.size();
             List<WorkerConnection> assigned = new ArrayList<>();

@@ -7,15 +7,28 @@ import java.nio.file.Paths;
 import java.util.Scanner;
 
 public class ManagerConsoleApp {
-    private static final String MASTER_HOST = "localhost";
+    private static final String DEFAULT_MASTER_HOST = "localhost";
     private static final int MASTER_PORT = 8080;
 
     public static void main(String[] args) {
-        try (Socket socket = new Socket(MASTER_HOST, MASTER_PORT);
+        String masterHost = DEFAULT_MASTER_HOST;
+        
+        if (args.length > 0) {
+            masterHost = args[0];
+            System.out.println("Using master host: " + masterHost);
+        }
+
+        String envMasterHost = System.getenv("MASTER_HOST");
+        if (envMasterHost != null && !envMasterHost.isEmpty()) {
+            masterHost = envMasterHost;
+            System.out.println("Using master host from environment: " + masterHost);
+        }
+
+        try (Socket socket = new Socket(masterHost, MASTER_PORT);
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
              BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
              Scanner scanner = new Scanner(System.in)) {
-            System.out.println("Connected to Master at " + MASTER_HOST + ":" + MASTER_PORT);
+            System.out.println("Connected to Master at " + masterHost + ":" + MASTER_PORT);
             while (true) {
                 System.out.println("Enter command (ADD_STORE, ADD_PRODUCT, REMOVE_PRODUCT, GET_SALES_BY_STORE_TYPE_CATEGORY, GET_SALES_BY_PRODUCT_CATEGORY, GET_SALES_BY_PRODUCT, EXIT):");
                 String command = scanner.nextLine();
