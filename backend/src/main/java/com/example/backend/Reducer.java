@@ -48,12 +48,36 @@ public class Reducer {
             }
         }
 
-        // Try to get hostname of current machine
-        String hostname = "localhost";
+        // Get IP address of the current machine instead of hostname
+        String ipAddress = "localhost";
         try {
-            hostname = InetAddress.getLocalHost().getHostName();
-        } catch (UnknownHostException e) {
-            System.out.println("Could not determine hostname, using 'localhost'");
+            // Try to get the actual IP address instead of hostname
+            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+            while (interfaces.hasMoreElements()) {
+                NetworkInterface iface = interfaces.nextElement();
+                // Skip loopback interfaces and disabled interfaces
+                if (iface.isLoopback() || !iface.isUp()) {
+                    continue;
+                }
+
+                Enumeration<InetAddress> addresses = iface.getInetAddresses();
+                while (addresses.hasMoreElements()) {
+                    InetAddress addr = addresses.nextElement();
+                    // Skip IPv6 addresses and loopback addresses
+                    if (addr instanceof Inet6Address || addr.isLoopbackAddress()) {
+                        continue;
+                    }
+                    ipAddress = addr.getHostAddress();
+                    System.out.println("Using IP address: " + ipAddress);
+                    break;
+                }
+                
+                if (!ipAddress.equals("localhost")) {
+                    break; // Stop after finding a valid IP
+                }
+            }
+        } catch (SocketException e) {
+            System.out.println("Could not determine IP address, using 'localhost'");
         }
 
         List<WorkerConnection> workerConnections = new ArrayList<>();
@@ -80,7 +104,7 @@ public class Reducer {
             System.exit(1);
         }
 
-        Reducer reducer = new Reducer(workerConnections, hostname, reducerPort);
+        Reducer reducer = new Reducer(workerConnections, ipAddress, reducerPort);
         reducer.start();
     }
 }

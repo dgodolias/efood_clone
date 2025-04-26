@@ -31,8 +31,8 @@ echo - Connecting to Reducer at: %REDUCER_HOST%:%REDUCER_PORT%
 echo - Worker addresses: %WORKER_ADDRS%
 echo.
 
-REM Start Master with all worker addresses
-java -cp "%ROOT_DIR%\classes" com.example.backend.Master --distributed --reducer %REDUCER_HOST%:%REDUCER_PORT% --workers %WORKER_ADDRS%
+REM Start Master with all worker addresses - Fixed to pass just the host to --reducer flag
+java -cp "%ROOT_DIR%\classes" com.example.backend.Master --distributed --reducer %REDUCER_HOST% --workers %WORKER_ADDRS%
 
 if %ERRORLEVEL% NEQ 0 (
   echo Master failed to start! Error code: %ERRORLEVEL%

@@ -91,8 +91,31 @@ public class Master {
             System.out.println("Using remote Reducer at " + this.reducerHost + ":" + REDUCER_PORT);
         }
 
+        // Verify Reducer connectivity before proceeding
+        if (!verifyReducerConnectivity()) {
+            throw new IOException("Failed to connect to the Reducer at " + this.reducerHost + ":" + REDUCER_PORT + 
+                                 ". Make sure the Reducer is running before starting the Master.");
+        }
+        
         loadInitialStores();
         startHeartbeat();
+    }
+    
+    /**
+     * Verifies that the Master can connect to the Reducer.
+     * This makes the Reducer an essential component for the Master to start.
+     * 
+     * @return true if the connection was successful, false otherwise
+     */
+    private boolean verifyReducerConnectivity() {
+        try (Socket socket = new Socket(reducerHost, REDUCER_PORT)) {
+            System.out.println("Successfully connected to Reducer at " + reducerHost + ":" + REDUCER_PORT);
+            return true;
+        } catch (IOException e) {
+            System.err.println("ERROR: Cannot connect to Reducer at " + reducerHost + ":" + REDUCER_PORT);
+            System.err.println("The Reducer must be running for the Master to function.");
+            return false;
+        }
     }
 
     private int countStoresInJsonFile() {
@@ -410,6 +433,19 @@ class MasterThread extends Thread {
                     out.println("END"); 
                     continue;
                 }
+                
+                // Verify Reducer connection before processing any request
+                try {
+                    // Quick check to ensure Reducer is still available
+                    Socket reducerSocket = new Socket(reducerHost, reducerPort);
+                    reducerSocket.close();
+                } catch (IOException e) {
+                    System.err.println("ERROR: Cannot connect to Reducer at " + reducerHost + ":" + reducerPort);
+                    out.println("ERROR: Reducer is unavailable. The system cannot process requests without a functioning Reducer.");
+                    out.println("END");
+                    continue;
+                }
+                
                 String[] parts = request.split(" ", 2);
                 String command = parts[0];
                 String data = parts.length > 1 ? parts[1] : "";
@@ -417,97 +453,45 @@ class MasterThread extends Thread {
                 switch (command) {
                     // ########################### MANAGER COMMANDS ###########################
                     case "ADD_STORE":
-                        // ...existing ADD_STORE logic...
-                        String storeName = extractField(data, "StoreName");
-                        System.out.println("ADD_STORE storeName: [" + storeName + "]");
-                        if (storeName.isEmpty()) {
-                            out.println("Error: Invalid store JSON");
+                        // Forward to Reducer to handle
+                        try {
+                            String reducerResponse = sendRequestToReducer(request);
+                            System.out.println("Master received from Reducer for ADD_STORE:\n" + reducerResponse);
+                            out.println(reducerResponse);
                             out.println("END");
-                            continue;
+                        } catch (IOException e) {
+                            System.err.println("Master failed to communicate with Reducer: " + e.getMessage());
+                            out.println("Error: Could not add store due to Reducer communication failure.");
+                            out.println("END");
                         }
-                        List<WorkerConnection> assignedWorkers = getWorkersForStore(storeName);
-                        for (WorkerConnection worker : assignedWorkers) {
-                            try {
-                                worker.sendRequest("ADD_STORE " + data);
-                            } catch (IOException e) {
-                                System.err.println("Failed to send store to worker: " + e.getMessage());
-                            }
-                        }
-                        StringBuilder storeResult = new StringBuilder();
-                        storeResult.append("Store added: ").append(storeName).append("\n");
-                        storeResult.append("END");
-                        out.println(storeResult.toString());
                         break;
 
                     case "ADD_PRODUCT":
-                        
-                        String[] productParts = data.split(",");
-                        if (productParts.length < 5) {
-                            out.println("Invalid ADD_PRODUCT format");
+                        // Forward to Reducer to handle
+                        try {
+                            String reducerResponse = sendRequestToReducer(request);
+                            System.out.println("Master received from Reducer for ADD_PRODUCT:\n" + reducerResponse);
+                            out.println(reducerResponse);
                             out.println("END");
-                            continue;
-                        }
-                        String storeNameProd = productParts[0].trim();
-
-
-                        List<WorkerConnection> prodWorkers = storeToWorkers.get(storeNameProd);
-                        if (prodWorkers == null) {
-
-                            prodWorkers = storeToWorkers.get("\"" + storeNameProd + "\"");
-                        }
-
-                        if (prodWorkers == null) {
-                            out.println("Store not found: " + storeNameProd);
+                        } catch (IOException e) {
+                            System.err.println("Master failed to communicate with Reducer: " + e.getMessage());
+                            out.println("Error: Could not add product due to Reducer communication failure.");
                             out.println("END");
-                            continue;
                         }
-                        for (WorkerConnection worker : prodWorkers) {
-                            try {
-                                worker.sendRequest(request);
-                            } catch (IOException e) {
-                                System.err.println("Failed to add product to worker: " + e.getMessage());
-                            }
-                        }
-                        StringBuilder prodResult = new StringBuilder();
-                        prodResult.append("Product added to store: ").append(storeNameProd).append("\n");
-                        prodResult.append("END");
-                        out.println(prodResult.toString());
                         break;
 
                     case "REMOVE_PRODUCT":
-                        
-                        String[] removeParts = data.split(",");
-                        if (removeParts.length < 2) {
-                            out.println("Invalid REMOVE_PRODUCT format");
+                        // Forward to Reducer to handle
+                        try {
+                            String reducerResponse = sendRequestToReducer(request);
+                            System.out.println("Master received from Reducer for REMOVE_PRODUCT:\n" + reducerResponse);
+                            out.println(reducerResponse);
                             out.println("END");
-                            continue;
-                        }
-                        String removeStoreName = removeParts[0].trim();
-
-
-                        List<WorkerConnection> removeWorkers = storeToWorkers.get(removeStoreName);
-                        if (removeWorkers == null) {
-
-                            removeWorkers = storeToWorkers.get("\"" + removeStoreName + "\"");
-                        }
-
-                        if (removeWorkers == null) {
-                            out.println("Store not found: " + removeStoreName);
+                        } catch (IOException e) {
+                            System.err.println("Master failed to communicate with Reducer: " + e.getMessage());
+                            out.println("Error: Could not remove product due to Reducer communication failure.");
                             out.println("END");
-                            continue;
                         }
-
-                        for (WorkerConnection worker : removeWorkers) {
-                            try {
-                                worker.sendRequest(request);
-                            } catch (IOException e) {
-                                System.err.println("Failed to remove product from worker: " + e.getMessage());
-                            }
-                        }
-                        StringBuilder removeResult = new StringBuilder();
-                        removeResult.append("Product removed from store: ").append(removeStoreName).append("\n");
-                        removeResult.append("END");
-                        out.println(removeResult.toString());
                         break;
 
                     // ################# REDUCER COMMANDS ##################
@@ -528,228 +512,83 @@ class MasterThread extends Thread {
 
                     // ########################### CLIENT COMMANDS ###########################
                     case "FIND_STORES_WITHIN_RANGE":
-                        
-                        String[] coords = data.split(",");
-                        if (coords.length != 2) {
-                            out.println("Invalid coordinates format");
+                        // Forward to Reducer to handle
+                        try {
+                            String reducerResponse = sendRequestToReducer(request);
+                            System.out.println("Master received from Reducer for FIND_STORES_WITHIN_RANGE:\n" + reducerResponse);
+                            out.println(reducerResponse);
                             out.println("END");
-                            continue;
+                        } catch (IOException e) {
+                            System.err.println("Master failed to communicate with Reducer: " + e.getMessage());
+                            out.println("Error: Could not find stores due to Reducer communication failure.");
+                            out.println("END");
                         }
-
-                        StringBuilder combinedStoresJson = new StringBuilder("[");
-                        boolean firstStore = true;
-                        Set<String> addedStoreNames = new HashSet<>(); 
-
-                        for (WorkerConnection worker : workers) {
-                            try {
-                                String response = worker.sendRequest("FIND_STORES_WITHIN_RANGE " + data);
-                                if (response != null && !response.isEmpty() && response.startsWith("[") && response.endsWith("]")) {
-                                    
-                                    String storesContent = response.substring(1, response.length() - 1).trim();
-                                    if (!storesContent.isEmpty()) {
-                                        
-                                        List<String> storeObjects = splitJsonObjects(storesContent);
-
-                                        for (String storeJson : storeObjects) {
-                                            
-                                            String sName = extractField(storeJson, "StoreName");
-                                            if (!addedStoreNames.contains(sName)) {
-                                                if (!firstStore) {
-                                                    combinedStoresJson.append(",");
-                                                } else {
-                                                    firstStore = false;
-                                                }
-                                                combinedStoresJson.append(storeJson);
-                                                addedStoreNames.add(sName);
-                                            }
-                                        }
-                                    }
-                                }
-                            } catch (IOException e) {
-                                System.err.println("Error communicating with worker: " + e.getMessage());
-                            }
-                        }
-
-                        combinedStoresJson.append("]");
-                        out.println(combinedStoresJson.toString());
-                        out.println("END");
                         break;
+                        
                     case "FILTER_STORES":
-                        
-                            System.out.println("Processing filter request: " + data);
-                            Map<String, List<String>> filters = parseFilterString(data);
-
-                            List<String> individualStores = new ArrayList<>();
-                            Set<String> processedStoreNames = new HashSet<>();
-
-                            for (WorkerConnection worker : workers) {
-                                try {
-                                    String response = worker.sendRequest(request);
-                                    if (response != null && !response.isEmpty()) {
-                                        
-                                        if (response.startsWith("[") && response.endsWith("]")) {
-                                            
-                                            List<String> storeObjects = splitJsonObjects(
-                                                response.substring(1, response.length() - 1).trim()
-                                            );
-
-                                            for (String storeJson : storeObjects) {
-                                                String sName = extractField(storeJson, "StoreName");
-                                                if (!processedStoreNames.contains(sName)) {
-                                                    individualStores.add(storeJson);
-                                                    processedStoreNames.add(sName);
-                                                }
-                                            }
-                                        }
-                                    }
-                                } catch (IOException e) {
-                                    System.err.println("Error communicating with worker for filter: " + e.getMessage());
-                                }
-                            }
-
-                            if (individualStores.isEmpty()) {
-                                out.println("No stores found with the specified filters.");
-                            } else {
-                                for (String store : individualStores) {
-                                    out.println(store);
-                                }
-                            }
+                        // Forward to Reducer to handle
+                        try {
+                            String reducerResponse = sendRequestToReducer(request);
+                            System.out.println("Master received from Reducer for FILTER_STORES:\n" + reducerResponse);
+                            out.println(reducerResponse);
                             out.println("END");
-                            break;
+                        } catch (IOException e) {
+                            System.err.println("Master failed to communicate with Reducer: " + e.getMessage());
+                            out.println("Error: Could not filter stores due to Reducer communication failure.");
+                            out.println("END");
+                        }
+                        break;
+                        
                     case "BUY":
-                        
-                        String[] buyParts = data.split(",");
-                        if (buyParts.length < 3) {
-                            out.println("Invalid BUY format");
+                        // Forward to Reducer to handle
+                        try {
+                            String reducerResponse = sendRequestToReducer(request);
+                            System.out.println("Master received from Reducer for BUY:\n" + reducerResponse);
+                            out.println(reducerResponse);
                             out.println("END");
-                            continue;
-                        }
-                        String buyStoreName = buyParts[0].trim();
-                        String buyProductName = buyParts[1].trim();
-                        int buyQuantity = Integer.parseInt(buyParts[2].trim());
-
-                        List<WorkerConnection> buyWorkers = storeToWorkers.get(buyStoreName);
-                        if (buyWorkers == null) {
-                            buyWorkers = storeToWorkers.get("\"" + buyStoreName + "\"");
-                        }
-
-                        if (buyWorkers == null) {
-                            out.println("Store not found: " + buyStoreName);
+                        } catch (IOException e) {
+                            System.err.println("Master failed to communicate with Reducer: " + e.getMessage());
+                            out.println("Error: Could not process purchase due to Reducer communication failure.");
                             out.println("END");
-                            continue;
                         }
-
-                        // Send BUY request to *all* replicas for consistency
-                        boolean buySuccess = false;
-                        for (WorkerConnection worker : buyWorkers) {
-                            try {
-                                
-                                String buyResponse = worker.sendRequest("BUY " + data);
-                                if (buyResponse != null && buyResponse.startsWith("OK")) { 
-                                     buySuccess = true;
-                                     
-                                } else {
-                                     System.err.println("Worker " + worker.getPort() + " failed BUY: " + buyResponse);
-                                     
-                                }
-                            } catch (IOException e) {
-                                System.err.println("Failed to send purchase to worker " + worker.getPort() + ": " + e.getMessage());
-                            }
-                        }
-
-                        if (buySuccess) {
-                            out.println("Purchase completed: " + buyQuantity + " of " + buyProductName + " from " + buyStoreName);
-                        } else {
-                            out.println("Error: Purchase failed for " + buyProductName + " at " + buyStoreName);
-                        }
-                        out.println("END");
                         break;
+                        
                     case "GET_STORE_DETAILS":
+                        // Forward to Reducer to handle
+                        try {
+                            String reducerResponse = sendRequestToReducer(request);
+                            System.out.println("Master received from Reducer for GET_STORE_DETAILS:\n" + reducerResponse);
+                            out.println(reducerResponse);
+                            out.println("END");
+                        } catch (IOException e) {
+                            System.err.println("Master failed to communicate with Reducer: " + e.getMessage());
+                            out.println("Error: Could not get store details due to Reducer communication failure.");
+                            out.println("END");
+                        }
+                        break;
                         
-                        String detailsStoreName = data.trim();
-                        System.out.println("Processing GET_STORE_DETAILS for: " + detailsStoreName);
-
-
-                        List<WorkerConnection> storeWorkers = storeToWorkers.get(detailsStoreName);
-                        if (storeWorkers == null) {
-                            storeWorkers = storeToWorkers.get("\"" + detailsStoreName + "\"");
-                        }
-
-                        if (storeWorkers == null || storeWorkers.isEmpty()) { 
-                            out.println("Error: Store not found or no available workers for it.");
-                            out.println("END");
-                            continue;
-                        }
-
-                        String storeDetails = null;
-
-                        for (WorkerConnection worker : storeWorkers) {
-                            try {
-                                storeDetails = worker.sendRequest("GET_STORE_DETAILS " + detailsStoreName);
-                                if (storeDetails != null && !storeDetails.isEmpty() && !storeDetails.startsWith("Error:")) { 
-                                    break;
-                                }
-                            } catch (IOException e) {
-                                System.err.println("Failed to get store details from worker " + worker.getPort() + ": " + e.getMessage());
-                                
-                            }
-                        }
-
-                        if (storeDetails == null || storeDetails.isEmpty() || storeDetails.startsWith("Error:")) {
-                            out.println("Error: Could not retrieve store details");
-                        } else {
-                            out.println(storeDetails);
-                        }
-                        System.out.println("Sending store details from Master: " + storeDetails);
-                        out.println("END");
-                        break;
                     case "REVIEW":
-                       
-                        String[] reviewParts = data.split(",");
-                        if (reviewParts.length < 2) {
-                            out.println("Invalid REVIEW format");
+                        // Forward to Reducer to handle
+                        try {
+                            String reducerResponse = sendRequestToReducer(request);
+                            System.out.println("Master received from Reducer for REVIEW:\n" + reducerResponse);
+                            out.println(reducerResponse);
                             out.println("END");
-                            continue;
-                        }
-                        String reviewStoreName = reviewParts[0].trim();
-
-
-                        List<WorkerConnection> reviewWorkers = storeToWorkers.get(reviewStoreName);
-                        if (reviewWorkers == null) {
-                            reviewWorkers = storeToWorkers.get("\"" + reviewStoreName + "\"");
-                        }
-
-                        if (reviewWorkers == null || reviewWorkers.isEmpty()) {
-                            out.println("Store not found or no available workers for it: " + reviewStoreName);
+                        } catch (IOException e) {
+                            System.err.println("Master failed to communicate with Reducer: " + e.getMessage());
+                            out.println("Error: Could not process review due to Reducer communication failure.");
                             out.println("END");
-                            continue;
                         }
-
-                        boolean reviewSuccess = false;
-                        for (WorkerConnection worker : reviewWorkers) {
-                            try {
-                                
-                                String reviewResponse = worker.sendRequest(request);
-                                if (reviewResponse != null && reviewResponse.startsWith("OK")) { 
-                                    reviewSuccess = true;
-                                    
-                                } else {
-                                    System.err.println("Worker " + worker.getPort() + " failed REVIEW: " + reviewResponse);
-                                }
-                            } catch (IOException e) {
-                                System.err.println("Failed to send review to worker " + worker.getPort() + ": " + e.getMessage());
-                            }
-                        }
-
-                        if (reviewSuccess) {
-                             out.println("Review submitted for store: " + reviewStoreName);
-                        } else {
-                             out.println("Error: Failed to submit review for store: " + reviewStoreName);
-                        }
-                        out.println("END");
                         break;
+                        
                     default:
-                        out.println("Unknown command: " + command);
+                        // For any unknown command, still try to route through the Reducer
+                        try {
+                            String reducerResponse = sendRequestToReducer(request);
+                            out.println(reducerResponse);
+                        } catch (IOException e) {
+                            out.println("Unknown command and Reducer unavailable: " + command);
+                        }
                         out.println("END"); 
                 }
             }
