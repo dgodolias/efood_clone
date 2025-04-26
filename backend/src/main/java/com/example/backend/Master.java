@@ -13,68 +13,104 @@ import java.util.stream.Collectors;
 public class Master {
     private static final int PORT = 8080;
     private static final int REDUCER_PORT = 8090; // Port where Reducer listens
-    private static final String REDUCER_HOST = "localhost";
+    private static final String DEFAULT_REDUCER_HOST = "localhost"; // Default for local testing
+    private String reducerHost; // Can be modified for remote execution
     private static final int REPLICATION_FACTOR = 3;
     private List<WorkerConnection> workers;
-    private List<Process> workerProcesses;
-    private Process reducerProcess; // Keep track of the Reducer process
+    private List<Process> workerProcesses; // Only used for local workers
+    private Process reducerProcess; // Only used for local reducer
     private Map<String, List<WorkerConnection>> storeToWorkers;
     private ScheduledExecutorService heartbeatScheduler;
     private PrintWriter out;
+    private boolean isLocalMode = true; // Flag to determine if we're running in local or distributed mode
 
-public Master(int startPort) throws IOException {
-    workers = new ArrayList<>();
-    workerProcesses = new ArrayList<>();
-    storeToWorkers = new HashMap<>();
+    public Master(int startPort, boolean localMode, String reducerHost, List<String> remoteWorkerAddresses) throws IOException {
+        this.isLocalMode = localMode;
+        this.reducerHost = (reducerHost != null && !reducerHost.isEmpty()) ? reducerHost : DEFAULT_REDUCER_HOST;
+        
+        workers = new ArrayList<>();
+        workerProcesses = new ArrayList<>();
+        storeToWorkers = new HashMap<>();
 
-    out = new PrintWriter(System.out, true);
+        out = new PrintWriter(System.out, true);
 
-    deleteDirectory(new File("data/temp_workers_data"));
-
-    // Count stores and calculate dynamic worker count
-    int storeCount = countStoresInJsonFile();
-    int workerCount = Math.max(1, (int)Math.sqrt(storeCount));
-
-    System.out.println("Initializing " + workerCount + " workers for " + storeCount + " stores");
-
-    List<String> workerAddresses = new ArrayList<>(); // Store worker addresses for Reducer
-    for (int i = 0; i < workerCount; i++) {
-        int workerPort = startPort + i;
-        spawnWorker(workerPort);
-        WorkerConnection wc = new WorkerConnection("localhost", workerPort);
-        workers.add(wc);
-        workerAddresses.add("localhost:" + workerPort); // Add address for Reducer
-        System.out.println("Started and connected to worker at localhost:" + workerPort);
-    }
-
-    // Spawn the Reducer process
-    spawnReducer(workerAddresses);
-
-    loadInitialStores();
-    startHeartbeat();
-}
-
-private int countStoresInJsonFile() {
-    try {
-        File storesFile = new File("data/stores.json");
-        if (!storesFile.exists()) {
-            System.out.println("No stores.json file found, using default worker count");
-            return 2; // Default if file not found
+        // Only delete local data directory in local mode
+        if (isLocalMode) {
+            deleteDirectory(new File("data/temp_workers_data"));
         }
 
-        String jsonContent = new String(Files.readAllBytes(Paths.get("data/stores.json"))).trim();
-        if (!jsonContent.startsWith("[") || !jsonContent.endsWith("]")) {
-            System.err.println("Invalid JSON format in stores.json");
-            return 2; // Default if invalid format
+        // Count stores for informational purposes
+        int storeCount = countStoresInJsonFile();
+        
+        List<String> workerAddresses = new ArrayList<>(); // Store worker addresses for Reducer
+
+        if (isLocalMode) {
+            // Calculate dynamic worker count for local mode
+            int workerCount = Math.max(1, (int)Math.sqrt(storeCount));
+            
+            // Local mode: spawn workers locally
+            System.out.println("Starting in LOCAL mode with " + workerCount + " workers for " + storeCount + " stores");
+            for (int i = 0; i < workerCount; i++) {
+                int workerPort = startPort + i;
+                spawnWorker(workerPort);
+                WorkerConnection wc = new WorkerConnection("localhost", workerPort);
+                workers.add(wc);
+                workerAddresses.add("localhost:" + workerPort);
+                System.out.println("Started and connected to worker at localhost:" + workerPort);
+            }
+            
+            // In local mode, spawn the Reducer process locally
+            spawnReducer(workerAddresses);
+        } else {
+            // Distributed mode: connect to remote workers
+            System.out.println("Starting in DISTRIBUTED mode with " + remoteWorkerAddresses.size() + " remote workers");
+            for (String address : remoteWorkerAddresses) {
+                String[] parts = address.split(":");
+                if (parts.length == 2) {
+                    String host = parts[0];
+                    int port = Integer.parseInt(parts[1]);
+                    try {
+                        WorkerConnection wc = new WorkerConnection(host, port);
+                        workers.add(wc);
+                        workerAddresses.add(address);
+                        System.out.println("Connected to remote worker at " + address);
+                    } catch (IOException e) {
+                        System.err.println("Failed to connect to remote worker at " + address + ": " + e.getMessage());
+                    }
+                } else {
+                    System.err.println("Invalid worker address format: " + address);
+                }
+            }
+            
+            // In distributed mode, Reducer is assumed to be started independently
+            System.out.println("Using remote Reducer at " + this.reducerHost + ":" + REDUCER_PORT);
         }
 
-        List<String> storeJsons = parseStoreJsons(jsonContent);
-        return storeJsons.size();
-    } catch (IOException e) {
-        System.err.println("Error reading stores.json: " + e.getMessage());
-        return 2; // Default on error
+        loadInitialStores();
+        startHeartbeat();
     }
-}
+
+    private int countStoresInJsonFile() {
+        try {
+            File storesFile = new File("data/stores.json");
+            if (!storesFile.exists()) {
+                System.out.println("No stores.json file found, using default worker count");
+                return 2; // Default if file not found
+            }
+
+            String jsonContent = new String(Files.readAllBytes(Paths.get("data/stores.json"))).trim();
+            if (!jsonContent.startsWith("[") || !jsonContent.endsWith("]")) {
+                System.err.println("Invalid JSON format in stores.json");
+                return 2; // Default if invalid format
+            }
+
+            List<String> storeJsons = parseStoreJsons(jsonContent);
+            return storeJsons.size();
+        } catch (IOException e) {
+            System.err.println("Error reading stores.json: " + e.getMessage());
+            return 2; // Default on error
+        }
+    }
 
     private void deleteDirectory(File directory) {
         if (directory.exists()) {
@@ -189,6 +225,11 @@ private int countStoresInJsonFile() {
     }
 
     private void spawnReducer(List<String> workerAddresses) throws IOException {
+        if (!isLocalMode) {
+            System.out.println("Skipping local Reducer spawn in distributed mode");
+            return;
+        }
+        
         String javaHome = System.getProperty("java.home");
         String javaBin = javaHome + File.separator + "bin" + File.separator + "java";
         String classpath = System.getProperty("java.class.path");
@@ -221,7 +262,7 @@ private int countStoresInJsonFile() {
                 Socket socket = serverSocket.accept();
                 System.out.println("New client connected: " + socket.getInetAddress());
                 // Pass Reducer host/port to the thread
-                new MasterThread(socket, workers, storeToWorkers, REPLICATION_FACTOR, REDUCER_HOST, REDUCER_PORT).start();
+                new MasterThread(socket, workers, storeToWorkers, REPLICATION_FACTOR, reducerHost, REDUCER_PORT).start();
             }
         } catch (IOException e) {
             System.err.println("Master server failed: " + e.getMessage());
@@ -253,6 +294,12 @@ private int countStoresInJsonFile() {
     }
 
     private List<WorkerConnection> getWorkersForStore(String storeName) {
+        // Check for empty workers list first to avoid division by zero
+        if (workers.isEmpty()) {
+            System.err.println("Cannot assign workers for store '" + storeName + "': No workers available.");
+            return new ArrayList<>(); // Return empty list if no workers
+        }
+        
         int primaryIndex = Math.abs(storeName.hashCode()) % workers.size();
         List<WorkerConnection> assignedWorkers = new ArrayList<>();
         for (int i = 0; i < REPLICATION_FACTOR && i < workers.size(); i++) {
@@ -277,15 +324,48 @@ private int countStoresInJsonFile() {
         }, 0, 5, TimeUnit.SECONDS);
     }
 
-public static void main(String[] args) {
-    try {
-        int startPort = 8081;
-        Master master = new Master(startPort);
-        master.start();
-    } catch (IOException e) {
-        System.err.println("Failed to initialize Master: " + e.getMessage());
+    public static void main(String[] args) {
+        try {
+            int startPort = 8081;
+            boolean localMode = true; // Default to local mode
+            String reducerHost = DEFAULT_REDUCER_HOST;
+            List<String> remoteWorkerAddresses = new ArrayList<>();
+
+            // Parse command-line arguments for distributed mode
+            for (int i = 0; i < args.length; i++) {
+                if (args[i].equals("--distributed")) {
+                    localMode = false;
+                    System.out.println("Distributed mode enabled");
+                } else if (args[i].equals("--reducer")) {
+                    if (i + 1 < args.length) {
+                        reducerHost = args[++i];
+                        System.out.println("Using reducer host: " + reducerHost);
+                    }
+                } else if (args[i].equals("--workers")) {
+                    if (i + 1 < args.length) {
+                        // Process comma-separated worker addresses
+                        String workersArg = args[++i];
+                        String[] workers = workersArg.split(",");
+                        for (String worker : workers) {
+                            worker = worker.trim();
+                            if (!worker.isEmpty()) {
+                                remoteWorkerAddresses.add(worker);
+                                System.out.println("Added worker: " + worker);
+                            }
+                        }
+                    }
+                }
+            }
+
+            System.out.println("Configured with " + remoteWorkerAddresses.size() + " worker(s) in " + 
+                               (localMode ? "LOCAL" : "DISTRIBUTED") + " mode");
+
+            Master master = new Master(startPort, localMode, reducerHost, remoteWorkerAddresses);
+            master.start();
+        } catch (IOException e) {
+            System.err.println("Failed to initialize Master: " + e.getMessage());
+        }
     }
-}
 }
 
 class MasterThread extends Thread {

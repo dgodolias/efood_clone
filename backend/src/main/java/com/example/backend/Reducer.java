@@ -6,19 +6,23 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Reducer {
-    private static final int REDUCER_PORT = 8090; // Port for Reducer
+    private static final int DEFAULT_REDUCER_PORT = 8090; // Default port for Reducer
     private List<WorkerConnection> workers;
+    private String reducerHostname; // For displaying in logs
+    private int port; // The port Reducer will listen on
 
-    public Reducer(List<WorkerConnection> workers) {
+    public Reducer(List<WorkerConnection> workers, String hostname, int port) {
         this.workers = workers;
+        this.reducerHostname = hostname;
+        this.port = port;
     }
 
     public void start() {
-        try (ServerSocket serverSocket = new ServerSocket(REDUCER_PORT)) {
-            System.out.println("Reducer running on port " + REDUCER_PORT);
+        try (ServerSocket serverSocket = new ServerSocket(port)) {
+            System.out.println("Reducer Server running on " + reducerHostname + ":" + port);
             while (true) {
                 Socket masterSocket = serverSocket.accept();
-                System.out.println("Master connected to Reducer: " + masterSocket.getInetAddress());
+                System.out.println("Master connected to Reducer from: " + masterSocket.getInetAddress());
                 new ReducerThread(masterSocket, workers).start();
             }
         } catch (IOException e) {
@@ -30,6 +34,26 @@ public class Reducer {
         if (args.length == 0) {
             System.err.println("Usage: Reducer <workerHost1:workerPort1> <workerHost2:workerPort2> ...");
             System.exit(1);
+        }
+
+        // Read custom port from system property, or use default
+        int reducerPort = DEFAULT_REDUCER_PORT;
+        String customPort = System.getProperty("reducer.port");
+        if (customPort != null && !customPort.isEmpty()) {
+            try {
+                reducerPort = Integer.parseInt(customPort);
+                System.out.println("Using custom port: " + reducerPort);
+            } catch (NumberFormatException e) {
+                System.err.println("Invalid custom port: " + customPort + ", using default: " + DEFAULT_REDUCER_PORT);
+            }
+        }
+
+        // Try to get hostname of current machine
+        String hostname = "localhost";
+        try {
+            hostname = InetAddress.getLocalHost().getHostName();
+        } catch (UnknownHostException e) {
+            System.out.println("Could not determine hostname, using 'localhost'");
         }
 
         List<WorkerConnection> workerConnections = new ArrayList<>();
@@ -56,7 +80,7 @@ public class Reducer {
             System.exit(1);
         }
 
-        Reducer reducer = new Reducer(workerConnections);
+        Reducer reducer = new Reducer(workerConnections, hostname, reducerPort);
         reducer.start();
     }
 }
