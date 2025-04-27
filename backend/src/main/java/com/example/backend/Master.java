@@ -454,174 +454,24 @@ class MasterThread extends Thread {
                 String data = parts.length > 1 ? parts[1] : "";
 
                 switch (command) {
-                    // ########################### MANAGER COMMANDS ###########################
+                    // All commands now follow the same processing pattern
                     case "ADD_STORE":
-                        // MAP: Send request to all workers
-                        executeMapPhase(command, data);
-                        
-                        // REDUCE: Send intermediate results to Reducer for processing
-                        try {
-                            String reducerResponse = sendIntermediateResultsToReducer(command);
-                            System.out.println("Master received from Reducer for ADD_STORE:\n" + reducerResponse);
-                            out.println(reducerResponse);
-                            out.println("END");
-                        } catch (IOException e) {
-                            System.err.println("Master failed to communicate with Reducer: " + e.getMessage());
-                            out.println("Error: Could not add store due to Reducer communication failure.");
-                            out.println("END");
-                        }
-                        break;
-
                     case "ADD_PRODUCT":
-                        // MAP: Send request to all workers
-                        executeMapPhase(command, data);
-                        
-                        // REDUCE: Send intermediate results to Reducer for processing
-                        try {
-                            String reducerResponse = sendIntermediateResultsToReducer(command);
-                            System.out.println("Master received from Reducer for ADD_PRODUCT:\n" + reducerResponse);
-                            out.println(reducerResponse);
-                            out.println("END");
-                        } catch (IOException e) {
-                            System.err.println("Master failed to communicate with Reducer: " + e.getMessage());
-                            out.println("Error: Could not add product due to Reducer communication failure.");
-                            out.println("END");
-                        }
-                        break;
-
                     case "REMOVE_PRODUCT":
-                        // MAP: Send request to all workers
-                        executeMapPhase(command, data);
-                        
-                        // REDUCE: Send intermediate results to Reducer for processing
-                        try {
-                            String reducerResponse = sendIntermediateResultsToReducer(command);
-                            System.out.println("Master received from Reducer for REMOVE_PRODUCT:\n" + reducerResponse);
-                            out.println(reducerResponse);
-                            out.println("END");
-                        } catch (IOException e) {
-                            System.err.println("Master failed to communicate with Reducer: " + e.getMessage());
-                            out.println("Error: Could not remove product due to Reducer communication failure.");
-                            out.println("END");
-                        }
-                        break;
-
-                    // ################# REDUCER COMMANDS ##################
                     case "GET_SALES_BY_STORE_TYPE_CATEGORY":
                     case "GET_SALES_BY_PRODUCT_CATEGORY":
                     case "GET_SALES_BY_PRODUCT":
-                        System.out.println("Map phase for sales analytics: " + request);
-                        // MAP: Collect sales data from all workers
-                        executeMapPhase(command, data);
-                        
-                        // REDUCE: Send intermediate results to Reducer
-                        try {
-                            String reducerResponse = sendIntermediateResultsToReducer(command);
-                            System.out.println("Master received from Reducer:\n" + reducerResponse);
-                            out.println(reducerResponse); 
-                        } catch (IOException e) {
-                            System.err.println("Master failed to communicate with Reducer: " + e.getMessage());
-                            out.println("Error: Could not process sales data.");
-                        }
-                        out.println("END");
-                        break;
-
-                    // ########################### CLIENT COMMANDS ###########################
                     case "FIND_STORES_WITHIN_RANGE":
-                        // MAP: Send request to all workers
-                        executeMapPhase(command, data);
-                        
-                        // REDUCE: Send intermediate results to Reducer for processing
-                        try {
-                            String reducerResponse = sendIntermediateResultsToReducer(command);
-                            System.out.println("Master received from Reducer for FIND_STORES_WITHIN_RANGE:\n" + reducerResponse);
-                            out.println(reducerResponse);
-                            out.println("END");
-                        } catch (IOException e) {
-                            System.err.println("Master failed to communicate with Reducer: " + e.getMessage());
-                            out.println("Error: Could not find stores due to Reducer communication failure.");
-                            out.println("END");
-                        }
-                        break;
-                        
                     case "FILTER_STORES":
-                        // MAP: Send request to all workers
-                        executeMapPhase(command, data);
-                        
-                        // REDUCE: Send intermediate results to Reducer for processing
-                        try {
-                            String reducerResponse = sendIntermediateResultsToReducer(command);
-                            System.out.println("Master received from Reducer for FILTER_STORES:\n" + reducerResponse);
-                            out.println(reducerResponse);
-                            out.println("END");
-                        } catch (IOException e) {
-                            System.err.println("Master failed to communicate with Reducer: " + e.getMessage());
-                            out.println("Error: Could not filter stores due to Reducer communication failure.");
-                            out.println("END");
-                        }
-                        break;
-                        
                     case "BUY":
-                        // MAP: Send request to all workers
-                        executeMapPhase(command, data);
-                        
-                        // REDUCE: Send intermediate results to Reducer for processing
-                        try {
-                            String reducerResponse = sendIntermediateResultsToReducer(command);
-                            System.out.println("Master received from Reducer for BUY:\n" + reducerResponse);
-                            out.println(reducerResponse);
-                            out.println("END");
-                        } catch (IOException e) {
-                            System.err.println("Master failed to communicate with Reducer: " + e.getMessage());
-                            out.println("Error: Could not process purchase due to Reducer communication failure.");
-                            out.println("END");
-                        }
-                        break;
-                        
                     case "GET_STORE_DETAILS":
-                        // MAP: Send request to all workers
-                        executeMapPhase(command, data);
-                        
-                        // REDUCE: Send intermediate results to Reducer for processing
-                        try {
-                            String reducerResponse = sendIntermediateResultsToReducer(command);
-                            System.out.println("Master received from Reducer for GET_STORE_DETAILS:\n" + reducerResponse);
-                            out.println(reducerResponse);
-                            out.println("END");
-                        } catch (IOException e) {
-                            System.err.println("Master failed to communicate with Reducer: " + e.getMessage());
-                            out.println("Error: Could not get store details due to Reducer communication failure.");
-                            out.println("END");
-                        }
-                        break;
-                        
                     case "REVIEW":
-                        // MAP: Send request to all workers
-                        executeMapPhase(command, data);
-                        
-                        // REDUCE: Send intermediate results to Reducer for processing
-                        try {
-                            String reducerResponse = sendIntermediateResultsToReducer(command);
-                            System.out.println("Master received from Reducer for REVIEW:\n" + reducerResponse);
-                            out.println(reducerResponse);
-                            out.println("END");
-                        } catch (IOException e) {
-                            System.err.println("Master failed to communicate with Reducer: " + e.getMessage());
-                            out.println("Error: Could not process review due to Reducer communication failure.");
-                            out.println("END");
-                        }
+                        processCommandWithMapReduce(command, data, out);
                         break;
                         
                     default:
                         // For any unknown command, try to process it through MapReduce
-                        executeMapPhase(command, data);
-                        try {
-                            String reducerResponse = sendIntermediateResultsToReducer(command);
-                            out.println(reducerResponse);
-                        } catch (IOException e) {
-                            out.println("Unknown command and Reducer unavailable: " + command);
-                        }
-                        out.println("END"); 
+                        processCommandWithMapReduce(command, data, out);
                 }
             }
         } catch (IOException e) {
@@ -633,6 +483,29 @@ class MasterThread extends Thread {
                 System.err.println("Error closing socket: " + e.getMessage());
             }
         }
+    }
+
+    /**
+     * Process a command using the MapReduce pattern
+     * 
+     * @param command The command to process
+     * @param data The data associated with the command
+     * @param out The PrintWriter to send the response to
+     */
+    private void processCommandWithMapReduce(String command, String data, PrintWriter out) {
+        // MAP phase: Distribute command to all workers and collect results
+        executeMapPhase(command, data);
+        
+        // REDUCE phase: Send intermediate results to Reducer for processing
+        try {
+            String reducerResponse = sendIntermediateResultsToReducer(command);
+            System.out.println("Master received from Reducer for " + command + ":\n" + reducerResponse);
+            out.println(reducerResponse);
+        } catch (IOException e) {
+            System.err.println("Master failed to communicate with Reducer: " + e.getMessage());
+            out.println("Error: Could not process " + command + " due to Reducer communication failure.");
+        }
+        out.println("END");
     }
 
     /**
