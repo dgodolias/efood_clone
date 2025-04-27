@@ -1,0 +1,25 @@
+"Burger Barn":8082,8083,8084
+"Pasta Place":8081,8082,8083
+"Salad Sensations":8083,8084,8085
+"Juice Junction":8083,8084,8085
+"Pizza Palace":8082,8083,8084
+"Gyro Grill":8084,8085,8081
+"Sandwich Stop":8081,8082,8083
+"Pizza Planet":8081,8082,8083
+"Indian Flavors":8081,8082,8083
+"Coffee Corner":8081,8082,8083
+"Daily Grind Coffee":8085,8081,8082
+"Ice Cream Dream":8084,8085,8081
+"Taco Town":8081,8082,8083
+"Thai Orchid":8085,8081,8082
+"Souvlaki Station":8085,8081,8082
+"Sushi Spot":8081,8082,8083
+"Burger Bonanza":8082,8083,8084
+"Kebab Kingdom":8081,8082,8083
+"Breakfast Nook":8081,8082,8083
+"Mama Mia Italian":8081,8082,8083
+"Seafood Shack":8082,8083,8084
+"Sweet Treats Bakery":8085,8081,8082
+"Veggie Vibes":8083,8084,8085
+"Dragon Wok":8084,8085,8081
+"Steak House Supreme":8084,8085,8081

@@ -175,6 +175,12 @@ public class Master {
             return;
         }
 
+        // First try to load persistent worker assignments from a file
+        boolean loadedFromFile = loadWorkerAssignments();
+        if (loadedFromFile) {
+            System.out.println("Loaded store-to-worker assignments from persistent storage.");
+        }
+
         List<String> storeJsons = parseStoreJsons(jsonContent);
         for (String storeJson : storeJsons) {
             String storeName = extractField(storeJson, "StoreName");
@@ -191,6 +197,73 @@ public class Master {
                     System.err.println("Failed to send store to worker: " + e.getMessage());
                 }
             }
+        }
+        
+        // Save worker assignments for future restarts
+        saveWorkerAssignments();
+    }
+    
+    /**
+     * Save the current store-to-worker assignments to a file for persistence across restarts
+     */
+    private void saveWorkerAssignments() {
+        File assignmentsFile = new File("data/worker_assignments.txt");
+        try (PrintWriter writer = new PrintWriter(new FileWriter(assignmentsFile))) {
+            for (Map.Entry<String, List<WorkerConnection>> entry : storeToWorkers.entrySet()) {
+                String storeName = entry.getKey();
+                List<Integer> workerPorts = entry.getValue().stream()
+                    .map(WorkerConnection::getPort)
+                    .collect(Collectors.toList());
+                
+                writer.println(storeName + ":" + workerPorts.stream()
+                    .map(String::valueOf)
+                    .collect(Collectors.joining(",")));
+            }
+            System.out.println("Saved store-to-worker assignments to " + assignmentsFile.getAbsolutePath());
+        } catch (IOException e) {
+            System.err.println("Failed to save worker assignments: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Load store-to-worker assignments from a file
+     * @return true if assignments were loaded, false otherwise
+     */
+    private boolean loadWorkerAssignments() {
+        File assignmentsFile = new File("data/worker_assignments.txt");
+        if (!assignmentsFile.exists()) {
+            return false;
+        }
+        
+        try (BufferedReader reader = new BufferedReader(new FileReader(assignmentsFile))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(":", 2);
+                if (parts.length != 2) continue;
+                
+                String storeName = parts[0];
+                String[] workerPortStrs = parts[1].split(",");
+                List<WorkerConnection> assignedWorkers = new ArrayList<>();
+                
+                for (String portStr : workerPortStrs) {
+                    int port = Integer.parseInt(portStr);
+                    // Find the matching worker connection
+                    for (WorkerConnection worker : workers) {
+                        if (worker.getPort() == port) {
+                            assignedWorkers.add(worker);
+                            break;
+                        }
+                    }
+                }
+                
+                if (!assignedWorkers.isEmpty()) {
+                    storeToWorkers.put(storeName, assignedWorkers);
+                }
+            }
+            return true;
+        } catch (IOException | NumberFormatException e) {
+            System.err.println("Failed to load worker assignments: " + e.getMessage());
+            return false;
         }
     }
 
@@ -330,20 +403,90 @@ public class Master {
     }
 
     private List<WorkerConnection> getWorkersForStore(String storeName) {
+        // Normalize storeName by removing surrounding quotes
+        String normalizedName = normalizeStoreName(storeName);
+        
+        // Check all normalized keys in storeToWorkers map
+        for (String existingStore : new ArrayList<>(storeToWorkers.keySet())) {
+            if (normalizeStoreName(existingStore).equals(normalizedName)) {
+                List<WorkerConnection> workers = storeToWorkers.get(existingStore);
+                System.out.println("WORKER ASSIGNMENT: Using existing assignment for store '" + normalizedName + "' (stored as '" + existingStore + "'): " +
+                    workers.stream()
+                        .map(w -> "Worker_" + w.getPort())
+                        .collect(Collectors.joining(", ")));
+                
+                // Update the key if necessary to ensure consistency
+                if (!existingStore.equals(storeName)) {
+                    storeToWorkers.put(normalizedName, workers);
+                    storeToWorkers.remove(existingStore);
+                    System.out.println("WORKER ASSIGNMENT: Updated store key from '" + existingStore + "' to '" + normalizedName + "'");
+                }
+                
+                return workers;
+            }
+        }
         
         if (workers.isEmpty()) {
-            System.err.println("Cannot assign workers for store '" + storeName + "': No workers available.");
+            System.err.println("WORKER ASSIGNMENT: Cannot assign workers for store '" + normalizedName + "': No workers available.");
             return new ArrayList<>(); 
         }
         
-        int primaryIndex = Math.abs(storeName.hashCode()) % workers.size();
+        // Use a consistent hashing algorithm to ensure the same store always gets assigned to the same workers
+        int hash = getConsistentHashForStore(normalizedName);
+        System.out.println("WORKER ASSIGNMENT: Calculated consistent hash " + hash + " for store '" + normalizedName + "'");
+        
+        int primaryIndex = hash % workers.size();
         List<WorkerConnection> assignedWorkers = new ArrayList<>();
         for (int i = 0; i < REPLICATION_FACTOR && i < workers.size(); i++) {
             int index = (primaryIndex + i) % workers.size();
             assignedWorkers.add(workers.get(index));
         }
-        storeToWorkers.put(storeName, assignedWorkers);
+        
+        storeToWorkers.put(normalizedName, assignedWorkers);
+        
+        System.out.println("WORKER ASSIGNMENT: Newly assigned store '" + normalizedName + "' to worker(s): " +
+            assignedWorkers.stream()
+                .map(w -> "Worker_" + w.getPort())
+                .collect(Collectors.joining(", ")));
+        
         return assignedWorkers;
+    }
+
+    /**
+     * Normalize a store name by removing any surrounding quotes
+     */
+    private String normalizeStoreName(String storeName) {
+        if (storeName == null) {
+            return "";
+        }
+        
+        // Remove surrounding quotes if present
+        String normalized = storeName;
+        if (normalized.startsWith("\"") && normalized.endsWith("\"")) {
+            normalized = normalized.substring(1, normalized.length() - 1);
+        }
+        
+        // Handle double-quote escaping in JSON
+        if (normalized.startsWith("\"") && normalized.endsWith("\"")) {
+            normalized = normalized.substring(1, normalized.length() - 1);
+        }
+        
+        System.out.println("WORKER ASSIGNMENT: Normalized store name from '" + storeName + "' to '" + normalized + "'");
+        return normalized;
+    }
+
+    /**
+     * Custom hash function for consistent worker assignment across system restarts
+     * This ensures the same store always gets assigned to the same workers,
+     * even across different JVM instances
+     */
+    private int getConsistentHashForStore(String storeName) {
+        // Simple but consistent hashing algorithm
+        int hash = 0;
+        for (int i = 0; i < storeName.length(); i++) {
+            hash = 31 * hash + storeName.charAt(i);
+        }
+        return Math.abs(hash);
     }
 
     private void startHeartbeat() {
@@ -509,14 +652,31 @@ class MasterThread extends Thread {
             List<WorkerConnection> assignedWorkers = storeToWorkers.get(storeName);
             
             if (assignedWorkers != null && !assignedWorkers.isEmpty()) {
+                // ADDED DEBUG PRINT - Show which worker is assigned this command
+                System.out.println("DEBUG: Command " + command + " for store '" + storeName + "' assigned to worker(s): " +
+                    assignedWorkers.stream().map(w -> "Worker_" + w.getPort()).collect(Collectors.joining(", ")));
+                
                 // Send command to assigned workers according to replication factor
                 executeCommandOnWorkers(fullCommand, assignedWorkers, results);
                 System.out.println("Command sent to " + assignedWorkers.size() + " assigned workers for store: " + storeName);
+                
+                // ADDED DEBUG PRINT - Show which workers should be synced
+                System.out.println("DEBUG: Workers that should be synced after this operation: " +
+                    workers.stream().map(w -> "Worker_" + w.getPort()).collect(Collectors.joining(", ")));
             } else {
                 // New store or store not found in mapping, assign workers and send command
                 List<WorkerConnection> newAssignedWorkers = getWorkersForStore(storeName);
+                
+                // ADDED DEBUG PRINT - Show which worker is newly assigned this command
+                System.out.println("DEBUG: Command " + command + " for store '" + storeName + "' newly assigned to worker(s): " +
+                    newAssignedWorkers.stream().map(w -> "Worker_" + w.getPort()).collect(Collectors.joining(", ")));
+                
                 executeCommandOnWorkers(fullCommand, newAssignedWorkers, results);
                 System.out.println("Command sent to " + newAssignedWorkers.size() + " newly assigned workers for store: " + storeName);
+                
+                // ADDED DEBUG PRINT - Show which workers should be synced
+                System.out.println("DEBUG: Workers that should be synced after this operation: " +
+                    workers.stream().map(w -> "Worker_" + w.getPort()).collect(Collectors.joining(", ")));
             }
         } else {
             // For commands that don't target a specific store (like FILTER_STORES), send to all workers
@@ -527,7 +687,7 @@ class MasterThread extends Thread {
         // Store the intermediate results for the reducer phase
         intermediateResults.put(command, results);
     }
-    
+
     /**
      * Execute a command on the specified list of worker connections
      * @param fullCommand The complete command to execute
@@ -549,7 +709,7 @@ class MasterThread extends Thread {
             }
         }
     }
-    
+
     /**
      * Extract the store name from various commands
      * @param command The command type
@@ -560,6 +720,8 @@ class MasterThread extends Thread {
         if (data == null || data.isEmpty()) {
             return null;
         }
+        
+        String extractedName = null;
         
         switch (command) {
             case "ADD_STORE":
@@ -572,20 +734,66 @@ class MasterThread extends Thread {
                         start++;
                         int end = data.indexOf("\"", start);
                         if (end != -1) {
-                            return data.substring(start, end);
+                            extractedName = data.substring(start, end);
                         }
                     }
                 }
-                return null;
+                break;
                 
             case "ADD_PRODUCT":
             case "REMOVE_PRODUCT":
             case "BUY":
+                // These commands have store name as first part before comma
+                String[] commaParts = data.split(",", 2);
+                if (commaParts.length > 0) {
+                    extractedName = commaParts[0].trim();
+                }
+                break;
+                
             case "REVIEW":
             case "GET_STORE_DETAILS":
-                // These commands typically have store name as the first parameter
-                String[] parts = data.split("\\s+", 2);
-                return parts[0];
+                // Special handling for multi-word store names
+                // First check if the store name is a known store with multiple words
+                for (String existingStore : storeToWorkers.keySet()) {
+                    String normalizedExisting = normalizeStoreName(existingStore);
+                    // If data starts with the existing store name, use that full name
+                    if (data.startsWith(normalizedExisting)) {
+                        extractedName = normalizedExisting;
+                        System.out.println("STORE NAME EXTRACTION: Found full store name match '" + normalizedExisting + "' in command data");
+                        break;
+                    }
+                }
+                
+                // If no match found in existing stores, try to get first word as a fallback
+                if (extractedName == null) {
+                    // Check if the command data might contain a store name with multiple words
+                    for (String existingStore : storeToWorkers.keySet()) {
+                        String normalizedExisting = normalizeStoreName(existingStore);
+                        String[] existingWords = normalizedExisting.split("\\s+");
+                        if (existingWords.length > 1 && data.startsWith(existingWords[0])) {
+                            // If first word of an existing store matches the start of data,
+                            // check if data might contain the full store name
+                            if (data.length() >= normalizedExisting.length() && 
+                                data.substring(0, normalizedExisting.length()).equalsIgnoreCase(normalizedExisting)) {
+                                extractedName = normalizedExisting;
+                                System.out.println("STORE NAME EXTRACTION: Expanded partial match '" + 
+                                                 existingWords[0] + "' to full store name '" + normalizedExisting + "'");
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // If still no match, default to first word
+                    if (extractedName == null) {
+                        String[] spaceParts = data.split("\\s+", 2);
+                        if (spaceParts.length > 0) {
+                            extractedName = spaceParts[0].trim();
+                            System.out.println("STORE NAME EXTRACTION: Using first word '" + extractedName + 
+                                             "' as store name from: '" + data + "'");
+                        }
+                    }
+                }
+                break;
                 
             case "FILTER_STORES":
             case "FIND_STORES_WITHIN_RANGE":
@@ -598,8 +806,17 @@ class MasterThread extends Thread {
             default:
                 return null;
         }
+        
+        // Normalize the extracted store name before returning it
+        if (extractedName != null) {
+            String normalizedName = normalizeStoreName(extractedName);
+            System.out.println("STORE NAME EXTRACTION: Command '" + command + "' - Final normalized store name: '" + normalizedName + "'");
+            return normalizedName;
+        }
+        
+        return null;
     }
-    
+
     /**
      * Get the list of worker connections assigned to handle a specific store
      * This implements active replication by maintaining multiple copies of each store
@@ -607,19 +824,35 @@ class MasterThread extends Thread {
      * @return List of WorkerConnection instances assigned to this store
      */
     private List<WorkerConnection> getWorkersForStore(String storeName) {
-        // If the store already has assigned workers, return them
-        if (storeToWorkers.containsKey(storeName)) {
-            return storeToWorkers.get(storeName);
+        // Normalize storeName by removing surrounding quotes
+        String normalizedName = normalizeStoreName(storeName);
+        
+        // Check all normalized keys in storeToWorkers map
+        for (String existingStore : new ArrayList<>(storeToWorkers.keySet())) {
+            if (normalizeStoreName(existingStore).equals(normalizedName)) {
+                List<WorkerConnection> workers = storeToWorkers.get(existingStore);
+                
+                // Update the key if necessary to ensure consistency
+                if (!existingStore.equals(storeName)) {
+                    storeToWorkers.put(normalizedName, workers);
+                    storeToWorkers.remove(existingStore);
+                }
+                
+                return workers;
+            }
         }
         
         // If workers list is empty, return an empty list
         if (workers.isEmpty()) {
-            System.err.println("Cannot assign workers for store '" + storeName + "': No workers available.");
+            System.err.println("WORKER ASSIGNMENT (Thread): Cannot assign workers for store '" + normalizedName + "': No workers available.");
             return new ArrayList<>(); 
         }
         
-        // Assign workers to the store using consistent hashing based on store name
-        int primaryIndex = Math.abs(storeName.hashCode()) % workers.size();
+        // Use a consistent hashing algorithm to ensure the same store always gets assigned to the same workers
+        int hash = getConsistentHashForStore(normalizedName);
+        System.out.println("WORKER ASSIGNMENT (Thread): Calculated consistent hash " + hash + " for store '" + normalizedName + "'");
+        
+        int primaryIndex = hash % workers.size();
         List<WorkerConnection> assignedWorkers = new ArrayList<>();
         for (int i = 0; i < replicationFactor && i < workers.size(); i++) {
             int index = (primaryIndex + i) % workers.size();
@@ -627,10 +860,49 @@ class MasterThread extends Thread {
         }
         
         // Store the assignment for future use
-        storeToWorkers.put(storeName, assignedWorkers);
-        System.out.println("Assigned " + assignedWorkers.size() + " workers to store: " + storeName);
+        storeToWorkers.put(normalizedName, assignedWorkers);
+        System.out.println("WORKER ASSIGNMENT (Thread): Newly assigned store '" + normalizedName + "' to worker(s): " +
+            assignedWorkers.stream()
+                .map(w -> "Worker_" + w.getPort())
+                .collect(Collectors.joining(", ")));
         
         return assignedWorkers;
+    }
+
+    /**
+     * Normalize a store name by removing any surrounding quotes
+     */
+    private String normalizeStoreName(String storeName) {
+        if (storeName == null) {
+            return "";
+        }
+        
+        // Remove surrounding quotes if present
+        String normalized = storeName;
+        if (normalized.startsWith("\"") && normalized.endsWith("\"")) {
+            normalized = normalized.substring(1, normalized.length() - 1);
+        }
+        
+        // Handle double-quote escaping in JSON
+        if (normalized.startsWith("\"") && normalized.endsWith("\"")) {
+            normalized = normalized.substring(1, normalized.length() - 1);
+        }
+        
+        return normalized;
+    }
+
+    /**
+     * Custom hash function for consistent worker assignment across system restarts
+     * This ensures the same store always gets assigned to the same workers,
+     * even across different JVM instances
+     */
+    private int getConsistentHashForStore(String storeName) {
+        // Simple but consistent hashing algorithm
+        int hash = 0;
+        for (int i = 0; i < storeName.length(); i++) {
+            hash = 31 * hash + storeName.charAt(i);
+        }
+        return Math.abs(hash);
     }
 
     /**
