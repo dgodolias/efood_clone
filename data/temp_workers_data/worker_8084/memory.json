@@ -155,14 +155,14 @@
     "Latitude": 37.992222,
     "Longitude": 23.732222,
     "FoodCategory": "burger",
-    "Stars": 4.0,
-    "NoOfVotes": 23,
+    "Stars": 4.04,
+    "NoOfVotes": 24,
     "StoreLogo": "app/src/main/assets/logos/burger_barn.png",
     "PriceCategory": "$$",
     "Products": [
       {"ProductName": "Bacon Cheeseburger", "ProductType": "burger", "Available Amount": 1800, "Price": 9.0},
       {"ProductName": "Mushroom Swiss Burger", "ProductType": "burger", "Available Amount": 1200, "Price": 9.5},
-      {"ProductName": "Onion Rings", "ProductType": "side", "Available Amount": 800, "Price": 3.5}
+      {"ProductName": "Onion Rings", "ProductType": "side", "Available Amount": 799, "Price": 3.5}
     ]
   }
 ]

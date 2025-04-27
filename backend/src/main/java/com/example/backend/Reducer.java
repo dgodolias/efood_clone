@@ -155,59 +155,11 @@ class ReducerThread extends Thread {
                 } else if (isReduceMode) {
                     // Ignore other inputs during reduce mode
                     continue;
+                } else {
+                    // Invalid request outside of MapReduce pattern
+                    out.println("ERROR: Invalid request. Use REDUCE command to start MapReduce operation.");
+                    out.println("END_REDUCER");
                 }
-                
-                // Legacy direct command mode (for backward compatibility)
-                String[] parts = request.split(" ", 2);
-                String cmd = parts[0];
-                String data = parts.length > 1 ? parts[1] : "";
-
-                String result;
-                switch (cmd) {
-                    // ANALYTICS OPERATIONS - REDUCE PHASE
-                    case "GET_SALES_BY_STORE_TYPE_CATEGORY":
-                    case "GET_SALES_BY_PRODUCT_CATEGORY":
-                    case "GET_SALES_BY_PRODUCT":
-                        result = processSalesAnalytics(cmd, data);
-                        break;
-                        
-                    // MANAGER OPERATIONS
-                    case "ADD_STORE":
-                        result = processAddStoreResults(data);
-                        break;
-                    case "ADD_PRODUCT":
-                        result = processAddProductResults(data);
-                        break;
-                    case "REMOVE_PRODUCT":
-                        result = processRemoveProductResults(data);
-                        break;
-                        
-                    // CLIENT OPERATIONS
-                    case "FILTER_STORES":
-                        result = processFilterStoresResults(data);
-                        break;
-                    case "FIND_STORES_WITHIN_RANGE":
-                        result = processFindStoresResults(data);
-                        break;
-                    case "GET_STORE_DETAILS":
-                        result = processGetStoreDetailsResults(data);
-                        break;
-                    case "BUY":
-                        result = processPurchaseResults(data);
-                        break;
-                    case "REVIEW":
-                        result = processReviewResults(data);
-                        break;
-                    default:
-                        result = "Reducer Error: Unknown command " + cmd;
-                        break;
-                }
-                
-                // Send multi-line result back to Master
-                if (result != null && !result.isEmpty()) {
-                    out.println(result);
-                }
-                out.println("END_REDUCER"); // Signal end of response
             }
         } catch (IOException e) {
             System.err.println("Error handling Master connection in Reducer: " + e.getMessage());

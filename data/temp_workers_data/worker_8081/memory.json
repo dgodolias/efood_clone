@@ -139,14 +139,14 @@
     "Latitude": 37.983456,
     "Longitude": 23.724567,
     "FoodCategory": "sandwich",
-    "Stars": 3.0,
-    "NoOfVotes": 11,
+    "Stars": 3.31,
+    "NoOfVotes": 13,
     "StoreLogo": "app/src/main/assets/logos/sandwich_stop.png",
     "PriceCategory": "$$",
     "Products": [
       {"ProductName": "Turkey Club", "ProductType": "sandwich", "Available Amount": 2000, "Price": 7.5},
       {"ProductName": "Ham and Cheese", "ProductType": "sandwich", "Available Amount": 2500, "Price": 6.5},
-      {"ProductName": "Potato Chips", "ProductType": "side", "Available Amount": 3000, "Price": 1.5}
+      {"ProductName": "Potato Chips", "ProductType": "side", "Available Amount": 2998, "Price": 1.5}
     ]
   },
   {
