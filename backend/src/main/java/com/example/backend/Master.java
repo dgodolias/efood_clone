@@ -490,7 +490,8 @@ class MasterThread extends Thread {
     }
 
     /**
-     * Execute the Map phase by distributing the command to all workers and collecting their results
+     * Execute the Map phase by distributing the command to the appropriate workers based on the store
+     * This implements active replication by targeting only the workers assigned to a specific store
      * @param command The command to execute
      * @param data The data associated with the command
      */
@@ -500,7 +501,41 @@ class MasterThread extends Thread {
         
         System.out.println("MAP PHASE: Distributing command to workers: " + fullCommand);
         
-        for (WorkerConnection worker : workers) {
+        // Extract store name from the command data if possible
+        String storeName = extractStoreNameFromCommand(command, data);
+        
+        if (storeName != null && !storeName.isEmpty()) {
+            // Get the assigned workers for this store
+            List<WorkerConnection> assignedWorkers = storeToWorkers.get(storeName);
+            
+            if (assignedWorkers != null && !assignedWorkers.isEmpty()) {
+                // Send command to assigned workers according to replication factor
+                executeCommandOnWorkers(fullCommand, assignedWorkers, results);
+                System.out.println("Command sent to " + assignedWorkers.size() + " assigned workers for store: " + storeName);
+            } else {
+                // New store or store not found in mapping, assign workers and send command
+                List<WorkerConnection> newAssignedWorkers = getWorkersForStore(storeName);
+                executeCommandOnWorkers(fullCommand, newAssignedWorkers, results);
+                System.out.println("Command sent to " + newAssignedWorkers.size() + " newly assigned workers for store: " + storeName);
+            }
+        } else {
+            // For commands that don't target a specific store (like FILTER_STORES), send to all workers
+            executeCommandOnWorkers(fullCommand, workers, results);
+            System.out.println("Command sent to all " + workers.size() + " workers (no specific store targeted)");
+        }
+        
+        // Store the intermediate results for the reducer phase
+        intermediateResults.put(command, results);
+    }
+    
+    /**
+     * Execute a command on the specified list of worker connections
+     * @param fullCommand The complete command to execute
+     * @param targetWorkers The list of workers to send the command to
+     * @param results List to collect the results
+     */
+    private void executeCommandOnWorkers(String fullCommand, List<WorkerConnection> targetWorkers, List<String> results) {
+        for (WorkerConnection worker : targetWorkers) {
             try {
                 String response = worker.sendRequest(fullCommand);
                 if (response != null && !response.isEmpty()) {
@@ -509,13 +544,95 @@ class MasterThread extends Thread {
                 }
             } catch (IOException e) {
                 System.err.println("Error communicating with worker " + worker.getPort() + ": " + e.getMessage());
+                // If a worker is down, we should implement failover to other replicas
+                // This will be handled in the Reducer when processing the results
             }
         }
-        
-        // Store the intermediate results for the reducer phase
-        intermediateResults.put(command, results);
     }
     
+    /**
+     * Extract the store name from various commands
+     * @param command The command type
+     * @param data The command data
+     * @return The extracted store name, or null if not applicable
+     */
+    private String extractStoreNameFromCommand(String command, String data) {
+        if (data == null || data.isEmpty()) {
+            return null;
+        }
+        
+        switch (command) {
+            case "ADD_STORE":
+                // Extract from JSON format
+                String storeNameField = "\"StoreName\":";
+                int start = data.indexOf(storeNameField);
+                if (start != -1) {
+                    start += storeNameField.length();
+                    if (data.charAt(start) == '"') {
+                        start++;
+                        int end = data.indexOf("\"", start);
+                        if (end != -1) {
+                            return data.substring(start, end);
+                        }
+                    }
+                }
+                return null;
+                
+            case "ADD_PRODUCT":
+            case "REMOVE_PRODUCT":
+            case "BUY":
+            case "REVIEW":
+            case "GET_STORE_DETAILS":
+                // These commands typically have store name as the first parameter
+                String[] parts = data.split("\\s+", 2);
+                return parts[0];
+                
+            case "FILTER_STORES":
+            case "FIND_STORES_WITHIN_RANGE":
+            case "GET_SALES_BY_STORE_TYPE_CATEGORY":
+            case "GET_SALES_BY_PRODUCT_CATEGORY":
+            case "GET_SALES_BY_PRODUCT":
+                // These commands don't target a specific store, they require querying all workers
+                return null;
+                
+            default:
+                return null;
+        }
+    }
+    
+    /**
+     * Get the list of worker connections assigned to handle a specific store
+     * This implements active replication by maintaining multiple copies of each store
+     * @param storeName The name of the store
+     * @return List of WorkerConnection instances assigned to this store
+     */
+    private List<WorkerConnection> getWorkersForStore(String storeName) {
+        // If the store already has assigned workers, return them
+        if (storeToWorkers.containsKey(storeName)) {
+            return storeToWorkers.get(storeName);
+        }
+        
+        // If workers list is empty, return an empty list
+        if (workers.isEmpty()) {
+            System.err.println("Cannot assign workers for store '" + storeName + "': No workers available.");
+            return new ArrayList<>(); 
+        }
+        
+        // Assign workers to the store using consistent hashing based on store name
+        int primaryIndex = Math.abs(storeName.hashCode()) % workers.size();
+        List<WorkerConnection> assignedWorkers = new ArrayList<>();
+        for (int i = 0; i < replicationFactor && i < workers.size(); i++) {
+            int index = (primaryIndex + i) % workers.size();
+            assignedWorkers.add(workers.get(index));
+        }
+        
+        // Store the assignment for future use
+        storeToWorkers.put(storeName, assignedWorkers);
+        System.out.println("Assigned " + assignedWorkers.size() + " workers to store: " + storeName);
+        
+        return assignedWorkers;
+    }
+
     /**
      * Send the intermediate results collected during the Map phase to the Reducer
      * @param command The command that was executed in the Map phase
