@@ -5,6 +5,7 @@ import java.net.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -20,6 +21,7 @@ public class Master {
     private List<Process> workerProcesses; 
     private Process reducerProcess; 
     private Map<String, List<WorkerConnection>> storeToWorkers;
+    private Map<WorkerConnection, Boolean> workerHealth;
     private ScheduledExecutorService heartbeatScheduler;
     private PrintWriter out;
     private boolean isLocalMode = true; 
@@ -36,23 +38,20 @@ public class Master {
         workers = new ArrayList<>();
         workerProcesses = new ArrayList<>();
         storeToWorkers = new HashMap<>();
+        workerHealth = new ConcurrentHashMap<>();
 
         out = new PrintWriter(System.out, true);
 
-      
         if (isLocalMode) {
             deleteDirectory(new File("data/temp_workers_data"));
         }
 
-        
         int storeCount = countStoresInJsonFile();
         
         List<String> workerAddresses = new ArrayList<>(); 
 
         if (isLocalMode) {
-            
             int workerCount = Math.max(1, (int)Math.sqrt(storeCount));
-            
             
             System.out.println("Starting in LOCAL mode with " + workerCount + " workers for " + storeCount + " stores");
             for (int i = 0; i < workerCount; i++) {
@@ -60,14 +59,13 @@ public class Master {
                 spawnWorker(workerPort);
                 WorkerConnection wc = new WorkerConnection("localhost", workerPort);
                 workers.add(wc);
+                workerHealth.put(wc, true);
                 workerAddresses.add("localhost:" + workerPort);
                 System.out.println("Started and connected to worker at localhost:" + workerPort);
             }
             
-            
             spawnReducer(workerAddresses);
         } else {
-            
             System.out.println("Starting in DISTRIBUTED mode with " + remoteWorkerAddresses.size() + " remote workers");
             for (String address : remoteWorkerAddresses) {
                 String[] parts = address.split(":");
@@ -77,6 +75,7 @@ public class Master {
                     try {
                         WorkerConnection wc = new WorkerConnection(host, port);
                         workers.add(wc);
+                        workerHealth.put(wc, true);
                         workerAddresses.add(address);
                         System.out.println("Connected to remote worker at " + address);
                     } catch (IOException e) {
@@ -87,11 +86,9 @@ public class Master {
                 }
             }
             
-            
             System.out.println("Using remote Reducer at " + this.reducerHost + ":" + REDUCER_PORT);
         }
 
-        // Verify Reducer connectivity before proceeding
         if (!verifyReducerConnectivity()) {
             throw new IOException("Failed to connect to the Reducer at " + this.reducerHost + ":" + REDUCER_PORT + 
                                  ". Make sure the Reducer is running before starting the Master.");
@@ -101,12 +98,6 @@ public class Master {
         startHeartbeat();
     }
     
-    /**
-     * Verifies that the Master can connect to the Reducer.
-     * This makes the Reducer an essential component for the Master to start.
-     * 
-     * @return true if the connection was successful, false otherwise
-     */
     private boolean verifyReducerConnectivity() {
         try (Socket socket = new Socket(reducerHost, REDUCER_PORT)) {
             System.out.println("Successfully connected to Reducer at " + reducerHost + ":" + REDUCER_PORT);
@@ -162,7 +153,6 @@ public class Master {
             StringBuilder content = new StringBuilder();
             String line;
             while ((line = reader.readLine()) != null) content.append(line).append("\n");
-
         }
 
         if (!storesFile.exists()) {
@@ -175,7 +165,6 @@ public class Master {
             return;
         }
 
-        // First try to load persistent worker assignments from a file
         boolean loadedFromFile = loadWorkerAssignments();
         if (loadedFromFile) {
             System.out.println("Loaded store-to-worker assignments from persistent storage.");
@@ -195,17 +184,14 @@ public class Master {
                     worker.sendRequest("ADD_STORE " + storeJson);
                 } catch (IOException e) {
                     System.err.println("Failed to send store to worker: " + e.getMessage());
+                    workerHealth.put(worker, false);
                 }
             }
         }
         
-        // Save worker assignments for future restarts
         saveWorkerAssignments();
     }
     
-    /**
-     * Save the current store-to-worker assignments to a file for persistence across restarts
-     */
     private void saveWorkerAssignments() {
         File assignmentsFile = new File("data/worker_assignments.txt");
         try (PrintWriter writer = new PrintWriter(new FileWriter(assignmentsFile))) {
@@ -225,10 +211,6 @@ public class Master {
         }
     }
     
-    /**
-     * Load store-to-worker assignments from a file
-     * @return true if assignments were loaded, false otherwise
-     */
     private boolean loadWorkerAssignments() {
         File assignmentsFile = new File("data/worker_assignments.txt");
         if (!assignmentsFile.exists()) {
@@ -247,7 +229,6 @@ public class Master {
                 
                 for (String portStr : workerPortStrs) {
                     int port = Integer.parseInt(portStr);
-                    // Find the matching worker connection
                     for (WorkerConnection worker : workers) {
                         if (worker.getPort() == port) {
                             assignedWorkers.add(worker);
@@ -348,9 +329,8 @@ public class Master {
         reducerProcess = pb.start();
         System.out.println("Started Reducer process.");
 
-        
         try {
-            Thread.sleep(1000); // Give reducer time to start
+            Thread.sleep(1000);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
@@ -358,8 +338,8 @@ public class Master {
 
     public void start() {
         try (ServerSocket serverSocket = bindAddress != null ? 
-                new ServerSocket(PORT, 50, bindAddress) : // Bind to localhost in local mode
-                new ServerSocket(PORT)) { // Bind to all interfaces (0.0.0.0) in distributed mode
+                new ServerSocket(PORT, 50, bindAddress) : 
+                new ServerSocket(PORT)) { 
             
             String bindInfo = bindAddress != null ? 
                     "localhost:" + PORT : 
@@ -371,7 +351,7 @@ public class Master {
                 Socket socket = serverSocket.accept();
                 System.out.println("New client connected: " + socket.getInetAddress());
                 
-                new MasterThread(socket, workers, storeToWorkers, REPLICATION_FACTOR, reducerHost, REDUCER_PORT).start();
+                new MasterThread(socket, workers, storeToWorkers, REPLICATION_FACTOR, reducerHost, REDUCER_PORT, workerHealth).start();
             }
         } catch (IOException e) {
             System.err.println("Master server failed: " + e.getMessage());
@@ -403,10 +383,8 @@ public class Master {
     }
 
     private List<WorkerConnection> getWorkersForStore(String storeName) {
-        // Normalize storeName by removing surrounding quotes
         String normalizedName = normalizeStoreName(storeName);
         
-        // Check all normalized keys in storeToWorkers map
         for (String existingStore : new ArrayList<>(storeToWorkers.keySet())) {
             if (normalizeStoreName(existingStore).equals(normalizedName)) {
                 List<WorkerConnection> workers = storeToWorkers.get(existingStore);
@@ -415,7 +393,6 @@ public class Master {
                         .map(w -> "Worker_" + w.getPort())
                         .collect(Collectors.joining(", ")));
                 
-                // Update the key if necessary to ensure consistency
                 if (!existingStore.equals(storeName)) {
                     storeToWorkers.put(normalizedName, workers);
                     storeToWorkers.remove(existingStore);
@@ -431,42 +408,42 @@ public class Master {
             return new ArrayList<>(); 
         }
         
-        // Use a consistent hashing algorithm to ensure the same store always gets assigned to the same workers
         int hash = getConsistentHashForStore(normalizedName);
         System.out.println("WORKER ASSIGNMENT: Calculated consistent hash " + hash + " for store '" + normalizedName + "'");
         
         int primaryIndex = hash % workers.size();
         List<WorkerConnection> assignedWorkers = new ArrayList<>();
-        for (int i = 0; i < REPLICATION_FACTOR && i < workers.size(); i++) {
+        
+        WorkerConnection primaryWorker = workers.get(primaryIndex);
+        assignedWorkers.add(primaryWorker);
+        
+        for (int i = 1; i < REPLICATION_FACTOR && i < workers.size(); i++) {
             int index = (primaryIndex + i) % workers.size();
             assignedWorkers.add(workers.get(index));
         }
         
         storeToWorkers.put(normalizedName, assignedWorkers);
         
-        System.out.println("WORKER ASSIGNMENT: Newly assigned store '" + normalizedName + "' to worker(s): " +
-            assignedWorkers.stream()
-                .map(w -> "Worker_" + w.getPort())
-                .collect(Collectors.joining(", ")));
+        System.out.println("WORKER ASSIGNMENT: Newly assigned store '" + normalizedName + "' with PRIMARY worker " + 
+                          primaryWorker.getPort() + " and backup workers: " +
+                          assignedWorkers.stream()
+                              .skip(1)
+                              .map(w -> "Worker_" + w.getPort())
+                              .collect(Collectors.joining(", ")));
         
         return assignedWorkers;
     }
 
-    /**
-     * Normalize a store name by removing any surrounding quotes
-     */
     private String normalizeStoreName(String storeName) {
         if (storeName == null) {
             return "";
         }
         
-        // Remove surrounding quotes if present
         String normalized = storeName;
         if (normalized.startsWith("\"") && normalized.endsWith("\"")) {
             normalized = normalized.substring(1, normalized.length() - 1);
         }
         
-        // Handle double-quote escaping in JSON
         if (normalized.startsWith("\"") && normalized.endsWith("\"")) {
             normalized = normalized.substring(1, normalized.length() - 1);
         }
@@ -475,13 +452,7 @@ public class Master {
         return normalized;
     }
 
-    /**
-     * Custom hash function for consistent worker assignment across system restarts
-     * This ensures the same store always gets assigned to the same workers,
-     * even across different JVM instances
-     */
     private int getConsistentHashForStore(String storeName) {
-        // Simple but consistent hashing algorithm
         int hash = 0;
         for (int i = 0; i < storeName.length(); i++) {
             hash = 31 * hash + storeName.charAt(i);
@@ -495,12 +466,85 @@ public class Master {
             for (WorkerConnection w : workers) {
                 try {
                     String response = w.sendRequest("PING"); 
-                    System.out.println("Master received from worker " + w.getPort() + ": " + response); 
+                    System.out.println("Master received from worker " + w.getPort() + ": " + response);
+                    if (workerHealth.getOrDefault(w, true) == false) {
+                        System.out.println("WORKER RECOVERY: Worker " + w.getPort() + " is back online");
+                    }
+                    workerHealth.put(w, true);
                 } catch (IOException e) {
-                    System.err.println("Worker at " + w.getPort() + " is down");
+                    System.err.println("Worker at " + w.getPort() + " is down: " + e.getMessage());
+                    if (workerHealth.getOrDefault(w, true) == true) {
+                        workerHealth.put(w, false);
+                        reassignStoresFromFailedWorker(w);
+                    }
                 }
             }
         }, 0, 5, TimeUnit.SECONDS);
+    }
+    
+    private void reassignStoresFromFailedWorker(WorkerConnection failedWorker) {
+        List<String> affectedStores = new ArrayList<>();
+        
+        for (Map.Entry<String, List<WorkerConnection>> entry : storeToWorkers.entrySet()) {
+            if (entry.getValue().contains(failedWorker)) {
+                affectedStores.add(entry.getKey());
+            }
+        }
+        
+        System.out.println("WORKER FAILOVER: Worker " + failedWorker.getPort() + " has failed. " +
+                          "Reassigning " + affectedStores.size() + " affected stores.");
+        
+        for (String storeName : affectedStores) {
+            List<WorkerConnection> currentWorkers = storeToWorkers.get(storeName);
+            boolean wasPrimary = currentWorkers.indexOf(failedWorker) == 0;
+            currentWorkers.remove(failedWorker);
+            
+            if (currentWorkers.isEmpty()) {
+                List<WorkerConnection> newWorkers = getWorkersForStore(storeName);
+                System.out.println("WORKER FAILOVER: All workers for store '" + storeName + 
+                                  "' have failed. Assigned completely new workers.");
+                continue;
+            }
+            
+            if (wasPrimary) {
+                System.out.println("WORKER FAILOVER: Primary worker for store '" + storeName + 
+                                  "' has failed. Promoting backup worker " + currentWorkers.get(0).getPort() + 
+                                  " to primary.");
+            }
+            
+            if (currentWorkers.size() < REPLICATION_FACTOR) {
+                for (WorkerConnection w : workers) {
+                    if (!currentWorkers.contains(w) && workerHealth.getOrDefault(w, false)) {
+                        currentWorkers.add(w);
+                        System.out.println("WORKER FAILOVER: Added worker " + w.getPort() + 
+                                          " as new backup for store '" + storeName + 
+                                          "' to maintain replication factor of " + REPLICATION_FACTOR);
+                        
+                        try {
+                            WorkerConnection healthyWorker = currentWorkers.get(0);
+                            String storeData = healthyWorker.sendRequest("GET_STORE_DETAILS " + storeName);
+                            
+                            if (storeData != null && !storeData.isEmpty() && !storeData.startsWith("ERROR")) {
+                                w.sendRequest("ADD_STORE " + storeData);
+                                System.out.println("WORKER FAILOVER: Successfully synchronized store '" + 
+                                                 storeName + "' to new worker " + w.getPort());
+                            } else {
+                                System.err.println("WORKER FAILOVER: Failed to get store data for '" + 
+                                                 storeName + "' from healthy worker " + healthyWorker.getPort());
+                            }
+                        } catch (IOException e) {
+                            System.err.println("WORKER FAILOVER: Error syncing store '" + storeName + 
+                                             "' to new worker " + w.getPort() + ": " + e.getMessage());
+                        }
+                        break;
+                    }
+                }
+            }
+            
+            storeToWorkers.put(storeName, currentWorkers);
+        }
+        
+        saveWorkerAssignments();
     }
 
     public static void main(String[] args) {
@@ -510,7 +554,6 @@ public class Master {
             String reducerHost = DEFAULT_REDUCER_HOST;
             List<String> remoteWorkerAddresses = new ArrayList<>();
 
-            
             for (int i = 0; i < args.length; i++) {
                 if (args[i].equals("--distributed")) {
                     localMode = false;
@@ -522,7 +565,6 @@ public class Master {
                     }
                 } else if (args[i].equals("--workers")) {
                     if (i + 1 < args.length) {
-
                         String workersArg = args[++i];
                         String[] workers = workersArg.split(",");
                         for (String worker : workers) {
@@ -554,16 +596,20 @@ class MasterThread extends Thread {
     private final int replicationFactor;
     private final String reducerHost;
     private final int reducerPort;
-    // Add a map to store intermediate results from workers
+    private Map<WorkerConnection, Boolean> workerHealth;
     private Map<String, List<String>> intermediateResults;
 
-    public MasterThread(Socket socket, List<WorkerConnection> workers, Map<String, List<WorkerConnection>> storeToWorkers, int replicationFactor, String reducerHost, int reducerPort) {
+    public MasterThread(Socket socket, List<WorkerConnection> workers, 
+                      Map<String, List<WorkerConnection>> storeToWorkers, 
+                      int replicationFactor, String reducerHost, int reducerPort,
+                      Map<WorkerConnection, Boolean> workerHealth) {
         this.socket = socket;
         this.workers = workers;
         this.storeToWorkers = storeToWorkers;
         this.replicationFactor = replicationFactor;
         this.reducerHost = reducerHost;
         this.reducerPort = reducerPort;
+        this.workerHealth = workerHealth;
         this.intermediateResults = new HashMap<>();
     }
 
@@ -576,13 +622,11 @@ class MasterThread extends Thread {
                 System.out.println("Received command: " + request);
                 if (workers.isEmpty()) {
                     out.println("No workers available to process request: " + request);
-                    out.println("END"); 
+                    out.println("END");
                     continue;
                 }
                 
-                // Verify Reducer connection before processing any request
                 try {
-                    // Quick check to ensure Reducer is still available
                     Socket reducerSocket = new Socket(reducerHost, reducerPort);
                     reducerSocket.close();
                 } catch (IOException e) {
@@ -609,18 +653,9 @@ class MasterThread extends Thread {
         }
     }
 
-    /**
-     * Process a command using the MapReduce pattern
-     * 
-     * @param command The command to process
-     * @param data The data associated with the command
-     * @param out The PrintWriter to send the response to
-     */
     private void processCommandWithMapReduce(String command, String data, PrintWriter out) {
-        // MAP phase: Distribute command to all workers and collect results
         executeMapPhase(command, data);
         
-        // REDUCE phase: Send intermediate results to Reducer for processing
         try {
             String reducerResponse = sendIntermediateResultsToReducer(command);
             System.out.println("Master received from Reducer for " + command + ":\n" + reducerResponse);
@@ -632,70 +667,152 @@ class MasterThread extends Thread {
         out.println("END");
     }
 
-    /**
-     * Execute the Map phase by distributing the command to the appropriate workers based on the store
-     * This implements active replication by targeting only the workers assigned to a specific store
-     * @param command The command to execute
-     * @param data The data associated with the command
-     */
     private void executeMapPhase(String command, String data) {
         List<String> results = new ArrayList<>();
         String fullCommand = command + (data.isEmpty() ? "" : " " + data);
         
         System.out.println("MAP PHASE: Distributing command to workers: " + fullCommand);
         
-        // Extract store name from the command data if possible
         String storeName = extractStoreNameFromCommand(command, data);
         
         if (storeName != null && !storeName.isEmpty()) {
-            // Get the assigned workers for this store
-            List<WorkerConnection> assignedWorkers = storeToWorkers.get(storeName);
+            List<WorkerConnection> assignedWorkers = null;
+            
+            for (String existingStore : new ArrayList<>(storeToWorkers.keySet())) {
+                String normalizedExisting = normalizeStoreName(existingStore);
+                String normalizedRequested = normalizeStoreName(storeName);
+                
+                if (normalizedExisting.equals(normalizedRequested)) {
+                    assignedWorkers = storeToWorkers.get(existingStore);
+                    System.out.println("WORKER EXECUTION: Found existing workers for store '" + normalizedRequested + 
+                                      "' (stored as '" + existingStore + "')");
+                    break;
+                }
+            }
             
             if (assignedWorkers != null && !assignedWorkers.isEmpty()) {
-                // ADDED DEBUG PRINT - Show which worker is assigned this command
-                System.out.println("DEBUG: Command " + command + " for store '" + storeName + "' assigned to worker(s): " +
+                System.out.println("WORKER EXECUTION: Command " + command + " for store '" + storeName + "' assigned to worker(s): " +
                     assignedWorkers.stream().map(w -> "Worker_" + w.getPort()).collect(Collectors.joining(", ")));
                 
-                // Send command to assigned workers according to replication factor
-                executeCommandOnWorkers(fullCommand, assignedWorkers, results);
-                System.out.println("Command sent to " + assignedWorkers.size() + " assigned workers for store: " + storeName);
-                
-                // ADDED DEBUG PRINT - Show which workers should be synced
-                System.out.println("DEBUG: Workers that should be synced after this operation: " +
-                    workers.stream().map(w -> "Worker_" + w.getPort()).collect(Collectors.joining(", ")));
+                executeCommandWithFailover(fullCommand, assignedWorkers, results);
             } else {
-                // New store or store not found in mapping, assign workers and send command
                 List<WorkerConnection> newAssignedWorkers = getWorkersForStore(storeName);
                 
-                // ADDED DEBUG PRINT - Show which worker is newly assigned this command
-                System.out.println("DEBUG: Command " + command + " for store '" + storeName + "' newly assigned to worker(s): " +
+                System.out.println("WORKER EXECUTION: Command " + command + " for store '" + storeName + "' newly assigned to worker(s): " +
                     newAssignedWorkers.stream().map(w -> "Worker_" + w.getPort()).collect(Collectors.joining(", ")));
                 
-                executeCommandOnWorkers(fullCommand, newAssignedWorkers, results);
-                System.out.println("Command sent to " + newAssignedWorkers.size() + " newly assigned workers for store: " + storeName);
-                
-                // ADDED DEBUG PRINT - Show which workers should be synced
-                System.out.println("DEBUG: Workers that should be synced after this operation: " +
-                    workers.stream().map(w -> "Worker_" + w.getPort()).collect(Collectors.joining(", ")));
+                executeCommandWithFailover(fullCommand, newAssignedWorkers, results);
             }
         } else {
-            // For commands that don't target a specific store (like FILTER_STORES), send to all workers
             executeCommandOnWorkers(fullCommand, workers, results);
             System.out.println("Command sent to all " + workers.size() + " workers (no specific store targeted)");
         }
         
-        // Store the intermediate results for the reducer phase
         intermediateResults.put(command, results);
     }
 
-    /**
-     * Execute a command on the specified list of worker connections
-     * @param fullCommand The complete command to execute
-     * @param targetWorkers The list of workers to send the command to
-     * @param results List to collect the results
-     */
+    private void executeCommandWithFailover(String fullCommand, List<WorkerConnection> targetWorkers, List<String> results) {
+        if (targetWorkers.isEmpty()) {
+            System.out.println("WORKER EXECUTION: No workers available for command: " + fullCommand);
+            results.add("ERROR|No workers available for this command");
+            return;
+        }
+        
+        boolean successful = false;
+        String primaryResponse = null;
+        List<String> errors = new ArrayList<>();
+        
+        // First try primary worker (first in the list)
+        WorkerConnection primaryWorker = targetWorkers.get(0);
+        boolean primaryHealthy = workerHealth.getOrDefault(primaryWorker, false);
+        
+        if (primaryHealthy) {
+            try {
+                primaryResponse = primaryWorker.sendRequest(fullCommand);
+                if (primaryResponse != null && !primaryResponse.isEmpty() && !primaryResponse.startsWith("ERROR")) {
+                    results.add(primaryResponse);
+                    System.out.println("WORKER EXECUTION: Primary worker " + primaryWorker.getPort() + 
+                                     " successfully processed command");
+                    successful = true;
+                } else {
+                    System.out.println("WORKER EXECUTION: Primary worker " + primaryWorker.getPort() + 
+                                     " returned error: " + primaryResponse);
+                    errors.add("Primary worker " + primaryWorker.getPort() + " error: " + primaryResponse);
+                }
+            } catch (IOException e) {
+                String errorMsg = "WORKER EXECUTION: Primary worker " + primaryWorker.getPort() + 
+                                " failed with error: " + e.getMessage();
+                System.err.println(errorMsg);
+                errors.add(errorMsg);
+                
+                // Mark the worker as unhealthy
+                workerHealth.put(primaryWorker, false);
+            }
+        } else {
+            System.out.println("WORKER EXECUTION: Primary worker " + primaryWorker.getPort() + 
+                             " is marked as unhealthy, skipping");
+            errors.add("Primary worker " + primaryWorker.getPort() + " is unhealthy");
+        }
+        
+        // If primary worker failed, try backup workers
+        if (!successful && targetWorkers.size() > 1) {
+            System.out.println("WORKER EXECUTION: Primary worker failed or unhealthy. Trying backup workers...");
+            
+            for (int i = 1; i < targetWorkers.size(); i++) {
+                WorkerConnection backupWorker = targetWorkers.get(i);
+                boolean backupHealthy = workerHealth.getOrDefault(backupWorker, false);
+                
+                if (!backupHealthy) {
+                    System.out.println("WORKER EXECUTION: Backup worker " + backupWorker.getPort() + 
+                                     " is marked as unhealthy, skipping");
+                    continue;
+                }
+                
+                try {
+                    String backupResponse = backupWorker.sendRequest(fullCommand);
+                    if (backupResponse != null && !backupResponse.isEmpty() && !backupResponse.startsWith("ERROR")) {
+                        results.add(backupResponse);
+                        System.out.println("WORKER EXECUTION: Backup worker " + backupWorker.getPort() + 
+                                         " successfully processed command");
+                        successful = true;
+                        
+                        // If this was a successful backup worker invocation, log it for monitoring
+                        System.out.println("WORKER FAILOVER: Successfully executed on backup worker " + 
+                                         backupWorker.getPort() + " after primary worker " + 
+                                         primaryWorker.getPort() + " failed");
+                        break; // Stop after first successful backup
+                    } else {
+                        System.out.println("WORKER EXECUTION: Backup worker " + backupWorker.getPort() + 
+                                         " returned error: " + backupResponse);
+                        errors.add("Backup worker " + backupWorker.getPort() + " error: " + backupResponse);
+                    }
+                } catch (IOException e) {
+                    String errorMsg = "WORKER EXECUTION: Backup worker " + backupWorker.getPort() + 
+                                    " failed with error: " + e.getMessage();
+                    System.err.println(errorMsg);
+                    errors.add(errorMsg);
+                    
+                    // Mark the worker as unhealthy
+                    workerHealth.put(backupWorker, false);
+                }
+            }
+        }
+        
+        // If all workers failed, add errors to results
+        if (!successful) {
+            System.err.println("WORKER EXECUTION: All workers for this command have failed!");
+            results.add("ERROR|All workers failed: " + String.join(", ", errors));
+        }
+    }
+
     private void executeCommandOnWorkers(String fullCommand, List<WorkerConnection> targetWorkers, List<String> results) {
         for (WorkerConnection worker : targetWorkers) {
+            boolean isHealthy = workerHealth.getOrDefault(worker, false);
+            if (!isHealthy) {
+                System.out.println("WORKER EXECUTION: Skipping unhealthy worker " + worker.getPort());
+                continue;
+            }
+            
             try {
                 String response = worker.sendRequest(fullCommand);
                 if (response != null && !response.isEmpty()) {
@@ -704,18 +821,11 @@ class MasterThread extends Thread {
                 }
             } catch (IOException e) {
                 System.err.println("Error communicating with worker " + worker.getPort() + ": " + e.getMessage());
-                // If a worker is down, we should implement failover to other replicas
-                // This will be handled in the Reducer when processing the results
+                workerHealth.put(worker, false);
             }
         }
     }
 
-    /**
-     * Extract the store name from various commands
-     * @param command The command type
-     * @param data The command data
-     * @return The extracted store name, or null if not applicable
-     */
     private String extractStoreNameFromCommand(String command, String data) {
         if (data == null || data.isEmpty()) {
             return null;
@@ -725,7 +835,6 @@ class MasterThread extends Thread {
         
         switch (command) {
             case "ADD_STORE":
-                // Extract from JSON format
                 String storeNameField = "\"StoreName\":";
                 int start = data.indexOf(storeNameField);
                 if (start != -1) {
@@ -743,7 +852,6 @@ class MasterThread extends Thread {
             case "ADD_PRODUCT":
             case "REMOVE_PRODUCT":
             case "BUY":
-                // These commands have store name as first part before comma
                 String[] commaParts = data.split(",", 2);
                 if (commaParts.length > 0) {
                     extractedName = commaParts[0].trim();
@@ -752,11 +860,8 @@ class MasterThread extends Thread {
                 
             case "REVIEW":
             case "GET_STORE_DETAILS":
-                // Special handling for multi-word store names
-                // First check if the store name is a known store with multiple words
                 for (String existingStore : storeToWorkers.keySet()) {
                     String normalizedExisting = normalizeStoreName(existingStore);
-                    // If data starts with the existing store name, use that full name
                     if (data.startsWith(normalizedExisting)) {
                         extractedName = normalizedExisting;
                         System.out.println("STORE NAME EXTRACTION: Found full store name match '" + normalizedExisting + "' in command data");
@@ -764,15 +869,11 @@ class MasterThread extends Thread {
                     }
                 }
                 
-                // If no match found in existing stores, try to get first word as a fallback
                 if (extractedName == null) {
-                    // Check if the command data might contain a store name with multiple words
                     for (String existingStore : storeToWorkers.keySet()) {
                         String normalizedExisting = normalizeStoreName(existingStore);
                         String[] existingWords = normalizedExisting.split("\\s+");
                         if (existingWords.length > 1 && data.startsWith(existingWords[0])) {
-                            // If first word of an existing store matches the start of data,
-                            // check if data might contain the full store name
                             if (data.length() >= normalizedExisting.length() && 
                                 data.substring(0, normalizedExisting.length()).equalsIgnoreCase(normalizedExisting)) {
                                 extractedName = normalizedExisting;
@@ -783,7 +884,6 @@ class MasterThread extends Thread {
                         }
                     }
                     
-                    // If still no match, default to first word
                     if (extractedName == null) {
                         String[] spaceParts = data.split("\\s+", 2);
                         if (spaceParts.length > 0) {
@@ -800,90 +900,183 @@ class MasterThread extends Thread {
             case "GET_SALES_BY_STORE_TYPE_CATEGORY":
             case "GET_SALES_BY_PRODUCT_CATEGORY":
             case "GET_SALES_BY_PRODUCT":
-                // These commands don't target a specific store, they require querying all workers
                 return null;
                 
             default:
                 return null;
         }
         
-        // Normalize the extracted store name before returning it
         if (extractedName != null) {
-            String normalizedName = normalizeStoreName(extractedName);
-            System.out.println("STORE NAME EXTRACTION: Command '" + command + "' - Final normalized store name: '" + normalizedName + "'");
-            return normalizedName;
+            extractedName = normalizeStoreName(extractedName);
+            System.out.println("STORE NAME EXTRACTION: Command '" + command + "' - Final normalized store name: '" + extractedName + "'");
         }
         
-        return null;
+        return extractedName;
     }
 
-    /**
-     * Get the list of worker connections assigned to handle a specific store
-     * This implements active replication by maintaining multiple copies of each store
-     * @param storeName The name of the store
-     * @return List of WorkerConnection instances assigned to this store
-     */
     private List<WorkerConnection> getWorkersForStore(String storeName) {
-        // Normalize storeName by removing surrounding quotes
         String normalizedName = normalizeStoreName(storeName);
         
-        // Check all normalized keys in storeToWorkers map
         for (String existingStore : new ArrayList<>(storeToWorkers.keySet())) {
             if (normalizeStoreName(existingStore).equals(normalizedName)) {
                 List<WorkerConnection> workers = storeToWorkers.get(existingStore);
+                System.out.println("WORKER ASSIGNMENT (Thread): Using existing assignment for store '" + normalizedName + "' (stored as '" + existingStore + "'): " +
+                    workers.stream()
+                        .map(w -> "Worker_" + w.getPort())
+                        .collect(Collectors.joining(", ")));
                 
-                // Update the key if necessary to ensure consistency
                 if (!existingStore.equals(storeName)) {
                     storeToWorkers.put(normalizedName, workers);
                     storeToWorkers.remove(existingStore);
+                    System.out.println("WORKER ASSIGNMENT (Thread): Updated store key from '" + existingStore + "' to '" + normalizedName + "'");
                 }
+                
+                // Filter out unhealthy workers and reorganize if primary is down
+                workers = filterAndReorganizeWorkers(workers, normalizedName);
                 
                 return workers;
             }
         }
         
-        // If workers list is empty, return an empty list
         if (workers.isEmpty()) {
             System.err.println("WORKER ASSIGNMENT (Thread): Cannot assign workers for store '" + normalizedName + "': No workers available.");
             return new ArrayList<>(); 
         }
         
-        // Use a consistent hashing algorithm to ensure the same store always gets assigned to the same workers
+        // Get only healthy workers
+        List<WorkerConnection> healthyWorkers = workers.stream()
+            .filter(w -> workerHealth.getOrDefault(w, false))
+            .collect(Collectors.toList());
+        
+        if (healthyWorkers.isEmpty()) {
+            System.err.println("WORKER ASSIGNMENT (Thread): No healthy workers available for store '" + normalizedName + "'");
+            return new ArrayList<>();
+        }
+        
         int hash = getConsistentHashForStore(normalizedName);
         System.out.println("WORKER ASSIGNMENT (Thread): Calculated consistent hash " + hash + " for store '" + normalizedName + "'");
         
-        int primaryIndex = hash % workers.size();
+        int primaryIndex = hash % healthyWorkers.size();
         List<WorkerConnection> assignedWorkers = new ArrayList<>();
-        for (int i = 0; i < replicationFactor && i < workers.size(); i++) {
-            int index = (primaryIndex + i) % workers.size();
-            assignedWorkers.add(workers.get(index));
+        
+        WorkerConnection primaryWorker = healthyWorkers.get(primaryIndex);
+        assignedWorkers.add(primaryWorker);
+        
+        for (int i = 1; i < replicationFactor && i < healthyWorkers.size(); i++) {
+            int index = (primaryIndex + i) % healthyWorkers.size();
+            assignedWorkers.add(healthyWorkers.get(index));
         }
         
-        // Store the assignment for future use
         storeToWorkers.put(normalizedName, assignedWorkers);
-        System.out.println("WORKER ASSIGNMENT (Thread): Newly assigned store '" + normalizedName + "' to worker(s): " +
-            assignedWorkers.stream()
-                .map(w -> "Worker_" + w.getPort())
-                .collect(Collectors.joining(", ")));
+        
+        System.out.println("WORKER ASSIGNMENT (Thread): Newly assigned store '" + normalizedName + "' with PRIMARY worker " + 
+                          primaryWorker.getPort() + " and backup workers: " +
+                          assignedWorkers.stream()
+                              .skip(1)
+                              .map(w -> "Worker_" + w.getPort())
+                              .collect(Collectors.joining(", ")));
         
         return assignedWorkers;
     }
+    
+    private List<WorkerConnection> filterAndReorganizeWorkers(List<WorkerConnection> workerList, String storeName) {
+        List<WorkerConnection> filtered = new ArrayList<>();
+        
+        // Check if primary is healthy
+        WorkerConnection primaryWorker = null;
+        if (!workerList.isEmpty()) {
+            primaryWorker = workerList.get(0);
+        }
+        
+        boolean primaryHealthy = primaryWorker != null && workerHealth.getOrDefault(primaryWorker, false);
+        
+        if (primaryHealthy) {
+            // Primary is healthy, keep it
+            filtered.add(primaryWorker);
+            
+            // Add healthy backup workers
+            for (int i = 1; i < workerList.size(); i++) {
+                WorkerConnection backupWorker = workerList.get(i);
+                if (workerHealth.getOrDefault(backupWorker, false)) {
+                    filtered.add(backupWorker);
+                } else {
+                    System.out.println("WORKER HEALTH: Removing unhealthy backup worker " + 
+                                     backupWorker.getPort() + " from store '" + storeName + "'");
+                }
+            }
+        } else if (primaryWorker != null) {
+            // Primary is unhealthy, remove it and promote first healthy backup
+            System.out.println("WORKER HEALTH: Primary worker " + primaryWorker.getPort() + 
+                             " for store '" + storeName + "' is unhealthy");
+            
+            boolean foundNewPrimary = false;
+            for (int i = 1; i < workerList.size(); i++) {
+                WorkerConnection backupWorker = workerList.get(i);
+                if (workerHealth.getOrDefault(backupWorker, false)) {
+                    // Found a healthy backup worker, promote it to primary
+                    filtered.add(backupWorker);
+                    foundNewPrimary = true;
+                    System.out.println("WORKER FAILOVER: Promoting backup worker " + 
+                                     backupWorker.getPort() + " to primary for store '" + 
+                                     storeName + "'");
+                    
+                    // Add remaining healthy backups
+                    for (int j = i + 1; j < workerList.size(); j++) {
+                        WorkerConnection worker = workerList.get(j);
+                        if (workerHealth.getOrDefault(worker, false)) {
+                            filtered.add(worker);
+                        }
+                    }
+                    break;
+                }
+            }
+            
+            if (!foundNewPrimary) {
+                System.out.println("WORKER HEALTH: No healthy backup workers available for store '" + 
+                                 storeName + "'. Need to assign new workers.");
+                
+                // All workers for this store are unhealthy, get new healthy workers
+                List<WorkerConnection> healthyWorkers = workers.stream()
+                    .filter(w -> workerHealth.getOrDefault(w, false))
+                    .filter(w -> !workerList.contains(w))
+                    .collect(Collectors.toList());
+                
+                if (!healthyWorkers.isEmpty()) {
+                    // Add a new primary worker
+                    filtered.add(healthyWorkers.get(0));
+                    System.out.println("WORKER FAILOVER: Assigned new primary worker " + 
+                                     healthyWorkers.get(0).getPort() + " for store '" + 
+                                     storeName + "'");
+                    
+                    // Add backup workers up to replication factor
+                    for (int i = 1; i < replicationFactor && i < healthyWorkers.size(); i++) {
+                        filtered.add(healthyWorkers.get(i));
+                        System.out.println("WORKER FAILOVER: Assigned new backup worker " + 
+                                         healthyWorkers.get(i).getPort() + " for store '" + 
+                                         storeName + "'");
+                    }
+                }
+            }
+        }
+        
+        // If we have healthy workers, update the assignment
+        if (!filtered.isEmpty()) {
+            storeToWorkers.put(storeName, filtered);
+        }
+        
+        return filtered;
+    }
 
-    /**
-     * Normalize a store name by removing any surrounding quotes
-     */
     private String normalizeStoreName(String storeName) {
         if (storeName == null) {
             return "";
         }
         
-        // Remove surrounding quotes if present
         String normalized = storeName;
         if (normalized.startsWith("\"") && normalized.endsWith("\"")) {
             normalized = normalized.substring(1, normalized.length() - 1);
         }
         
-        // Handle double-quote escaping in JSON
         if (normalized.startsWith("\"") && normalized.endsWith("\"")) {
             normalized = normalized.substring(1, normalized.length() - 1);
         }
@@ -891,13 +1084,7 @@ class MasterThread extends Thread {
         return normalized;
     }
 
-    /**
-     * Custom hash function for consistent worker assignment across system restarts
-     * This ensures the same store always gets assigned to the same workers,
-     * even across different JVM instances
-     */
     private int getConsistentHashForStore(String storeName) {
-        // Simple but consistent hashing algorithm
         int hash = 0;
         for (int i = 0; i < storeName.length(); i++) {
             hash = 31 * hash + storeName.charAt(i);
@@ -905,11 +1092,6 @@ class MasterThread extends Thread {
         return Math.abs(hash);
     }
 
-    /**
-     * Send the intermediate results collected during the Map phase to the Reducer
-     * @param command The command that was executed in the Map phase
-     * @return The final result from the Reducer after processing the intermediate results
-     */
     private String sendIntermediateResultsToReducer(String command) throws IOException {
         StringBuilder responseBuilder = new StringBuilder();
         
@@ -917,10 +1099,8 @@ class MasterThread extends Thread {
              PrintWriter reducerOut = new PrintWriter(reducerSocket.getOutputStream(), true);
              BufferedReader reducerIn = new BufferedReader(new InputStreamReader(reducerSocket.getInputStream()))) {
 
-            // Get the intermediate results for this command
             List<String> mapResults = intermediateResults.getOrDefault(command, new ArrayList<>());
             
-            // Send the command and all map results to the reducer
             reducerOut.println("REDUCE " + command); 
             for (String result : mapResults) {
                 reducerOut.println("MAP_RESULT " + result);
@@ -937,5 +1117,4 @@ class MasterThread extends Thread {
         } 
         return responseBuilder.toString();
     }
-    
 }

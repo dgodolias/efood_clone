@@ -64,14 +64,14 @@
     "Latitude": 37.982345,
     "Longitude": 23.722345,
     "FoodCategory": "kebab",
-    "Stars": 2.27,
-    "NoOfVotes": 11,
+    "Stars": 2.0,
+    "NoOfVotes": 10,
     "StoreLogo": "app/src/main/assets/logos/kebab_kingdom.png",
     "PriceCategory": "$$",
     "Products": [
       {"ProductName": "Lamb Kebab", "ProductType": "kebab", "Available Amount": 1500, "Price": 8.0},
       {"ProductName": "Chicken Kebab", "ProductType": "kebab", "Available Amount": 1200, "Price": 7.5},
-      {"ProductName": "Hummus", "ProductType": "side", "Available Amount": 199, "Price": 4.0}
+      {"ProductName": "Hummus", "ProductType": "side", "Available Amount": 200, "Price": 4.0}
     ]
   },
   {
@@ -139,12 +139,12 @@
     "Latitude": 37.983456,
     "Longitude": 23.724567,
     "FoodCategory": "sandwich",
-    "Stars": 3.17,
-    "NoOfVotes": 12,
+    "Stars": 3.0,
+    "NoOfVotes": 11,
     "StoreLogo": "app/src/main/assets/logos/sandwich_stop.png",
     "PriceCategory": "$$",
     "Products": [
-      {"ProductName": "Turkey Club", "ProductType": "sandwich", "Available Amount": 1999, "Price": 7.5},
+      {"ProductName": "Turkey Club", "ProductType": "sandwich", "Available Amount": 2000, "Price": 7.5},
       {"ProductName": "Ham and Cheese", "ProductType": "sandwich", "Available Amount": 2500, "Price": 6.5},
       {"ProductName": "Potato Chips", "ProductType": "side", "Available Amount": 3000, "Price": 1.5}
     ]
@@ -229,14 +229,14 @@
     "Latitude": 37.981111,
     "Longitude": 23.721111,
     "FoodCategory": "pizza",
-    "Stars": 3.11,
-    "NoOfVotes": 18,
+    "Stars": 3.0,
+    "NoOfVotes": 17,
     "StoreLogo": "app/src/main/assets/logos/pizza_planet.png",
     "PriceCategory": "$$",
     "Products": [
       {"ProductName": "Veggie Supreme", "ProductType": "pizza", "Available Amount": 2500, "Price": 9.5},
       {"ProductName": "BBQ Chicken", "ProductType": "pizza", "Available Amount": 2000, "Price": 11.0},
-      {"ProductName": "Garlic Bread", "ProductType": "side", "Available Amount": 999, "Price": 4.0}
+      {"ProductName": "Garlic Bread", "ProductType": "side", "Available Amount": 1000, "Price": 4.0}
     ]
   },
   {
