@@ -181,21 +181,6 @@
     ]
   },
   {
-    "StoreName": "Dessert Delight",
-    "Latitude": 37.989012,
-    "Longitude": 23.731234,
-    "FoodCategory": "desserts",
-    "Stars": 4.0,
-    "NoOfVotes": 28,
-    "StoreLogo": "/usr/bin/images/dessert_delight.png",
-    "PriceCategory": "$",
-    "Products": [
-      {"ProductName": "Chocolate Cake", "ProductType": "dessert", "Available Amount": 500, "Price": 5.0},
-      {"ProductName": "Cheesecake", "ProductType": "dessert", "Available Amount": 400, "Price": 6.0},
-      {"ProductName": "Ice Cream", "ProductType": "dessert", "Available Amount": 600, "Price": 4.0}
-    ]
-  },
-  {
     "StoreName": "Pizza Planet",
     "Latitude": 37.981111,
     "Longitude": 23.721111,

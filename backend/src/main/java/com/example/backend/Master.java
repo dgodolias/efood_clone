@@ -411,6 +411,8 @@ class MasterThread extends Thread {
     private final int replicationFactor;
     private final String reducerHost;
     private final int reducerPort;
+    // Add a map to store intermediate results from workers
+    private Map<String, List<String>> intermediateResults;
 
     public MasterThread(Socket socket, List<WorkerConnection> workers, Map<String, List<WorkerConnection>> storeToWorkers, int replicationFactor, String reducerHost, int reducerPort) {
         this.socket = socket;
@@ -419,6 +421,7 @@ class MasterThread extends Thread {
         this.replicationFactor = replicationFactor;
         this.reducerHost = reducerHost;
         this.reducerPort = reducerPort;
+        this.intermediateResults = new HashMap<>();
     }
 
     @Override
@@ -453,9 +456,12 @@ class MasterThread extends Thread {
                 switch (command) {
                     // ########################### MANAGER COMMANDS ###########################
                     case "ADD_STORE":
-                        // Forward to Reducer to handle
+                        // MAP: Send request to all workers
+                        executeMapPhase(command, data);
+                        
+                        // REDUCE: Send intermediate results to Reducer for processing
                         try {
-                            String reducerResponse = sendRequestToReducer(request);
+                            String reducerResponse = sendIntermediateResultsToReducer(command);
                             System.out.println("Master received from Reducer for ADD_STORE:\n" + reducerResponse);
                             out.println(reducerResponse);
                             out.println("END");
@@ -467,9 +473,12 @@ class MasterThread extends Thread {
                         break;
 
                     case "ADD_PRODUCT":
-                        // Forward to Reducer to handle
+                        // MAP: Send request to all workers
+                        executeMapPhase(command, data);
+                        
+                        // REDUCE: Send intermediate results to Reducer for processing
                         try {
-                            String reducerResponse = sendRequestToReducer(request);
+                            String reducerResponse = sendIntermediateResultsToReducer(command);
                             System.out.println("Master received from Reducer for ADD_PRODUCT:\n" + reducerResponse);
                             out.println(reducerResponse);
                             out.println("END");
@@ -481,9 +490,12 @@ class MasterThread extends Thread {
                         break;
 
                     case "REMOVE_PRODUCT":
-                        // Forward to Reducer to handle
+                        // MAP: Send request to all workers
+                        executeMapPhase(command, data);
+                        
+                        // REDUCE: Send intermediate results to Reducer for processing
                         try {
-                            String reducerResponse = sendRequestToReducer(request);
+                            String reducerResponse = sendIntermediateResultsToReducer(command);
                             System.out.println("Master received from Reducer for REMOVE_PRODUCT:\n" + reducerResponse);
                             out.println(reducerResponse);
                             out.println("END");
@@ -498,9 +510,13 @@ class MasterThread extends Thread {
                     case "GET_SALES_BY_STORE_TYPE_CATEGORY":
                     case "GET_SALES_BY_PRODUCT_CATEGORY":
                     case "GET_SALES_BY_PRODUCT":
-                        System.out.println("Forwarding command to Reducer: " + request);
+                        System.out.println("Map phase for sales analytics: " + request);
+                        // MAP: Collect sales data from all workers
+                        executeMapPhase(command, data);
+                        
+                        // REDUCE: Send intermediate results to Reducer
                         try {
-                            String reducerResponse = sendRequestToReducer(request);
+                            String reducerResponse = sendIntermediateResultsToReducer(command);
                             System.out.println("Master received from Reducer:\n" + reducerResponse);
                             out.println(reducerResponse); 
                         } catch (IOException e) {
@@ -512,9 +528,12 @@ class MasterThread extends Thread {
 
                     // ########################### CLIENT COMMANDS ###########################
                     case "FIND_STORES_WITHIN_RANGE":
-                        // Forward to Reducer to handle
+                        // MAP: Send request to all workers
+                        executeMapPhase(command, data);
+                        
+                        // REDUCE: Send intermediate results to Reducer for processing
                         try {
-                            String reducerResponse = sendRequestToReducer(request);
+                            String reducerResponse = sendIntermediateResultsToReducer(command);
                             System.out.println("Master received from Reducer for FIND_STORES_WITHIN_RANGE:\n" + reducerResponse);
                             out.println(reducerResponse);
                             out.println("END");
@@ -526,9 +545,12 @@ class MasterThread extends Thread {
                         break;
                         
                     case "FILTER_STORES":
-                        // Forward to Reducer to handle
+                        // MAP: Send request to all workers
+                        executeMapPhase(command, data);
+                        
+                        // REDUCE: Send intermediate results to Reducer for processing
                         try {
-                            String reducerResponse = sendRequestToReducer(request);
+                            String reducerResponse = sendIntermediateResultsToReducer(command);
                             System.out.println("Master received from Reducer for FILTER_STORES:\n" + reducerResponse);
                             out.println(reducerResponse);
                             out.println("END");
@@ -540,9 +562,12 @@ class MasterThread extends Thread {
                         break;
                         
                     case "BUY":
-                        // Forward to Reducer to handle
+                        // MAP: Send request to all workers
+                        executeMapPhase(command, data);
+                        
+                        // REDUCE: Send intermediate results to Reducer for processing
                         try {
-                            String reducerResponse = sendRequestToReducer(request);
+                            String reducerResponse = sendIntermediateResultsToReducer(command);
                             System.out.println("Master received from Reducer for BUY:\n" + reducerResponse);
                             out.println(reducerResponse);
                             out.println("END");
@@ -554,9 +579,12 @@ class MasterThread extends Thread {
                         break;
                         
                     case "GET_STORE_DETAILS":
-                        // Forward to Reducer to handle
+                        // MAP: Send request to all workers
+                        executeMapPhase(command, data);
+                        
+                        // REDUCE: Send intermediate results to Reducer for processing
                         try {
-                            String reducerResponse = sendRequestToReducer(request);
+                            String reducerResponse = sendIntermediateResultsToReducer(command);
                             System.out.println("Master received from Reducer for GET_STORE_DETAILS:\n" + reducerResponse);
                             out.println(reducerResponse);
                             out.println("END");
@@ -568,9 +596,12 @@ class MasterThread extends Thread {
                         break;
                         
                     case "REVIEW":
-                        // Forward to Reducer to handle
+                        // MAP: Send request to all workers
+                        executeMapPhase(command, data);
+                        
+                        // REDUCE: Send intermediate results to Reducer for processing
                         try {
-                            String reducerResponse = sendRequestToReducer(request);
+                            String reducerResponse = sendIntermediateResultsToReducer(command);
                             System.out.println("Master received from Reducer for REVIEW:\n" + reducerResponse);
                             out.println(reducerResponse);
                             out.println("END");
@@ -582,9 +613,10 @@ class MasterThread extends Thread {
                         break;
                         
                     default:
-                        // For any unknown command, still try to route through the Reducer
+                        // For any unknown command, try to process it through MapReduce
+                        executeMapPhase(command, data);
                         try {
-                            String reducerResponse = sendRequestToReducer(request);
+                            String reducerResponse = sendIntermediateResultsToReducer(command);
                             out.println(reducerResponse);
                         } catch (IOException e) {
                             out.println("Unknown command and Reducer unavailable: " + command);
@@ -603,18 +635,56 @@ class MasterThread extends Thread {
         }
     }
 
+    /**
+     * Execute the Map phase by distributing the command to all workers and collecting their results
+     * @param command The command to execute
+     * @param data The data associated with the command
+     */
+    private void executeMapPhase(String command, String data) {
+        List<String> results = new ArrayList<>();
+        String fullCommand = command + (data.isEmpty() ? "" : " " + data);
+        
+        System.out.println("MAP PHASE: Distributing command to workers: " + fullCommand);
+        
+        for (WorkerConnection worker : workers) {
+            try {
+                String response = worker.sendRequest(fullCommand);
+                if (response != null && !response.isEmpty()) {
+                    results.add(response);
+                    System.out.println("Worker " + worker.getPort() + " responded: " + response);
+                }
+            } catch (IOException e) {
+                System.err.println("Error communicating with worker " + worker.getPort() + ": " + e.getMessage());
+            }
+        }
+        
+        // Store the intermediate results for the reducer phase
+        intermediateResults.put(command, results);
+    }
     
-    private String sendRequestToReducer(String request) throws IOException {
+    /**
+     * Send the intermediate results collected during the Map phase to the Reducer
+     * @param command The command that was executed in the Map phase
+     * @return The final result from the Reducer after processing the intermediate results
+     */
+    private String sendIntermediateResultsToReducer(String command) throws IOException {
         StringBuilder responseBuilder = new StringBuilder();
         
         try (Socket reducerSocket = new Socket(reducerHost, reducerPort);
              PrintWriter reducerOut = new PrintWriter(reducerSocket.getOutputStream(), true);
              BufferedReader reducerIn = new BufferedReader(new InputStreamReader(reducerSocket.getInputStream()))) {
 
-            reducerOut.println(request); 
+            // Get the intermediate results for this command
+            List<String> mapResults = intermediateResults.getOrDefault(command, new ArrayList<>());
+            
+            // Send the command and all map results to the reducer
+            reducerOut.println("REDUCE " + command); 
+            for (String result : mapResults) {
+                reducerOut.println("MAP_RESULT " + result);
+            }
+            reducerOut.println("END_MAP_RESULTS");
 
             String line;
-            
             while ((line = reducerIn.readLine()) != null && !line.equals("END_REDUCER")) {
                 if (responseBuilder.length() > 0) {
                     responseBuilder.append("\n");
@@ -624,90 +694,5 @@ class MasterThread extends Thread {
         } 
         return responseBuilder.toString();
     }
-
     
-    private List<String> splitJsonObjects(String jsonContent) {
-        List<String> objects = new ArrayList<>();
-        int braceCount = 0;
-        int startIndex = -1;
-
-        for (int i = 0; i < jsonContent.length(); i++) {
-            char c = jsonContent.charAt(i);
-
-            if (c == '{') {
-                if (braceCount == 0) {
-                    startIndex = i;
-                }
-                braceCount++;
-            } else if (c == '}') {
-                braceCount--;
-                if (braceCount == 0 && startIndex != -1) {
-                    objects.add(jsonContent.substring(startIndex, i+1));
-                    startIndex = -1;
-                }
-            }
-        }
-
-        return objects;
-    }
-
-    private Map<String, List<String>> parseFilterString(String filterData) {
-        Map<String, List<String>> filters = new HashMap<>();
-        String[] filterGroups = filterData.split(";");
-
-        for (String group : filterGroups) {
-            if (group.isEmpty()) continue;
-
-            String[] parts = group.split(":");
-            if (parts.length == 2) {
-                String key = parts[0];
-                String[] values = parts[1].split(",");
-                List<String> valueList = new ArrayList<>();
-                for (String value : values) {
-                    if (!value.isEmpty()) {
-                        valueList.add(value);
-                    }
-                }
-                filters.put(key, valueList);
-            }
-        }
-
-        return filters;
-    }
-
-    private String extractField(String json, String field) {
-        String search = "\"" + field + "\":";
-        int start = json.indexOf(search);
-        if (start == -1) return "";
-        start += search.length();
-        if (json.charAt(start) == '"') {
-            start++;
-            int end = json.indexOf("\"", start);
-            return json.substring(start, end);
-        } else {
-            int end = json.indexOf(",", start);
-            if (end == -1) end = json.indexOf("}", start);
-            return json.substring(start, end).trim();
-        }
-    }
-
-    private List<WorkerConnection> getWorkersForStore(String storeName) {
-        
-        return storeToWorkers.computeIfAbsent(storeName, k -> {
-            
-            if (workers.isEmpty()) {
-                System.err.println("Cannot assign workers for store '" + storeName + "': No workers available.");
-                return new ArrayList<>(); 
-            }
-            int primaryIndex = Math.abs(k.hashCode()) % workers.size();
-            List<WorkerConnection> assigned = new ArrayList<>();
-            for (int i = 0; i < replicationFactor && i < workers.size(); i++) {
-                int index = (primaryIndex + i) % workers.size();
-                assigned.add(workers.get(index));
-            }
-            System.out.println("Assigned workers for store '" + storeName + "': " +
-                               assigned.stream().map(wc -> String.valueOf(wc.getPort())).collect(Collectors.joining(", ")));
-            return assigned;
-        });
-    }
 }

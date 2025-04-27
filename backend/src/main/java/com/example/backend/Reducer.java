@@ -124,28 +124,54 @@ class ReducerThread extends Thread {
              PrintWriter out = new PrintWriter(masterSocket.getOutputStream(), true)) {
 
             String request;
+            List<String> mapResults = new ArrayList<>();
+            String command = "";
+            boolean isReduceMode = false;
+            
             while ((request = in.readLine()) != null) {
-                System.out.println("Reducer received command: " + request);
-                if (workers.isEmpty()) {
-                    out.println("Reducer Error: No workers configured.");
-                    out.println("END_REDUCER"); // Use a distinct end marker
+                System.out.println("Reducer received: " + request);
+                
+                if (request.startsWith("REDUCE ")) {
+                    // Start collecting map results
+                    isReduceMode = true;
+                    command = request.substring(7); // Extract the command part
+                    mapResults.clear();
+                    continue;
+                } else if (request.startsWith("MAP_RESULT ")) {
+                    // Collect an intermediate result from the Map phase
+                    if (isReduceMode) {
+                        mapResults.add(request.substring(11)); // Extract the result part
+                    }
+                    continue;
+                } else if (request.equals("END_MAP_RESULTS")) {
+                    // All map results received, now process them (REDUCE phase)
+                    if (isReduceMode) {
+                        String reduceResult = processMapResults(command, mapResults);
+                        out.println(reduceResult);
+                        out.println("END_REDUCER");
+                        isReduceMode = false;
+                    }
+                    continue;
+                } else if (isReduceMode) {
+                    // Ignore other inputs during reduce mode
                     continue;
                 }
-
+                
+                // Legacy direct command mode (for backward compatibility)
                 String[] parts = request.split(" ", 2);
-                String command = parts[0];
+                String cmd = parts[0];
                 String data = parts.length > 1 ? parts[1] : "";
 
                 String result;
-                switch (command) {
+                switch (cmd) {
                     // ANALYTICS OPERATIONS - REDUCE PHASE
                     case "GET_SALES_BY_STORE_TYPE_CATEGORY":
                     case "GET_SALES_BY_PRODUCT_CATEGORY":
                     case "GET_SALES_BY_PRODUCT":
-                        result = processSalesAnalytics(command, data);
+                        result = processSalesAnalytics(cmd, data);
                         break;
                         
-                    // MANAGER OPERATIONS - REDUCE PHASE
+                    // MANAGER OPERATIONS
                     case "ADD_STORE":
                         result = processAddStoreResults(data);
                         break;
@@ -156,7 +182,7 @@ class ReducerThread extends Thread {
                         result = processRemoveProductResults(data);
                         break;
                         
-                    // CLIENT OPERATIONS - REDUCE PHASE
+                    // CLIENT OPERATIONS
                     case "FILTER_STORES":
                         result = processFilterStoresResults(data);
                         break;
@@ -173,10 +199,10 @@ class ReducerThread extends Thread {
                         result = processReviewResults(data);
                         break;
                     default:
-                        result = "Reducer Error: Unknown command " + command;
+                        result = "Reducer Error: Unknown command " + cmd;
                         break;
                 }
-
+                
                 // Send multi-line result back to Master
                 if (result != null && !result.isEmpty()) {
                     out.println(result);
@@ -192,6 +218,287 @@ class ReducerThread extends Thread {
                 System.err.println("Error closing Master socket in Reducer: " + e.getMessage());
             }
         }
+    }
+    
+    /**
+     * Process the map results for the given command
+     * This is the core of the Reduce phase in the MapReduce pattern
+     */
+    private String processMapResults(String command, List<String> mapResults) {
+        System.out.println("REDUCE PHASE: Processing " + mapResults.size() + " map results for command: " + command);
+        
+        switch (command) {
+            case "ADD_STORE":
+                return reduceAddStoreResults(mapResults);
+            case "ADD_PRODUCT":
+                return reduceAddProductResults(mapResults);
+            case "REMOVE_PRODUCT":
+                return reduceRemoveProductResults(mapResults);
+            case "FILTER_STORES":
+                return reduceFilterStoresResults(mapResults);
+            case "FIND_STORES_WITHIN_RANGE":
+                return reduceFindStoresResults(mapResults);
+            case "GET_STORE_DETAILS":
+                return reduceGetStoreDetailsResults(mapResults);
+            case "BUY":
+                return reducePurchaseResults(mapResults);
+            case "REVIEW":
+                return reduceReviewResults(mapResults);
+            case "GET_SALES_BY_STORE_TYPE_CATEGORY":
+            case "GET_SALES_BY_PRODUCT_CATEGORY":
+            case "GET_SALES_BY_PRODUCT":
+                return reduceSalesAnalytics(command, mapResults);
+            default:
+                return "Reducer Error: Unknown command for reduction: " + command;
+        }
+    }
+    
+    private String reduceAddStoreResults(List<String> mapResults) {
+        boolean anySuccess = false;
+        String successStoreName = "";
+        StringBuilder errorMessages = new StringBuilder();
+        
+        for (String response : mapResults) {
+            if (response != null && response.startsWith("SUCCESS|")) {
+                anySuccess = true;
+                successStoreName = response.split("\\|")[1];
+            } else if (response != null && response.startsWith("ERROR|")) {
+                if (errorMessages.length() > 0) errorMessages.append("; ");
+                errorMessages.append(response.substring(6));
+            }
+        }
+        
+        if (anySuccess) {
+            return "Store added: " + successStoreName;
+        } else {
+            return "Error adding store: " + (errorMessages.length() > 0 ? errorMessages.toString() : "Unknown error");
+        }
+    }
+    
+    private String reduceAddProductResults(List<String> mapResults) {
+        boolean anySuccess = false;
+        String successStoreName = "";
+        String successProductName = "";
+        StringBuilder errorMessages = new StringBuilder();
+        
+        for (String response : mapResults) {
+            if (response != null && response.startsWith("SUCCESS|")) {
+                anySuccess = true;
+                String[] parts = response.split("\\|");
+                successStoreName = parts[1];
+                successProductName = parts.length > 2 ? parts[2] : "";
+            } else if (response != null && response.startsWith("ERROR|")) {
+                if (errorMessages.length() > 0) errorMessages.append("; ");
+                errorMessages.append(response.substring(6));
+            }
+        }
+        
+        if (anySuccess) {
+            return "Product added to store: " + successStoreName;
+        } else {
+            return "Error adding product: " + (errorMessages.length() > 0 ? errorMessages.toString() : "Unknown error");
+        }
+    }
+    
+    private String reduceRemoveProductResults(List<String> mapResults) {
+        boolean anySuccess = false;
+        String successStoreName = "";
+        String successProductName = "";
+        StringBuilder errorMessages = new StringBuilder();
+        
+        for (String response : mapResults) {
+            if (response != null && response.startsWith("SUCCESS|")) {
+                anySuccess = true;
+                String[] parts = response.split("\\|");
+                successStoreName = parts[1];
+                successProductName = parts.length > 2 ? parts[2] : "";
+            } else if (response != null && response.startsWith("ERROR|")) {
+                if (errorMessages.length() > 0) errorMessages.append("; ");
+                errorMessages.append(response.substring(6));
+            }
+        }
+        
+        if (anySuccess) {
+            return "Product removed from store: " + successStoreName;
+        } else {
+            return "Error removing product: " + (errorMessages.length() > 0 ? errorMessages.toString() : "Unknown error");
+        }
+    }
+    
+    private String reduceFilterStoresResults(List<String> mapResults) {
+        Map<String, String> storeMap = new HashMap<>(); // StoreName -> StoreJSON
+        
+        for (String response : mapResults) {
+            if (response != null && response.startsWith("[") && response.endsWith("]")) {
+                String content = response.substring(1, response.length() - 1).trim();
+                if (!content.isEmpty()) {
+                    List<String> storeObjects = splitJsonObjects(content);
+                    for (String storeJson : storeObjects) {
+                        String storeName = extractField(storeJson, "StoreName");
+                        if (!storeMap.containsKey(storeName)) {
+                            storeMap.put(storeName, storeJson);
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Build the combined response
+        StringBuilder result = new StringBuilder("[");
+        boolean first = true;
+        for (String storeJson : storeMap.values()) {
+            if (!first) result.append(",");
+            result.append(storeJson);
+            first = false;
+        }
+        result.append("]");
+        
+        return result.toString();
+    }
+    
+    private String reduceFindStoresResults(List<String> mapResults) {
+        Map<String, String> storeMap = new HashMap<>(); // StoreName -> StoreJSON
+        
+        for (String response : mapResults) {
+            if (response != null && response.startsWith("[") && response.endsWith("]")) {
+                String content = response.substring(1, response.length() - 1).trim();
+                if (!content.isEmpty()) {
+                    List<String> storeObjects = splitJsonObjects(content);
+                    for (String storeJson : storeObjects) {
+                        String storeName = extractField(storeJson, "StoreName");
+                        if (!storeMap.containsKey(storeName)) {
+                            storeMap.put(storeName, storeJson);
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Build the combined response
+        StringBuilder result = new StringBuilder("[");
+        boolean first = true;
+        for (String storeJson : storeMap.values()) {
+            if (!first) result.append(",");
+            result.append(storeJson);
+            first = false;
+        }
+        result.append("]");
+        
+        return result.toString();
+    }
+    
+    private String reduceGetStoreDetailsResults(List<String> mapResults) {
+        // Pick the first valid response from any replica
+        for (String response : mapResults) {
+            if (response != null && !response.isEmpty() && !response.startsWith("ERROR|")) {
+                return response; // Return first valid store details
+            }
+        }
+        
+        return "Error: Store not found or could not retrieve store details.";
+    }
+    
+    private String reducePurchaseResults(List<String> mapResults) {
+        boolean anySuccess = false;
+        String successStoreName = "";
+        String successProductName = "";
+        int successQuantity = 0;
+        StringBuilder errorMessages = new StringBuilder();
+        
+        for (String response : mapResults) {
+            if (response != null && response.startsWith("SUCCESS|")) {
+                anySuccess = true;
+                String[] parts = response.split("\\|");
+                successStoreName = parts[1];
+                successProductName = parts.length > 2 ? parts[2] : "";
+                successQuantity = parts.length > 3 ? Integer.parseInt(parts[3]) : 0;
+            } else if (response != null && response.startsWith("ERROR|")) {
+                if (errorMessages.length() > 0) errorMessages.append("; ");
+                errorMessages.append(response.substring(6));
+            }
+        }
+        
+        if (anySuccess) {
+            return "Purchase completed: " + successQuantity + " of " + successProductName + " from " + successStoreName;
+        } else {
+            return "Error: Purchase failed - " + (errorMessages.length() > 0 ? errorMessages.toString() : "Unknown error");
+        }
+    }
+    
+    private String reduceReviewResults(List<String> mapResults) {
+        boolean anySuccess = false;
+        String successStoreName = "";
+        float newRating = 0;
+        int newVotes = 0;
+        StringBuilder errorMessages = new StringBuilder();
+        
+        for (String response : mapResults) {
+            if (response != null && response.startsWith("SUCCESS|")) {
+                anySuccess = true;
+                String[] parts = response.split("\\|");
+                successStoreName = parts[1];
+                newRating = parts.length > 2 ? Float.parseFloat(parts[2]) : 0;
+                newVotes = parts.length > 3 ? Integer.parseInt(parts[3]) : 0;
+            } else if (response != null && response.startsWith("ERROR|")) {
+                if (errorMessages.length() > 0) errorMessages.append("; ");
+                errorMessages.append(response.substring(6));
+            }
+        }
+        
+        if (anySuccess) {
+            return "Review submitted for store: " + successStoreName + " (new rating: " + newRating + " from " + newVotes + " votes)";
+        } else {
+            return "Error: Failed to submit review - " + (errorMessages.length() > 0 ? errorMessages.toString() : "Unknown error");
+        }
+    }
+    
+    private String reduceSalesAnalytics(String command, List<String> mapResults) {
+        Map<String, Integer> salesByStore = new HashMap<>();
+        Set<String> processedStores = new HashSet<>(); // Use Set to avoid duplicates from replicas
+        int total = 0;
+        
+        for (String response : mapResults) {
+            if (response != null && !response.isEmpty()) {
+                String[] storesSales = response.split("\\|"); // Worker returns StoreName:Amount pairs separated by |
+                for (String storeSale : storesSales) {
+                    if (!storeSale.isEmpty()) {
+                        String[] storeParts = storeSale.split(":");
+                        if (storeParts.length == 2) {
+                            String storeName = storeParts[0].trim();
+                            try {
+                                int amount = Integer.parseInt(storeParts[1].trim());
+
+                                // Only add/sum if this store hasn't been processed yet from another worker (replica)
+                                if (!processedStores.contains(storeName)) {
+                                    salesByStore.put(storeName, amount);
+                                    total += amount;
+                                    processedStores.add(storeName); // Mark store as processed
+                                }
+                            } catch (NumberFormatException nfe) {
+                                System.err.println("Reducer: Invalid amount format for store '" + storeName + "': " + storeParts[1]);
+                            }
+                        } else {
+                            System.err.println("Reducer: Invalid store:amount format: " + storeSale);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Format the result string as expected by the client
+        StringBuilder resultBuilder = new StringBuilder();
+        for (Map.Entry<String, Integer> entry : salesByStore.entrySet()) {
+            if (resultBuilder.length() > 0) {
+                resultBuilder.append("\n"); // Newline between store entries
+            }
+            resultBuilder.append("\"").append(entry.getKey()).append("\": ").append(entry.getValue());
+        }
+        if (!salesByStore.isEmpty()) {
+            resultBuilder.append("\n"); // Newline before total
+        }
+        resultBuilder.append("\"total\": ").append(total);
+        
+        return resultBuilder.toString();
     }
 
     // This method encapsulates the MapReduce logic for sales analytics
@@ -251,7 +558,7 @@ class ReducerThread extends Thread {
             resultBuilder.append("\n"); // Newline before total
         }
         resultBuilder.append("\"total\": ").append(total);
-
+        
         return resultBuilder.toString();
     }
 
