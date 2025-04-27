@@ -453,26 +453,7 @@ class MasterThread extends Thread {
                 String command = parts[0];
                 String data = parts.length > 1 ? parts[1] : "";
 
-                switch (command) {
-                    // All commands now follow the same processing pattern
-                    case "ADD_STORE":
-                    case "ADD_PRODUCT":
-                    case "REMOVE_PRODUCT":
-                    case "GET_SALES_BY_STORE_TYPE_CATEGORY":
-                    case "GET_SALES_BY_PRODUCT_CATEGORY":
-                    case "GET_SALES_BY_PRODUCT":
-                    case "FIND_STORES_WITHIN_RANGE":
-                    case "FILTER_STORES":
-                    case "BUY":
-                    case "GET_STORE_DETAILS":
-                    case "REVIEW":
-                        processCommandWithMapReduce(command, data, out);
-                        break;
-                        
-                    default:
-                        // For any unknown command, try to process it through MapReduce
-                        processCommandWithMapReduce(command, data, out);
-                }
+                processCommandWithMapReduce(command, data, out);
             }
         } catch (IOException e) {
             System.err.println("Error handling client: " + e.getMessage());
