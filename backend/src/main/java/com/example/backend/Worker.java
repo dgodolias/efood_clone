@@ -35,19 +35,21 @@ public class Worker {
             Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
             while (interfaces.hasMoreElements()) {
                 NetworkInterface iface = interfaces.nextElement();
-                // Skip loopback interfaces and disabled interfaces
-                if (iface.isLoopback() || !iface.isUp()) {
+                // Only filter loopback interfaces, but include all other interfaces
+                if (iface.isLoopback()) {
                     continue;
                 }
 
                 Enumeration<InetAddress> addresses = iface.getInetAddresses();
                 while (addresses.hasMoreElements()) {
                     InetAddress addr = addresses.nextElement();
-                    // Skip IPv6 addresses and loopback addresses
-                    if (addr instanceof Inet6Address || addr.isLoopbackAddress()) {
-                        continue;
+                    // Include IPv4 addresses (exclude IPv6 for now)
+                    if (addr instanceof Inet4Address) {
+                        ipAddresses.add(addr.getHostAddress());
+                        System.out.println("Found network interface: " + iface.getDisplayName() + 
+                                           " - Address: " + addr.getHostAddress() + 
+                                           " - isUp: " + iface.isUp());
                     }
-                    ipAddresses.add(addr.getHostAddress());
                 }
             }
         } catch (SocketException e) {
