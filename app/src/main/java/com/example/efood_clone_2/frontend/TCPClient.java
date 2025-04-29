@@ -1,5 +1,6 @@
 package com.example.efood_clone_2.frontend;
 
+import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -14,27 +15,120 @@ import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.net.InetAddress;
 import java.net.Socket;
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class TCPClient {
     private static final String TAG = "TCPClient";
-    private static String SERVER_HOST = "10.0.2.2"; 
-    private static final int SERVER_PORT = 8080;
+    private static String SERVER_HOST = "10.0.2.2"; // Default for Android emulator
+    private static int SERVER_PORT = 8080;
     private final Handler mainHandler;
     private final ExecutorService executor;
+    private static boolean isConfigLoaded = false;
+    private static Context appContext;
+    private static boolean fallbackToDefaultEnabled = true;
+    private static volatile boolean hasSuccessfullyFallenBack = false; 
 
+    public static void initialize(Context context) {
+        appContext = context.getApplicationContext();
+        loadConfiguration();
+    }
+
+    private static void loadConfiguration() {
+        if (isConfigLoaded || appContext == null) {
+            return;
+        }
+
+        Log.d(TAG, "Starting to load configuration from text file...");
+        try {
+            // Read from text file instead of properties file
+            InputStream inputStream = appContext.getAssets().open("server_config.txt");
+            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+            
+            StringBuilder fileContent = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                fileContent.append(line).append("\n");
+                
+                // Process each line
+                line = line.trim();
+                if (line.startsWith("master.host=")) {
+                    SERVER_HOST = line.substring("master.host=".length()).trim();
+                    Log.d(TAG, "Setting master host from config: " + SERVER_HOST);
+                } else if (line.startsWith("master.port=")) {
+                    try {
+                        SERVER_PORT = Integer.parseInt(line.substring("master.port=".length()).trim());
+                        Log.d(TAG, "Setting master port from config: " + SERVER_PORT);
+                    } catch (NumberFormatException e) {
+                        Log.e(TAG, "Invalid port in config, using default: " + SERVER_PORT);
+                    }
+                }
+            }
+            
+            reader.close();
+            inputStream.close();
+            
+            Log.d(TAG, "Raw text file content: " + fileContent.toString());
+            Log.d(TAG, "Final connection settings: " + SERVER_HOST + ":" + SERVER_PORT);
+
+            isConfigLoaded = true;
+            
+            // Test if the configured host is reachable
+            testHostReachability(SERVER_HOST);
+            
+        } catch (IOException e) {
+            Log.e(TAG, "Error loading configuration: " + e.getMessage(), e);
+            // Fall back to default values if configuration can't be loaded
+        }
+    }
+    
+    private static void testHostReachability(String host) {
+        new Thread(() -> {
+            try {
+                Log.d(TAG, "Testing reachability of configured host: " + host);
+                InetAddress address = InetAddress.getByName(host);
+                String resolvedIP = address.getHostAddress();
+                Log.d(TAG, "Resolved " + host + " to " + resolvedIP);
+                
+                boolean reachable = address.isReachable(3000); // 3 second timeout
+                Log.d(TAG, "Host is reachable via ICMP ping: " + reachable);
+                
+                // Test TCP connection to configured port
+                try {
+                    Socket testSocket = new Socket();
+                    testSocket.connect(new InetSocketAddress(host, SERVER_PORT), 3000);
+                    Log.d(TAG, "Successfully connected to socket at " + host + ":" + SERVER_PORT);
+                    testSocket.close();
+                } catch (IOException e) {
+                    Log.e(TAG, "Failed to connect to " + host + ":" + SERVER_PORT + " - " + e.getMessage());
+                    if (fallbackToDefaultEnabled) {
+                        Log.d(TAG, "Will attempt fallback to default (10.0.2.2:8080) when connections are made");
+                    }
+                }
+            } catch (UnknownHostException e) {
+                Log.e(TAG, "Unknown host: " + host + " - " + e.getMessage());
+            } catch (IOException e) {
+                Log.e(TAG, "IO error testing reachability: " + e.getMessage());
+            }
+        }).start();
+    }
 
     static {
+        // Legacy system property method - kept for backward compatibility
         String configuredHost = System.getProperty("master.host");
         if (configuredHost != null && !configuredHost.isEmpty()) {
             SERVER_HOST = configuredHost;
@@ -52,7 +146,59 @@ public class TCPClient {
     }
 
     public static TCPClient getInstance() {
+        if (!isConfigLoaded && appContext != null) {
+            loadConfiguration();
+        }
         return Holder.INSTANCE;
+    }
+
+    // Helper method to create and connect sockets with detailed logging
+    private Socket createAndConnectSocket() throws IOException {
+        String hostToUse = SERVER_HOST;
+        int portToUse = SERVER_PORT;
+        
+        // If we've already successfully fallen back once, go straight to the fallback
+        if (hasSuccessfullyFallenBack && fallbackToDefaultEnabled) {
+            Log.d(TAG, "Using known working fallback address 10.0.2.2:8080 (skipping configured address)");
+            Socket socket = new Socket();
+            socket.connect(new InetSocketAddress("10.0.2.2", 8080), 3000);
+            return socket;
+        }
+        
+        Log.d(TAG, "Attempting to connect to: " + hostToUse + ":" + portToUse);
+        
+        Socket socket = null;
+        IOException lastException = null;
+        
+        try {
+            // First try the configured host and port
+            socket = new Socket();
+            socket.connect(new InetSocketAddress(hostToUse, portToUse), 3000); // 3 second timeout
+            Log.d(TAG, "Successfully connected to: " + socket.getInetAddress().getHostAddress() + ":" + socket.getPort());
+            return socket;
+        } catch (IOException e) {
+            lastException = e;
+            Log.e(TAG, "Failed to connect to " + hostToUse + ":" + portToUse + " - " + e.getMessage());
+            
+            // If fallback is enabled and we're not already using the default, try the default
+            if (fallbackToDefaultEnabled && !hostToUse.equals("10.0.2.2")) {
+                try {
+                    Log.d(TAG, "Attempting fallback connection to default 10.0.2.2:8080");
+                    socket = new Socket();
+                    socket.connect(new InetSocketAddress("10.0.2.2", 8080), 3000);
+                    Log.d(TAG, "Successfully connected using fallback to: " + 
+                           socket.getInetAddress().getHostAddress() + ":" + socket.getPort());
+                    hasSuccessfullyFallenBack = true; // Mark that we've successfully used the fallback
+                    return socket;
+                } catch (IOException fallbackEx) {
+                    Log.e(TAG, "Fallback connection also failed: " + fallbackEx.getMessage());
+                    // We'll use the original exception since that's for the configuration the user specified
+                }
+            }
+            
+            // If we got here, both attempts failed or fallback was disabled
+            throw lastException;
+        }
     }
 
     public interface StoreListCallback {
@@ -68,7 +214,7 @@ public class TCPClient {
     private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
         final int R = 6371;
         double latDistance = Math.toRadians(lat2 - lat1);
-        double lonDistance = Math.toRadians(lon2 - lon1);
+        double lonDistance = Math.toRadians(lon1 - lon2);
         double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
                 + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
                 * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
@@ -79,7 +225,7 @@ public class TCPClient {
     public void getNearbyStores(double latitude, double longitude, StoreListCallback callback) {
         executor.execute(() -> {
             try {
-                Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
+                Socket socket = createAndConnectSocket();
                 PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 String request = String.format("FIND_STORES_WITHIN_RANGE %f,%f", latitude, longitude);
@@ -146,7 +292,7 @@ public class TCPClient {
                                   StoreListCallback callback) {
         new Thread(() -> {
             try {
-                Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
+                Socket socket = createAndConnectSocket();
                 PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 StringBuilder request = new StringBuilder("FILTER_STORES ");
@@ -234,9 +380,11 @@ public class TCPClient {
 
     public void getStoreDetails(String storeName, StoreDetailsCallback callback) {
         executor.execute(() -> {
-            try (Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
-                 PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+            try {
+                Socket socket = createAndConnectSocket();
+                PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+                BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                
                 Log.d(TAG, "Requesting store details for: " + storeName);
                 out.println("GET_STORE_DETAILS " + storeName);
                 StringBuilder response = new StringBuilder();
@@ -246,6 +394,11 @@ public class TCPClient {
                 }
                 String jsonResponse = response.toString();
                 Log.d(TAG, "Received store details: " + jsonResponse);
+                
+                in.close();
+                out.close();
+                socket.close();
+                
                 if (jsonResponse.isEmpty() || jsonResponse.contains("Store not found")) {
                     mainHandler.post(() -> callback.onError("Store details not found: " + storeName));
                     return;
@@ -266,7 +419,7 @@ public class TCPClient {
 
     public void purchaseProduct(String storeName, String productName, int quantity, ResultCallback callback) {
         executor.execute(() -> {
-            try (Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
+            try (Socket socket = createAndConnectSocket();
                  PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
                  BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
                 Log.d(TAG, "Sending purchase request - Store: " + storeName +
@@ -349,7 +502,7 @@ public class TCPClient {
     public void sendReview(String storeName, int rating) {
         new Thread(() -> {
             try {
-                Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
+                Socket socket = createAndConnectSocket();
                 PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 String command = "REVIEW " + storeName + "," + rating;

@@ -24,6 +24,10 @@ public class BootingActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_booting);
 
+        // Initialize TCPClient with application context
+        TCPClient.initialize(getApplicationContext());
+        Log.d(TAG, "TCPClient initialized with configuration from assets");
+
         ImageView imageView = findViewById(R.id.imageView);
 
         AlphaAnimation fadeIn = new AlphaAnimation(0.0f, 1.0f);
