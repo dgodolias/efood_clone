@@ -1,3 +1,9 @@
+LOCALHOST:
 cd C:\Users\USER\Desktop\PROJECTS\efood_clone_2\app\src\main\java\com\example\efood_clone_2\frontend
 javac ManagerConsoleApp.java
 java ManagerConsoleApp.java
+
+NETWORK:
+cd C:\Users\USER\Desktop\PROJECTS\efood_clone_2\app\src\main\java
+javac com/example/efood_clone_2/frontend/ManagerConsoleApp.java
+java com.example.efood_clone_2.frontend.ManagerConsoleApp 192.168.1.18:8080
