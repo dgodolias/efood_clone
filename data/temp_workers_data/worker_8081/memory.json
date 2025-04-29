@@ -4,14 +4,14 @@
     "Latitude": 37.985555,
     "Longitude": 23.731111,
     "FoodCategory": "indian",
-    "Stars": 4.03,
-    "NoOfVotes": 29,
+    "Stars": 4.0,
+    "NoOfVotes": 28,
     "StoreLogo": "app/src/main/assets/logos/indian_flavors.png",
     "PriceCategory": "$$",
     "Products": [
       {"ProductName": "Chicken Tikka Masala", "ProductType": "curry", "Available Amount": 1800, "Price": 12.5},
       {"ProductName": "Vegetable Samosa", "ProductType": "appetizer", "Available Amount": 1000, "Price": 5.0},
-      {"ProductName": "Naan Bread", "ProductType": "bread", "Available Amount": 1999, "Price": 2.5}
+      {"ProductName": "Naan Bread", "ProductType": "bread", "Available Amount": 2000, "Price": 2.5}
     ]
   },
   {
@@ -139,14 +139,14 @@
     "Latitude": 37.983456,
     "Longitude": 23.724567,
     "FoodCategory": "sandwich",
-    "Stars": 3.0,
-    "NoOfVotes": 11,
+    "Stars": 3.17,
+    "NoOfVotes": 12,
     "StoreLogo": "app/src/main/assets/logos/sandwich_stop.png",
     "PriceCategory": "$$",
     "Products": [
       {"ProductName": "Turkey Club", "ProductType": "sandwich", "Available Amount": 2000, "Price": 7.5},
-      {"ProductName": "Ham and Cheese", "ProductType": "sandwich", "Available Amount": 2500, "Price": 6.5},
-      {"ProductName": "Potato Chips", "ProductType": "side", "Available Amount": 3000, "Price": 1.5}
+      {"ProductName": "Ham and Cheese", "ProductType": "sandwich", "Available Amount": 2499, "Price": 6.5},
+      {"ProductName": "Potato Chips", "ProductType": "side", "Available Amount": 2999, "Price": 1.5}
     ]
   },
   {

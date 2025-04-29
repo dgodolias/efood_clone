@@ -1,0 +1,2 @@
+cd ..
+java -cp classes com.example.backend.Worker 8083

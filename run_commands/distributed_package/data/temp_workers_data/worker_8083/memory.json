@@ -1,1 +1,392 @@
-[]
+[
+  {
+    "StoreName": "Ice Cream Dream",
+    "Latitude": 40.988888,
+    "Longitude": 20.728888,
+    "FoodCategory": "icecream",
+    "Stars": 3.0,
+    "NoOfVotes": 14,
+    "StoreLogo": "app/src/main/assets/logos/ice_cream_dream.png",
+    "PriceCategory": "$",
+    "Products": [
+      {"ProductName": "Vanilla Scoop", "ProductType": "icecream", "Available Amount": 3000, "Price": 2.5},
+      {"ProductName": "Chocolate Scoop", "ProductType": "icecream", "Available Amount": 2800, "Price": 2.5},
+      {"ProductName": "Sundae", "ProductType": "icecream", "Available Amount": 1000, "Price": 6.0}
+    ]
+  },
+  {
+    "StoreName": "Salad Sensations",
+    "Latitude": 40.997777,
+    "Longitude": 20.737777,
+    "FoodCategory": "salad",
+    "Stars": 4.0,
+    "NoOfVotes": 27,
+    "StoreLogo": "app/src/main/assets/logos/salad_sensations.png",
+    "PriceCategory": "$$",
+    "Products": [
+      {"ProductName": "Chicken Caesar Salad", "ProductType": "salad", "Available Amount": 500, "Price": 8.0},
+      {"ProductName": "Cobb Salad", "ProductType": "salad", "Available Amount": 400, "Price": 9.0},
+      {"ProductName": "Soup of the Day", "ProductType": "soup", "Available Amount": 200, "Price": 5.0}
+    ]
+  },
+  {
+    "StoreName": "Kebab Kingdom",
+    "Latitude": 37.982345,
+    "Longitude": 23.722345,
+    "FoodCategory": "kebab",
+    "Stars": 2.0,
+    "NoOfVotes": 10,
+    "StoreLogo": "app/src/main/assets/logos/kebab_kingdom.png",
+    "PriceCategory": "$$",
+    "Products": [
+      {"ProductName": "Lamb Kebab", "ProductType": "kebab", "Available Amount": 1500, "Price": 8.0},
+      {"ProductName": "Chicken Kebab", "ProductType": "kebab", "Available Amount": 1200, "Price": 7.5},
+      {"ProductName": "Hummus", "ProductType": "side", "Available Amount": 200, "Price": 4.0}
+    ]
+  },
+  {
+    "StoreName": "Sushi Spot",
+    "Latitude": 38.001234,
+    "Longitude": 23.740123,
+    "FoodCategory": "sushi",
+    "Stars": 5.0,
+    "NoOfVotes": 30,
+    "StoreLogo": "app/src/main/assets/logos/sushi_spot.png",
+    "PriceCategory": "$$$",
+    "Products": [
+      {"ProductName": "California Roll", "ProductType": "sushi", "Available Amount": 800, "Price": 12.0},
+      {"ProductName": "Spicy Tuna", "ProductType": "sushi", "Available Amount": 600, "Price": 14.0},
+      {"ProductName": "Miso Soup", "ProductType": "soup", "Available Amount": 200, "Price": 24.5}
+    ]
+  },
+  {
+    "StoreName": "Sandwich Stop",
+    "Latitude": 37.983456,
+    "Longitude": 23.724567,
+    "FoodCategory": "sandwich",
+    "Stars": 3.0,
+    "NoOfVotes": 11,
+    "StoreLogo": "app/src/main/assets/logos/sandwich_stop.png",
+    "PriceCategory": "$$",
+    "Products": [
+      {"ProductName": "Turkey Club", "ProductType": "sandwich", "Available Amount": 2000, "Price": 7.5},
+      {"ProductName": "Ham and Cheese", "ProductType": "sandwich", "Available Amount": 2500, "Price": 6.5},
+      {"ProductName": "Potato Chips", "ProductType": "side", "Available Amount": 3000, "Price": 1.5}
+    ]
+  },
+  {
+    "StoreName": "Thai Orchid",
+    "Latitude": 37.991234,
+    "Longitude": 23.736789,
+    "FoodCategory": "thai",
+    "Stars": 4.0,
+    "NoOfVotes": 24,
+    "StoreLogo": "app/src/main/assets/logos/thai_orchid.png",
+    "PriceCategory": "$$$",
+    "Products": [
+      {"ProductName": "Pad Thai", "ProductType": "noodles", "Available Amount": 1500, "Price": 11.5},
+      {"ProductName": "Green Curry", "ProductType": "curry", "Available Amount": 1200, "Price": 13.0},
+      {"ProductName": "Spring Rolls", "ProductType": "appetizer", "Available Amount": 800, "Price": 26.0}
+    ]
+  },
+  {
+    "StoreName": "Breakfast Nook",
+    "Latitude": 37.994444,
+    "Longitude": 23.734444,
+    "FoodCategory": "brunch",
+    "Stars": 4.0,
+    "NoOfVotes": 21,
+    "StoreLogo": "app/src/main/assets/logos/breakfast_nook.png",
+    "PriceCategory": "$$",
+    "Products": [
+      {"ProductName": "Pancakes", "ProductType": "breakfast", "Available Amount": 1200, "Price": 7.0},
+      {"ProductName": "Omelette", "ProductType": "breakfast", "Available Amount": 1000, "Price": 8.5},
+      {"ProductName": "Orange Juice", "ProductType": "drink", "Available Amount": 1500, "Price": 3.0}
+    ]
+  },
+  {
+    "StoreName": "Juice Junction",
+    "Latitude": 37.999999,
+    "Longitude": 23.739999,
+    "FoodCategory": "juice",
+    "Stars": 4.0,
+    "NoOfVotes": 26,
+    "StoreLogo": "app/src/main/assets/logos/juice_junction.png",
+    "PriceCategory": "$$",
+    "Products": [
+      {"ProductName": "Green Detox Juice", "ProductType": "juice", "Available Amount": 800, "Price": 5.5},
+      {"ProductName": "Berry Blast Smoothie", "ProductType": "smoothie", "Available Amount": 700, "Price": 6.0},
+      {"ProductName": "Acai Bowl", "ProductType": "bowl", "Available Amount": 500, "Price": 8.0}
+    ]
+  },
+  {
+    "StoreName": "Dessert Delight",
+    "Latitude": 37.989012,
+    "Longitude": 23.731234,
+    "FoodCategory": "desserts",
+    "Stars": 4.0,
+    "NoOfVotes": 28,
+    "StoreLogo": "/usr/bin/images/dessert_delight.png",
+    "PriceCategory": "$",
+    "Products": [
+      {"ProductName": "Cheesecake", "ProductType": "dessert", "Available Amount": 400, "Price": 6.0},
+      {"ProductName": "Ice Cream", "ProductType": "dessert", "Available Amount": 600, "Price": 4.0}
+    ]
+  },
+  {
+    "StoreName": "Pizza Planet",
+    "Latitude": 37.981111,
+    "Longitude": 23.721111,
+    "FoodCategory": "pizza",
+    "Stars": 3.0,
+    "NoOfVotes": 17,
+    "StoreLogo": "app/src/main/assets/logos/pizza_planet.png",
+    "PriceCategory": "$$",
+    "Products": [
+      {"ProductName": "Veggie Supreme", "ProductType": "pizza", "Available Amount": 2500, "Price": 9.5},
+      {"ProductName": "BBQ Chicken", "ProductType": "pizza", "Available Amount": 2000, "Price": 11.0},
+      {"ProductName": "Garlic Bread", "ProductType": "side", "Available Amount": 1000, "Price": 4.0}
+    ]
+  },
+  {
+    "StoreName": "Taco Town",
+    "Latitude": 37.998765,
+    "Longitude": 23.735432,
+    "FoodCategory": "mexican",
+    "Stars": 4.0,
+    "NoOfVotes": 22,
+    "StoreLogo": "app/src/main/assets/logos/taco_town.png",
+    "PriceCategory": "$",
+    "Products": [
+      {"ProductName": "Beef Taco", "ProductType": "taco", "Available Amount": 3000, "Price": 5.5},
+      {"ProductName": "Chicken Taco", "ProductType": "taco", "Available Amount": 2800, "Price": 5.5},
+      {"ProductName": "Guacamole", "ProductType": "side", "Available Amount": 400, "Price": 3.5}
+    ]
+  },
+  {
+    "StoreName": "Coffee Corner",
+    "Latitude": 37.98,
+    "Longitude": 23.72,
+    "FoodCategory": "coffee",
+    "Stars": 5.0,
+    "NoOfVotes": 40,
+    "StoreLogo": "app/src/main/assets/logos/coffee_corner.png",
+    "PriceCategory": "$",
+    "Products": [
+      {"ProductName": "Espresso", "ProductType": "coffee", "Available Amount": 5000, "Price": 2.5},
+      {"ProductName": "Cappuccino", "ProductType": "coffee", "Available Amount": 4500, "Price": 3.5},
+      {"ProductName": "Croissant", "ProductType": "pastry", "Available Amount": 1000, "Price": 2.0}
+    ]
+  },
+  {
+    "StoreName": "Burger Barn",
+    "Latitude": 37.992222,
+    "Longitude": 23.732222,
+    "FoodCategory": "burger",
+    "Stars": 4.0,
+    "NoOfVotes": 23,
+    "StoreLogo": "app/src/main/assets/logos/burger_barn.png",
+    "PriceCategory": "$$",
+    "Products": [
+      {"ProductName": "Bacon Cheeseburger", "ProductType": "burger", "Available Amount": 1800, "Price": 9.0},
+      {"ProductName": "Mushroom Swiss Burger", "ProductType": "burger", "Available Amount": 1200, "Price": 9.5},
+      {"ProductName": "Onion Rings", "ProductType": "side", "Available Amount": 800, "Price": 3.5}
+    ]
+  },
+  {
+    "StoreName": "Indian Flavors",
+    "Latitude": 37.985555,
+    "Longitude": 23.731111,
+    "FoodCategory": "indian",
+    "Stars": 4.0,
+    "NoOfVotes": 28,
+    "StoreLogo": "app/src/main/assets/logos/indian_flavors.png",
+    "PriceCategory": "$$",
+    "Products": [
+      {"ProductName": "Chicken Tikka Masala", "ProductType": "curry", "Available Amount": 1800, "Price": 12.5},
+      {"ProductName": "Vegetable Samosa", "ProductType": "appetizer", "Available Amount": 1000, "Price": 5.0},
+      {"ProductName": "Naan Bread", "ProductType": "bread", "Available Amount": 2000, "Price": 2.5}
+    ]
+  },
+  {
+    "StoreName": "Steak House Supreme",
+    "Latitude": 40.002345,
+    "Longitude": 20.742345,
+    "FoodCategory": "meat",
+    "Stars": 5.0,
+    "NoOfVotes": 38,
+    "StoreLogo": "app/src/main/assets/logos/steak_house.png",
+    "PriceCategory": "$$$",
+    "Products": [
+      {"ProductName": "Ribeye Steak", "ProductType": "steak", "Available Amount": 500, "Price": 25.0},
+      {"ProductName": "Filet Mignon", "ProductType": "steak", "Available Amount": 400, "Price": 30.0},
+      {"ProductName": "Baked Potato", "ProductType": "side", "Available Amount": 800, "Price": 4.0}
+    ]
+  },
+  {
+    "StoreName": "Burger Bonanza",
+    "Latitude": 37.987654,
+    "Longitude": 23.725678,
+    "FoodCategory": "burger",
+    "Stars": 3.0,
+    "NoOfVotes": 18,
+    "StoreLogo": "app/src/main/assets/logos/burger_bonanza.png",
+    "PriceCategory": "$$",
+    "Products": [
+      {"ProductName": "Classic Burger", "ProductType": "burger", "Available Amount": 2000, "Price": 7.5},
+      {"ProductName": "Cheeseburger", "ProductType": "burger", "Available Amount": 1500, "Price": 8.5},
+      {"ProductName": "Fries", "ProductType": "side", "Available Amount": 1000, "Price": 3.0}
+    ]
+  },
+  {
+    "StoreName": "Gyro Grill",
+    "Latitude": 37.975432,
+    "Longitude": 23.718901,
+    "FoodCategory": "souvlaki",
+    "Stars": 4.0,
+    "NoOfVotes": 20,
+    "StoreLogo": "app/src/main/assets/logos/gyro_grill.png",
+    "PriceCategory": "$",
+    "Products": [
+      {"ProductName": "Chicken Gyro", "ProductType": "gyro", "Available Amount": 4000, "Price": 6.0},
+      {"ProductName": "Pork Gyro", "ProductType": "gyro", "Available Amount": 3500, "Price": 6.5},
+      {"ProductName": "Tzatziki", "ProductType": "side", "Available Amount": 500, "Price": 2.5}
+    ]
+  },
+  {
+    "StoreName": "Mama Mia Italian",
+    "Latitude": 40.989999,
+    "Longitude": 20.729999,
+    "FoodCategory": "italian",
+    "Stars": 4.0,
+    "NoOfVotes": 25,
+    "StoreLogo": "app/src/main/assets/logos/mama_mia.png",
+    "PriceCategory": "$$",
+    "Products": [
+      {"ProductName": "Lasagna", "ProductType": "pasta", "Available Amount": 1500, "Price": 13.0},
+      {"ProductName": "Fettuccine Alfredo", "ProductType": "pasta", "Available Amount": 1800, "Price": 12.0},
+      {"ProductName": "Tiramisu", "ProductType": "dessert", "Available Amount": 300, "Price": 6.5}
+    ]
+  },
+  {
+    "StoreName": "Daily Grind Coffee",
+    "Latitude": 40.984444,
+    "Longitude": 20.724444,
+    "FoodCategory": "coffee",
+    "Stars": 4.0,
+    "NoOfVotes": 29,
+    "StoreLogo": "app/src/main/assets/logos/daily_grind.png",
+    "PriceCategory": "$",
+    "Products": [
+      {"ProductName": "Latte", "ProductType": "coffee", "Available Amount": 4000, "Price": 4.0},
+      {"ProductName": "Americano", "ProductType": "coffee", "Available Amount": 3500, "Price": 3.0},
+      {"ProductName": "Muffin", "ProductType": "pastry", "Available Amount": 800, "Price": 2.5}
+    ]
+  },
+  {
+    "StoreName": "Dragon Wok",
+    "Latitude": 37.977777,
+    "Longitude": 23.717777,
+    "FoodCategory": "chinese",
+    "Stars": 3.0,
+    "NoOfVotes": 16,
+    "StoreLogo": "app/src/main/assets/logos/dragon_wok.png",
+    "PriceCategory": "$$",
+    "Products": [
+      {"ProductName": "Sweet and Sour Pork", "ProductType": "chinese", "Available Amount": 1600, "Price": 10.5},
+      {"ProductName": "Fried Rice", "ProductType": "rice", "Available Amount": 2000, "Price": 7.0},
+      {"ProductName": "Egg Roll", "ProductType": "appetizer", "Available Amount": 1500, "Price": 3.0}
+    ]
+  },
+  {
+    "StoreName": "Sweet Treats Bakery",
+    "Latitude": 40.996789,
+    "Longitude": 20.741234,
+    "FoodCategory": "sweets",
+    "Stars": 4.0,
+    "NoOfVotes": 19,
+    "StoreLogo": "app/src/main/assets/logos/sweet_treats.png",
+    "PriceCategory": "$",
+    "Products": [
+      {"ProductName": "Chocolate Cake Slice", "ProductType": "cake", "Available Amount": 500, "Price": 4.5},
+      {"ProductName": "Cupcake", "ProductType": "cake", "Available Amount": 800, "Price": 3.0},
+      {"ProductName": "Cookies (Dozen)", "ProductType": "cookie", "Available Amount": 1000, "Price": 5.0}
+    ]
+  },
+  {
+    "StoreName": "Souvlaki Station",
+    "Latitude": 40.976666,
+    "Longitude": 20.716666,
+    "FoodCategory": "souvlaki",
+    "Stars": 5.0,
+    "NoOfVotes": 33,
+    "StoreLogo": "app/src/main/assets/logos/souvlaki_station.png",
+    "PriceCategory": "$$",
+    "Products": [
+      {"ProductName": "Lamb Souvlaki Pita", "ProductType": "souvlaki", "Available Amount": 3000, "Price": 7.0},
+      {"ProductName": "Falafel Pita", "ProductType": "souvlaki", "Available Amount": 2000, "Price": 6.0},
+      {"ProductName": "Greek Fries", "ProductType": "side", "Available Amount": 1500, "Price": 4.0}
+    ]
+  },
+  {
+    "StoreName": "Pizza Palace",
+    "Latitude": 37.9932963,
+    "Longitude": 23.733413,
+    "FoodCategory": "pizza",
+    "Stars": 4.0,
+    "NoOfVotes": 25,
+    "StoreLogo": "app/src/main/assets/logos/pizza_palace.png",
+    "PriceCategory": "$$",
+    "Products": [
+      {"ProductName": "Margherita", "ProductType": "pizza", "Available Amount": 5000, "Price": 8.5},
+      {"ProductName": "Pepperoni", "ProductType": "pizza", "Available Amount": 3000, "Price": 10.0},
+      {"ProductName": "Greek Salad", "ProductType": "salad", "Available Amount": 150, "Price": 6.0}
+    ]
+  },
+  {
+    "StoreName": "Pasta Place",
+    "Latitude": 37.990123,
+    "Longitude": 23.729876,
+    "FoodCategory": "italian",
+    "Stars": 3.0,
+    "NoOfVotes": 12,
+    "StoreLogo": "app/src/main/assets/logos/pasta_place.png",
+    "PriceCategory": "$$",
+    "Products": [
+      {"ProductName": "Spaghetti Bolognese", "ProductType": "pasta", "Available Amount": 2500, "Price": 11.0},
+      {"ProductName": "Carbonara", "ProductType": "pasta", "Available Amount": 2000, "Price": 12.5},
+      {"ProductName": "Caesar Salad", "ProductType": "salad", "Available Amount": 300, "Price": 7.0}
+    ]
+  },
+  {
+    "StoreName": "Seafood Shack",
+    "Latitude": 37.978901,
+    "Longitude": 23.715678,
+    "FoodCategory": "fish",
+    "Stars": 3.0,
+    "NoOfVotes": 15,
+    "StoreLogo": "app/src/main/assets/logos/seafood_shack.png",
+    "PriceCategory": "$$",
+    "Products": [
+      {"ProductName": "Fish and Chips", "ProductType": "seafood", "Available Amount": 2000, "Price": 13.0},
+      {"ProductName": "Shrimp Cocktail", "ProductType": "seafood", "Available Amount": 1000, "Price": 15.0},
+      {"ProductName": "Coleslaw", "ProductType": "side", "Available Amount": 300, "Price": 3.5},
+      {"ProductName": "Quinoa Salad", "ProductType": "salad", "Available Amount": 10, "Price": 8.5}
+    ]
+  },
+  {
+    "StoreName": "Veggie Vibes",
+    "Latitude": 37.995678,
+    "Longitude": 23.738901,
+    "FoodCategory": "salad",
+    "Stars": 5.0,
+    "NoOfVotes": 35,
+    "StoreLogo": "app/src/main/assets/logos/veggie_vibes.png",
+    "PriceCategory": "$$",
+    "Products": [
+      {"ProductName": "Veggie Burger", "ProductType": "burger", "Available Amount": 1000, "Price": 9.0},
+      {"ProductName": "Falafel Wrap", "ProductType": "wrap", "Available Amount": 800, "Price": 8.5},
+      {"ProductName": "Quinoa Salad", "ProductType": "salad", "Available Amount": 150, "Price": 6.5}
+    ]
+  }
+]

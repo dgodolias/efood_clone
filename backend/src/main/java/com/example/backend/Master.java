@@ -344,7 +344,61 @@ public class Master {
                     "localhost:" + PORT : 
                     "0.0.0.0:" + PORT + " (all interfaces)";
             
-            System.out.println("Master Server running on " + bindInfo);
+            System.out.println("Master Server initialized on " + bindInfo);
+            
+            // Print actual IP addresses that can be used to connect
+            try {
+                System.out.println("Available Master IP addresses for connections:");
+                Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+                while (interfaces.hasMoreElements()) {
+                    NetworkInterface iface = interfaces.nextElement();
+                    // Skip loopback interfaces and disabled interfaces
+                    if (iface.isLoopback() || !iface.isUp()) {
+                        continue;
+                    }
+
+                    Enumeration<InetAddress> addresses = iface.getInetAddresses();
+                    while (addresses.hasMoreElements()) {
+                        InetAddress addr = addresses.nextElement();
+                        // Skip IPv6 addresses and loopback addresses
+                        if (addr instanceof Inet6Address || addr.isLoopbackAddress()) {
+                            continue;
+                        }
+                        System.out.println(" - " + addr.getHostAddress() + ":" + PORT);
+                    }
+                }
+            } catch (SocketException e) {
+                System.out.println("Could not determine IP addresses");
+            }
+            
+            System.out.println("Waiting for Reducer to be available before accepting connections...");
+            
+            // Wait for the Reducer to be available before accepting connections
+            boolean reducerAvailable = false;
+            int retryCount = 0;
+            while (!reducerAvailable) {
+                try {
+                    Socket reducerSocket = new Socket(reducerHost, REDUCER_PORT);
+                    reducerSocket.close();
+                    reducerAvailable = true;
+                    System.out.println("Successfully connected to Reducer at " + reducerHost + ":" + REDUCER_PORT);
+                } catch (IOException e) {
+                    retryCount++;
+                    if (retryCount == 1 || retryCount % 10 == 0) { // Show message on first attempt and every 10 attempts
+                        System.err.println("WARNING: Cannot connect to Reducer at " + reducerHost + ":" + REDUCER_PORT);
+                        System.err.println("The Reducer is required for processing requests. Retrying... (attempt " + retryCount + ")");
+                    }
+                    
+                    // Wait before retrying
+                    try {
+                        Thread.sleep(2000); // Wait 2 seconds between attempts
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+            }
+            
+            System.out.println("Reducer is available. Master Server is now accepting connections on " + bindInfo);
             
             while (true) {
                 Socket socket = serverSocket.accept();
@@ -387,15 +441,15 @@ public class Master {
         for (String existingStore : new ArrayList<>(storeToWorkers.keySet())) {
             if (normalizeStoreName(existingStore).equals(normalizedName)) {
                 List<WorkerConnection> workers = storeToWorkers.get(existingStore);
-                System.out.println("WORKER ASSIGNMENT: Using existing assignment for store '" + normalizedName + "' (stored as '" + existingStore + "'): " +
-                    workers.stream()
-                        .map(w -> "Worker_" + w.getPort())
-                        .collect(Collectors.joining(", ")));
+                // System.out.println("WORKER ASSIGNMENT: Using existing assignment for store '" + normalizedName + "' (stored as '" + existingStore + "'): " +
+                //     workers.stream()
+                //         .map(w -> "Worker_" + w.getPort())
+                //         .collect(Collectors.joining(", ")));
                 
                 if (!existingStore.equals(storeName)) {
                     storeToWorkers.put(normalizedName, workers);
                     storeToWorkers.remove(existingStore);
-                    System.out.println("WORKER ASSIGNMENT: Updated store key from '" + existingStore + "' to '" + normalizedName + "'");
+                    //System.out.println("WORKER ASSIGNMENT: Updated store key from '" + existingStore + "' to '" + normalizedName + "'");
                 }
                 
                 return workers;
@@ -447,7 +501,7 @@ public class Master {
             normalized = normalized.substring(1, normalized.length() - 1);
         }
         
-        System.out.println("WORKER ASSIGNMENT: Normalized store name from '" + storeName + "' to '" + normalized + "'");
+        //System.out.println("WORKER ASSIGNMENT: Normalized store name from '" + storeName + "' to '" + normalized + "'");
         return normalized;
     }
 
@@ -952,7 +1006,7 @@ class MasterThread extends Thread {
         
         if (extractedName != null) {
             extractedName = normalizeStoreName(extractedName);
-            System.out.println("STORE NAME EXTRACTION: Command '" + command + "' - Final normalized store name: '" + extractedName + "'");
+            //System.out.println("STORE NAME EXTRACTION: Command '" + command + "' - Final normalized store name: '" + extractedName + "'");
         }
         
         return extractedName;
@@ -1013,12 +1067,12 @@ class MasterThread extends Thread {
         
         storeToWorkers.put(normalizedName, assignedWorkers);
         
-        System.out.println("WORKER ASSIGNMENT (Thread): Newly assigned store '" + normalizedName + "' with PRIMARY worker " + 
-                          primaryWorker.getPort() + " and backup workers: " +
-                          assignedWorkers.stream()
-                              .skip(1)
-                              .map(w -> "Worker_" + w.getPort())
-                              .collect(Collectors.joining(", ")));
+        // System.out.println("WORKER ASSIGNMENT (Thread): Newly assigned store '" + normalizedName + "' with PRIMARY worker " + 
+        //                   primaryWorker.getPort() + " and backup workers: " +
+        //                   assignedWorkers.stream()
+        //                       .skip(1)
+        //                       .map(w -> "Worker_" + w.getPort())
+        //                       .collect(Collectors.joining(", ")));
         
         return assignedWorkers;
     }

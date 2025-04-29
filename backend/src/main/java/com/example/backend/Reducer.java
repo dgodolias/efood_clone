@@ -7,12 +7,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class Reducer {
     private static final int DEFAULT_REDUCER_PORT = 8090; // Default port for Reducer
-    private List<WorkerConnection> workers;
     private String reducerHostname; // For displaying in logs
     private int port; // The port Reducer will listen on
 
-    public Reducer(List<WorkerConnection> workers, String hostname, int port) {
-        this.workers = workers;
+    public Reducer(String hostname, int port) {
         this.reducerHostname = hostname;
         this.port = port;
     }
@@ -23,7 +21,7 @@ public class Reducer {
             while (true) {
                 Socket masterSocket = serverSocket.accept();
                 System.out.println("Master connected to Reducer from: " + masterSocket.getInetAddress());
-                new ReducerThread(masterSocket, workers).start();
+                new ReducerThread(masterSocket).start();
             }
         } catch (IOException e) {
             System.err.println("Reducer server failed: " + e.getMessage());
@@ -31,25 +29,49 @@ public class Reducer {
     }
 
     public static void main(String[] args) {
-        if (args.length == 0) {
-            System.err.println("Usage: Reducer <workerHost1:workerPort1> <workerHost2:workerPort2> ...");
-            System.exit(1);
+        // Print help if requested
+        if (args.length > 0 && (args[0].equals("--help") || args[0].equals("-h"))) {
+            System.out.println("Usage: java com.example.backend.Reducer [options]");
+            System.out.println("Options:");
+            System.out.println("  --port <port>    Set the Reducer port (default: 8090)");
+            System.out.println("Example:");
+            System.out.println("  java com.example.backend.Reducer --port 8090");
+            return;
         }
 
-        // Read custom port from system property, or use default
+        // Read custom port from arguments or system property
         int reducerPort = DEFAULT_REDUCER_PORT;
-        String customPort = System.getProperty("reducer.port");
-        if (customPort != null && !customPort.isEmpty()) {
-            try {
-                reducerPort = Integer.parseInt(customPort);
-                System.out.println("Using custom port: " + reducerPort);
-            } catch (NumberFormatException e) {
-                System.err.println("Invalid custom port: " + customPort + ", using default: " + DEFAULT_REDUCER_PORT);
+        
+        for (int i = 0; i < args.length; i++) {
+            if (args[i].equals("--port")) {
+                if (i + 1 < args.length) {
+                    try {
+                        reducerPort = Integer.parseInt(args[++i]);
+                        System.out.println("Using custom port: " + reducerPort);
+                    } catch (NumberFormatException e) {
+                        System.err.println("Invalid port number: " + args[i] + ", using default: " + DEFAULT_REDUCER_PORT);
+                    }
+                }
+            }
+        }
+        
+        // Fallback to system property if no port specified in args
+        if (reducerPort == DEFAULT_REDUCER_PORT) {
+            String customPort = System.getProperty("reducer.port");
+            if (customPort != null && !customPort.isEmpty()) {
+                try {
+                    reducerPort = Integer.parseInt(customPort);
+                    System.out.println("Using custom port from system property: " + reducerPort);
+                } catch (NumberFormatException e) {
+                    System.err.println("Invalid custom port from system property: " + customPort + ", using default: " + DEFAULT_REDUCER_PORT);
+                }
             }
         }
 
         // Get IP address of the current machine instead of hostname
         String ipAddress = "localhost";
+        List<String> availableIPs = new ArrayList<>();
+        
         try {
             // Try to get the actual IP address instead of hostname
             Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
@@ -67,55 +89,42 @@ public class Reducer {
                     if (addr instanceof Inet6Address || addr.isLoopbackAddress()) {
                         continue;
                     }
-                    ipAddress = addr.getHostAddress();
-                    System.out.println("Using IP address: " + ipAddress);
-                    break;
+                    availableIPs.add(addr.getHostAddress());
                 }
+            }
+            
+            // Use the first non-loopback IP address we found
+            if (!availableIPs.isEmpty()) {
+                ipAddress = availableIPs.get(0);
+                System.out.println("Using IP address: " + ipAddress);
                 
-                if (!ipAddress.equals("localhost")) {
-                    break; // Stop after finding a valid IP
+                // Print all available IP addresses if there are multiple
+                if (availableIPs.size() > 1) {
+                    System.out.println("All available IP addresses:");
+                    for (int i = 0; i < availableIPs.size(); i++) {
+                        System.out.println(" - " + availableIPs.get(i) + ":" + reducerPort);
+                    }
                 }
+            } else {
+                System.out.println("No external network interfaces found, using 'localhost'");
             }
         } catch (SocketException e) {
             System.out.println("Could not determine IP address, using 'localhost'");
         }
 
-        List<WorkerConnection> workerConnections = new ArrayList<>();
-        for (String workerAddr : args) {
-            try {
-                String[] parts = workerAddr.split(":");
-                if (parts.length != 2) {
-                    System.err.println("Invalid worker address format: " + workerAddr);
-                    continue;
-                }
-                String host = parts[0];
-                int port = Integer.parseInt(parts[1]);
-                workerConnections.add(new WorkerConnection(host, port));
-                System.out.println("Reducer configured for worker at " + host + ":" + port);
-            } catch (NumberFormatException e) {
-                System.err.println("Invalid port number in worker address: " + workerAddr);
-            } catch (IOException e) {
-                System.err.println("Error connecting to worker at " + workerAddr + ": " + e.getMessage());
-            }
-        }
-
-        if (workerConnections.isEmpty()) {
-            System.err.println("No valid worker addresses provided. Reducer cannot start.");
-            System.exit(1);
-        }
-
-        Reducer reducer = new Reducer(workerConnections, ipAddress, reducerPort);
+        System.out.println("Starting Reducer...");
+        
+        // Start the Reducer without worker connections
+        Reducer reducer = new Reducer(ipAddress, reducerPort);
         reducer.start();
     }
 }
 
 class ReducerThread extends Thread {
     private Socket masterSocket;
-    private List<WorkerConnection> workers;
 
-    public ReducerThread(Socket masterSocket, List<WorkerConnection> workers) {
+    public ReducerThread(Socket masterSocket) {
         this.masterSocket = masterSocket;
-        this.workers = workers;
     }
 
     @Override
