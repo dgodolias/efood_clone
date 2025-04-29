@@ -89,10 +89,8 @@ public class Master {
             System.out.println("Using remote Reducer at " + this.reducerHost + ":" + REDUCER_PORT);
         }
 
-        if (!verifyReducerConnectivity()) {
-            throw new IOException("Failed to connect to the Reducer at " + this.reducerHost + ":" + REDUCER_PORT + 
-                                 ". Make sure the Reducer is running before starting the Master.");
-        }
+        // Try to connect to the Reducer, but continue even if it's not available
+        verifyReducerConnectivity();
         
         loadInitialStores();
         startHeartbeat();
@@ -103,8 +101,9 @@ public class Master {
             System.out.println("Successfully connected to Reducer at " + reducerHost + ":" + REDUCER_PORT);
             return true;
         } catch (IOException e) {
-            System.err.println("ERROR: Cannot connect to Reducer at " + reducerHost + ":" + REDUCER_PORT);
-            System.err.println("The Reducer must be running for the Master to function.");
+            System.err.println("WARNING: Cannot connect to Reducer at " + reducerHost + ":" + REDUCER_PORT);
+            System.err.println("The Reducer is required for processing requests but the Master will continue running.");
+            System.err.println("The Master will periodically check for Reducer availability.");
             return false;
         }
     }
@@ -554,6 +553,18 @@ public class Master {
             String reducerHost = DEFAULT_REDUCER_HOST;
             List<String> remoteWorkerAddresses = new ArrayList<>();
 
+            // Print usage if requested
+            if (args.length > 0 && (args[0].equals("--help") || args[0].equals("-h"))) {
+                System.out.println("Usage: java com.example.backend.Master [options]");
+                System.out.println("Options:");
+                System.out.println("  --distributed             Enable distributed mode (default: local mode)");
+                System.out.println("  --reducer <host>          Specify reducer host (default: localhost)");
+                System.out.println("  --workers <host:port,...> Comma-separated list of worker addresses");
+                System.out.println("Example:");
+                System.out.println("  java com.example.backend.Master --distributed --reducer 192.168.1.10 --workers 192.168.1.18:8081,192.168.1.18:8082");
+                return;
+            }
+
             for (int i = 0; i < args.length; i++) {
                 if (args[i].equals("--distributed")) {
                     localMode = false;
@@ -570,16 +581,28 @@ public class Master {
                         for (String worker : workers) {
                             worker = worker.trim();
                             if (!worker.isEmpty()) {
-                                remoteWorkerAddresses.add(worker);
-                                System.out.println("Added worker: " + worker);
+                                // Validate worker address format
+                                if (worker.contains(":")) {
+                                    remoteWorkerAddresses.add(worker);
+                                    System.out.println("Added worker: " + worker);
+                                } else {
+                                    System.err.println("Invalid worker address format (should be host:port): " + worker);
+                                }
                             }
                         }
                     }
                 }
             }
 
+            // Always run in distributed mode if worker addresses are provided
+            if (!remoteWorkerAddresses.isEmpty()) {
+                localMode = false;
+                System.out.println("Switching to distributed mode due to provided worker addresses");
+            }
+
             System.out.println("Configured with " + remoteWorkerAddresses.size() + " worker(s) in " + 
                                (localMode ? "LOCAL" : "DISTRIBUTED") + " mode");
+            System.out.println("Master will wait for Reducer at " + reducerHost + ":" + REDUCER_PORT + " to become available");
 
             Master master = new Master(startPort, localMode, reducerHost, remoteWorkerAddresses);
             master.start();
@@ -626,11 +649,32 @@ class MasterThread extends Thread {
                     continue;
                 }
                 
-                try {
-                    Socket reducerSocket = new Socket(reducerHost, reducerPort);
-                    reducerSocket.close();
-                } catch (IOException e) {
-                    System.err.println("ERROR: Cannot connect to Reducer at " + reducerHost + ":" + reducerPort);
+                // Check if Reducer is available, wait with periodic retries if it's not
+                boolean reducerAvailable = false;
+                int retryCount = 0;
+                while (!reducerAvailable && retryCount < 5) {  // Try up to 5 times
+                    try {
+                        Socket reducerSocket = new Socket(reducerHost, reducerPort);
+                        reducerSocket.close();
+                        reducerAvailable = true;
+                    } catch (IOException e) {
+                        retryCount++;
+                        if (retryCount == 1) { // Only print this message on first attempt
+                            System.err.println("WARNING: Cannot connect to Reducer at " + reducerHost + ":" + reducerPort);
+                            out.println("WARNING: Waiting for Reducer to become available...");
+                        }
+                        
+                        // Exponential backoff for retries
+                        try {
+                            Thread.sleep(1000 * retryCount);
+                        } catch (InterruptedException ie) {
+                            Thread.currentThread().interrupt();
+                        }
+                    }
+                }
+                
+                if (!reducerAvailable) {
+                    System.err.println("ERROR: Cannot connect to Reducer at " + reducerHost + ":" + reducerPort + " after multiple attempts");
                     out.println("ERROR: Reducer is unavailable. The system cannot process requests without a functioning Reducer.");
                     out.println("END");
                     continue;
