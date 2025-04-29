@@ -28,9 +28,48 @@ public class Worker {
         }
     }
 
+    // Helper method to get the IP addresses of the machine
+    private List<String> getIPAddresses() {
+        List<String> ipAddresses = new ArrayList<>();
+        try {
+            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+            while (interfaces.hasMoreElements()) {
+                NetworkInterface iface = interfaces.nextElement();
+                // Skip loopback interfaces and disabled interfaces
+                if (iface.isLoopback() || !iface.isUp()) {
+                    continue;
+                }
+
+                Enumeration<InetAddress> addresses = iface.getInetAddresses();
+                while (addresses.hasMoreElements()) {
+                    InetAddress addr = addresses.nextElement();
+                    // Skip IPv6 addresses and loopback addresses
+                    if (addr instanceof Inet6Address || addr.isLoopbackAddress()) {
+                        continue;
+                    }
+                    ipAddresses.add(addr.getHostAddress());
+                }
+            }
+        } catch (SocketException e) {
+            System.err.println("Error getting network interfaces: " + e.getMessage());
+        }
+        return ipAddresses;
+    }
+
     public void start(int port) {
         try (ServerSocket serverSocket = new ServerSocket(port)) {
+            List<String> ipAddresses = getIPAddresses();
+            
             System.out.println("Worker running on port " + port);
+            if (!ipAddresses.isEmpty()) {
+                System.out.println("Available on network interfaces:");
+                for (String ip : ipAddresses) {
+                    System.out.println(" - " + ip + ":" + port);
+                }
+            } else {
+                System.out.println("No external network interfaces found, only available on localhost:" + port);
+            }
+            
             while (true) {
                 Socket socket = serverSocket.accept();
                 System.out.println("Master connected: " + socket.getInetAddress());
