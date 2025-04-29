@@ -1,0 +1,25 @@
+Ice Cream Dream:8084,8085,8081
+Salad Sensations:8085,8081,8082
+Kebab Kingdom:8082,8083,8084
+Sushi Spot:8085,8081,8082
+Sandwich Stop:8083,8084,8085
+Thai Orchid:8083,8084,8085
+Breakfast Nook:8082,8083,8084
+Juice Junction:8081,8082,8083
+Pizza Planet:8081,8082,8083
+Taco Town:8085,8081,8082
+Coffee Corner:8085,8081,8082
+Burger Barn:8082,8083,8084
+Indian Flavors:8084,8085,8081
+Steak House Supreme:8084,8085,8081
+Burger Bonanza:8083,8084,8085
+Gyro Grill:8082,8083,8084
+Mama Mia Italian:8084,8085,8081
+Daily Grind Coffee:8084,8085,8081
+Dragon Wok:8085,8081,8082
+Sweet Treats Bakery:8082,8083,8084
+Souvlaki Station:8084,8085,8081
+Pizza Palace:8081,8082,8083
+Pasta Place:8084,8085,8081
+Seafood Shack:8084,8085,8081
+Veggie Vibes:8083,8084,8085

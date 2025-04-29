@@ -34,14 +34,14 @@
     "Latitude": 37.982345,
     "Longitude": 23.722345,
     "FoodCategory": "kebab",
-    "Stars": 2.0,
-    "NoOfVotes": 10,
+    "Stars": 2.27,
+    "NoOfVotes": 11,
     "StoreLogo": "app/src/main/assets/logos/kebab_kingdom.png",
     "PriceCategory": "$$",
     "Products": [
       {"ProductName": "Lamb Kebab", "ProductType": "kebab", "Available Amount": 1500, "Price": 8.0},
       {"ProductName": "Chicken Kebab", "ProductType": "kebab", "Available Amount": 1200, "Price": 7.5},
-      {"ProductName": "Hummus", "ProductType": "side", "Available Amount": 200, "Price": 4.0}
+      {"ProductName": "Hummus", "ProductType": "side", "Available Amount": 199, "Price": 4.0}
     ]
   },
   {
@@ -94,13 +94,12 @@
     "Latitude": 37.9932963,
     "Longitude": 23.733413,
     "FoodCategory": "pizza",
-    "Stars": 4.0,
-    "NoOfVotes": 25,
+    "Stars": 4.04,
+    "NoOfVotes": 26,
     "StoreLogo": "app/src/main/assets/logos/pizza_palace.png",
     "PriceCategory": "$$",
     "Products": [
-      {"ProductName": "Margherita", "ProductType": "pizza", "Available Amount": 5000, "Price": 8.5},
-      {"ProductName": "Pepperoni", "ProductType": "pizza", "Available Amount": 3000, "Price": 10.0},
+      {"ProductName": "Margherita", "ProductType": "pizza", "Available Amount": 4999, "Price": 8.5},
       {"ProductName": "Greek Salad", "ProductType": "salad", "Available Amount": 150, "Price": 6.0}
     ]
   },
@@ -154,14 +153,14 @@
     "Latitude": 37.981111,
     "Longitude": 23.721111,
     "FoodCategory": "pizza",
-    "Stars": 3.0,
-    "NoOfVotes": 17,
+    "Stars": 3.21,
+    "NoOfVotes": 19,
     "StoreLogo": "app/src/main/assets/logos/pizza_planet.png",
     "PriceCategory": "$$",
     "Products": [
       {"ProductName": "Veggie Supreme", "ProductType": "pizza", "Available Amount": 2500, "Price": 9.5},
       {"ProductName": "BBQ Chicken", "ProductType": "pizza", "Available Amount": 2000, "Price": 11.0},
-      {"ProductName": "Garlic Bread", "ProductType": "side", "Available Amount": 1000, "Price": 4.0}
+      {"ProductName": "Garlic Bread", "ProductType": "side", "Available Amount": 998, "Price": 4.0}
     ]
   },
   {
@@ -199,14 +198,14 @@
     "Latitude": 37.992222,
     "Longitude": 23.732222,
     "FoodCategory": "burger",
-    "Stars": 4.04,
-    "NoOfVotes": 24,
+    "Stars": 4.0,
+    "NoOfVotes": 23,
     "StoreLogo": "app/src/main/assets/logos/burger_barn.png",
     "PriceCategory": "$$",
     "Products": [
-      {"ProductName": "Bacon Cheeseburger", "ProductType": "burger", "Available Amount": 1799, "Price": 9.0},
+      {"ProductName": "Bacon Cheeseburger", "ProductType": "burger", "Available Amount": 1800, "Price": 9.0},
       {"ProductName": "Mushroom Swiss Burger", "ProductType": "burger", "Available Amount": 1200, "Price": 9.5},
-      {"ProductName": "Onion Rings(extreme)", "ProductType": "side", "Available Amount": 100, "Price": 6.0}
+      {"ProductName": "Onion Rings", "ProductType": "side", "Available Amount": 800, "Price": 3.5}
     ]
   }
 ]

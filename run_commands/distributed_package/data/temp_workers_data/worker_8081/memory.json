@@ -4,14 +4,14 @@
     "Latitude": 37.985555,
     "Longitude": 23.731111,
     "FoodCategory": "indian",
-    "Stars": 4.0,
-    "NoOfVotes": 28,
+    "Stars": 4.03,
+    "NoOfVotes": 29,
     "StoreLogo": "app/src/main/assets/logos/indian_flavors.png",
     "PriceCategory": "$$",
     "Products": [
       {"ProductName": "Chicken Tikka Masala", "ProductType": "curry", "Available Amount": 1800, "Price": 12.5},
       {"ProductName": "Vegetable Samosa", "ProductType": "appetizer", "Available Amount": 1000, "Price": 5.0},
-      {"ProductName": "Naan Bread", "ProductType": "bread", "Available Amount": 2000, "Price": 2.5}
+      {"ProductName": "Naan Bread", "ProductType": "bread", "Available Amount": 1999, "Price": 2.5}
     ]
   },
   {
@@ -139,13 +139,12 @@
     "Latitude": 37.9932963,
     "Longitude": 23.733413,
     "FoodCategory": "pizza",
-    "Stars": 4.0,
-    "NoOfVotes": 25,
+    "Stars": 4.04,
+    "NoOfVotes": 26,
     "StoreLogo": "app/src/main/assets/logos/pizza_palace.png",
     "PriceCategory": "$$",
     "Products": [
-      {"ProductName": "Margherita", "ProductType": "pizza", "Available Amount": 5000, "Price": 8.5},
-      {"ProductName": "Pepperoni", "ProductType": "pizza", "Available Amount": 3000, "Price": 10.0},
+      {"ProductName": "Margherita", "ProductType": "pizza", "Available Amount": 4999, "Price": 8.5},
       {"ProductName": "Greek Salad", "ProductType": "salad", "Available Amount": 150, "Price": 6.0}
     ]
   },
@@ -215,14 +214,14 @@
     "Latitude": 37.981111,
     "Longitude": 23.721111,
     "FoodCategory": "pizza",
-    "Stars": 3.0,
-    "NoOfVotes": 17,
+    "Stars": 3.21,
+    "NoOfVotes": 19,
     "StoreLogo": "app/src/main/assets/logos/pizza_planet.png",
     "PriceCategory": "$$",
     "Products": [
       {"ProductName": "Veggie Supreme", "ProductType": "pizza", "Available Amount": 2500, "Price": 9.5},
       {"ProductName": "BBQ Chicken", "ProductType": "pizza", "Available Amount": 2000, "Price": 11.0},
-      {"ProductName": "Garlic Bread", "ProductType": "side", "Available Amount": 1000, "Price": 4.0}
+      {"ProductName": "Garlic Bread", "ProductType": "side", "Available Amount": 998, "Price": 4.0}
     ]
   },
   {

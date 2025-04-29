@@ -832,6 +832,27 @@ class MasterThread extends Thread {
                     System.out.println("WORKER EXECUTION: Primary worker " + primaryWorker.getPort() + 
                                      " successfully processed command");
                     successful = true;
+                    
+                    // Propagate changes to all backup workers for write operations to maintain consistency
+                    if (isWriteOperation(fullCommand)) {
+                        for (int i = 1; i < targetWorkers.size(); i++) {
+                            WorkerConnection backupWorker = targetWorkers.get(i);
+                            boolean backupHealthy = workerHealth.getOrDefault(backupWorker, false);
+                            
+                            if (backupHealthy) {
+                                try {
+                                    String backupResponse = backupWorker.sendRequest(fullCommand);
+                                    System.out.println("WORKER REPLICATION: Propagated change to backup worker " + 
+                                                     backupWorker.getPort() + " with response: " + 
+                                                     (backupResponse != null ? backupResponse.substring(0, Math.min(20, backupResponse.length())) + "..." : "null"));
+                                } catch (IOException e) {
+                                    System.err.println("WORKER REPLICATION: Failed to propagate change to backup worker " + 
+                                                     backupWorker.getPort() + ": " + e.getMessage());
+                                    workerHealth.put(backupWorker, false);
+                                }
+                            }
+                        }
+                    }
                 } else {
                     System.out.println("WORKER EXECUTION: Primary worker " + primaryWorker.getPort() + 
                                      " returned error: " + primaryResponse);
@@ -901,6 +922,18 @@ class MasterThread extends Thread {
             System.err.println("WORKER EXECUTION: All workers for this command have failed!");
             results.add("ERROR|All workers failed: " + String.join(", ", errors));
         }
+    }
+    
+    /**
+     * Determines if a command is a write operation that should be propagated to all replicas
+     */
+    private boolean isWriteOperation(String command) {
+        String cmd = command.trim().split(" ", 2)[0].toUpperCase();
+        return cmd.equals("BUY") || 
+               cmd.equals("ADD_PRODUCT") || 
+               cmd.equals("REMOVE_PRODUCT") || 
+               cmd.equals("REVIEW") || 
+               cmd.equals("ADD_STORE");
     }
 
     private void executeCommandOnWorkers(String fullCommand, List<WorkerConnection> targetWorkers, List<String> results) {
