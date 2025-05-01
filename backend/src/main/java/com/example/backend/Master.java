@@ -26,6 +26,11 @@ public class Master {
     private PrintWriter out;
     private boolean isLocalMode = true; 
     private InetAddress bindAddress; 
+    
+    // New fields for worker initialization synchronization
+    private final Object initializationLock = new Object();
+    private int initializedWorkerCount = 0;
+    private boolean allWorkersInitialized = false;
 
     public Master(int startPort, boolean localMode, String reducerHost, List<String> remoteWorkerAddresses) throws IOException {
         this.isLocalMode = localMode;
@@ -57,7 +62,8 @@ public class Master {
             for (int i = 0; i < workerCount; i++) {
                 int workerPort = startPort + i;
                 spawnWorker(workerPort);
-                WorkerConnection wc = new WorkerConnection("localhost", workerPort);
+                // Use the new constructor that takes a Master reference
+                WorkerConnection wc = new WorkerConnection("localhost", workerPort, this);
                 workers.add(wc);
                 workerHealth.put(wc, true);
                 workerAddresses.add("localhost:" + workerPort);
@@ -73,7 +79,8 @@ public class Master {
                     String host = parts[0];
                     int port = Integer.parseInt(parts[1]);
                     try {
-                        WorkerConnection wc = new WorkerConnection(host, port);
+                        // Use the new constructor that takes a Master reference
+                        WorkerConnection wc = new WorkerConnection(host, port, this);
                         workers.add(wc);
                         workerHealth.put(wc, true);
                         workerAddresses.add(address);
@@ -371,6 +378,9 @@ public class Master {
                 System.out.println("Could not determine IP addresses");
             }
             
+            // Wait for all workers to initialize before checking the reducer
+            waitForWorkersInitialization();
+            
             System.out.println("Waiting for Reducer to be available before accepting connections...");
             
             // Wait for the Reducer to be available before accepting connections
@@ -598,6 +608,50 @@ public class Master {
         }
         
         saveWorkerAssignments();
+    }
+
+    public void markWorkerAsInitialized(WorkerConnection worker) {
+        synchronized (initializationLock) {
+            initializedWorkerCount++;
+            System.out.println("Worker " + worker.getPort() + " marked as initialized. " 
+                + initializedWorkerCount + " of " + workers.size() + " workers initialized.");
+            
+            if (initializedWorkerCount == workers.size()) {
+                allWorkersInitialized = true;
+                System.out.println("All " + workers.size() + " workers are now initialized!");
+                initializationLock.notifyAll(); // Notify any waiting threads that initialization is complete
+            }
+        }
+    }
+    
+    private void waitForWorkersInitialization() {
+        if (workers.isEmpty()) {
+            System.out.println("No workers to initialize.");
+            return;
+        }
+        
+        synchronized (initializationLock) {
+            if (!allWorkersInitialized) {
+                System.out.println("Waiting for all " + workers.size() + " workers to initialize...");
+                try {
+                    // Wait until all workers are initialized or timeout after 30 seconds
+                    initializationLock.wait(30000);
+                    
+                    if (!allWorkersInitialized) {
+                        System.err.println("Timed out waiting for all workers to initialize!");
+                        System.err.println("Only " + initializedWorkerCount + " of " + 
+                                         workers.size() + " workers initialized.");
+                    } else {
+                        System.out.println("All workers initialized successfully!");
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    System.err.println("Interrupted while waiting for workers to initialize: " + e.getMessage());
+                }
+            } else {
+                System.out.println("All workers were already initialized.");
+            }
+        }
     }
 
     public static void main(String[] args) {
@@ -1232,12 +1286,21 @@ class MasterThread extends Thread {
 
             List<String> mapResults = intermediateResults.getOrDefault(command, new ArrayList<>());
             
-            reducerOut.println("REDUCE " + command); 
+            // Start the Reduce operation
+            reducerOut.println("REDUCE " + command);
+            
+            // Tell the Reducer how many map results to expect - this enables wait-notify coordination
+            reducerOut.println("EXPECT_MAP_RESULTS " + mapResults.size());
+            
+            // Send each map result
             for (String result : mapResults) {
                 reducerOut.println("MAP_RESULT " + result);
             }
+            
+            // Signal the end of map results
             reducerOut.println("END_MAP_RESULTS");
 
+            // Read the reducer's output
             String line;
             while ((line = reducerIn.readLine()) != null && !line.equals("END_REDUCER")) {
                 if (responseBuilder.length() > 0) {

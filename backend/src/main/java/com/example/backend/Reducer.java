@@ -122,6 +122,12 @@ public class Reducer {
 
 class ReducerThread extends Thread {
     private Socket masterSocket;
+    
+    // Wait-notify synchronization for MapReduce coordination
+    private final Object mapReduceLock = new Object();
+    private int expectedMapResults = 0;
+    private int receivedMapResults = 0;
+    private boolean allResultsReceived = false;
 
     public ReducerThread(Socket masterSocket) {
         this.masterSocket = masterSocket;
@@ -145,16 +151,72 @@ class ReducerThread extends Thread {
                     isReduceMode = true;
                     command = request.substring(7); // Extract the command part
                     mapResults.clear();
+                    
+                    // Reset synchronization state for new reduce operation
+                    synchronized (mapReduceLock) {
+                        expectedMapResults = 0;  // Will be set by EXPECT_MAP_RESULTS
+                        receivedMapResults = 0;
+                        allResultsReceived = false;
+                    }
+                    continue;
+                } else if (request.startsWith("EXPECT_MAP_RESULTS ")) {
+                    // Master tells us how many map results to expect
+                    if (isReduceMode) {
+                        synchronized (mapReduceLock) {
+                            try {
+                                expectedMapResults = Integer.parseInt(request.substring(19));
+                                System.out.println("Reducer expects " + expectedMapResults + " map results for " + command);
+                            } catch (NumberFormatException e) {
+                                System.err.println("Invalid expected map results count: " + request.substring(19));
+                            }
+                        }
+                    }
                     continue;
                 } else if (request.startsWith("MAP_RESULT ")) {
                     // Collect an intermediate result from the Map phase
                     if (isReduceMode) {
                         mapResults.add(request.substring(11)); // Extract the result part
+                        
+                        // Update received count and notify if all results received
+                        synchronized (mapReduceLock) {
+                            receivedMapResults++;
+                            System.out.println("Reducer received " + receivedMapResults + "/" + expectedMapResults + 
+                                             " map results for " + command);
+                            
+                            if (expectedMapResults > 0 && receivedMapResults >= expectedMapResults) {
+                                allResultsReceived = true;
+                                mapReduceLock.notifyAll(); // Notify any waiting threads
+                                System.out.println("Reducer notified that all map results received");
+                            }
+                        }
                     }
                     continue;
                 } else if (request.equals("END_MAP_RESULTS")) {
                     // All map results received, now process them (REDUCE phase)
                     if (isReduceMode) {
+                        // If we're expecting a specific number of results, wait for them
+                        if (expectedMapResults > 0) {
+                            synchronized (mapReduceLock) {
+                                if (!allResultsReceived) {
+                                    System.out.println("Reducer waiting for remaining map results (" + 
+                                                     receivedMapResults + "/" + expectedMapResults + ")");
+                                    try {
+                                        // Wait for up to 5 seconds for remaining results
+                                        mapReduceLock.wait(5000);
+                                        
+                                        if (!allResultsReceived) {
+                                            System.out.println("Reducer timed out waiting for map results. " +
+                                                             "Proceeding with " + receivedMapResults + "/" + 
+                                                             expectedMapResults + " results.");
+                                        }
+                                    } catch (InterruptedException e) {
+                                        Thread.currentThread().interrupt();
+                                        System.err.println("Interrupted while waiting for map results");
+                                    }
+                                }
+                            }
+                        }
+                        
                         String reduceResult = processMapResults(command, mapResults);
                         out.println(reduceResult);
                         out.println("END_REDUCER");

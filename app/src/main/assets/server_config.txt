@@ -1,2 +1,2 @@
-master.host=192.168.1.116
+master.host=10.0.2.2
 master.port=8080
