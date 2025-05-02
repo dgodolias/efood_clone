@@ -1,5 +1,7 @@
 package com.example.efood_clone_2.frontend;
 
+import com.example.efood_clone_2.communication.ClientRequest;
+import com.example.efood_clone_2.communication.ClientResponse;
 import java.io.*;
 import java.net.*;
 import java.nio.file.Files;
@@ -15,7 +17,6 @@ public class ManagerConsoleApp {
         int masterPort = MASTER_PORT;
         
         if (args.length > 0) {
-            // Check if input contains IP:PORT format
             if (args[0].contains(":")) {
                 String[] parts = args[0].split(":");
                 if (parts.length == 2) {
@@ -35,7 +36,6 @@ public class ManagerConsoleApp {
 
         String envMasterHost = System.getenv("MASTER_HOST");
         if (envMasterHost != null && !envMasterHost.isEmpty()) {
-            // Also handle IP:PORT format from environment variable
             if (envMasterHost.contains(":")) {
                 String[] parts = envMasterHost.split(":");
                 if (parts.length == 2) {
@@ -60,13 +60,11 @@ public class ManagerConsoleApp {
             InetAddress inetAddress = InetAddress.getByName(masterHost);
             System.out.println("Resolved " + masterHost + " to " + inetAddress.getHostAddress());
             
-            // Try a simple ping to check network connectivity
-            boolean reachable = inetAddress.isReachable(5000); // 5 second timeout
+            boolean reachable = inetAddress.isReachable(5000);
             System.out.println("Host is reachable via ICMP ping: " + reachable);
             
-            // Try opening a socket with a short timeout
             try (Socket testSocket = new Socket()) {
-                testSocket.connect(new InetSocketAddress(masterHost, masterPort), 5000); // 5 second timeout
+                testSocket.connect(new InetSocketAddress(masterHost, masterPort), 5000);
                 System.out.println("Successfully connected to Master socket at " + masterHost + ":" + masterPort);
                 testSocket.close();
             } catch (IOException e) {
@@ -74,21 +72,18 @@ public class ManagerConsoleApp {
                 System.err.println("Please verify the Master is running at the specified address and port.");
                 System.err.println("Also check for firewalls that might be blocking the connection.");
                 
-                // Suggest trying localhost if using a remote address
                 if (!masterHost.equals("localhost") && !masterHost.equals("127.0.0.1")) {
                     System.out.println("\nTrying fallback to localhost...");
                     try (Socket localSocket = new Socket()) {
                         localSocket.connect(new InetSocketAddress("localhost", masterPort), 3000);
                         System.out.println("Successfully connected to Master on localhost:" + masterPort);
                         System.out.println("Please use 'localhost' or '127.0.0.1' instead of " + masterHost);
-                        // Switch to localhost since it's working
                         masterHost = "localhost";
                     } catch (IOException ex) {
                         System.err.println("Localhost connection also failed: " + ex.getMessage());
                     }
                 }
                 
-                // Let user choose whether to continue despite connection test failure
                 System.out.println("\nDo you want to continue anyway? (y/n)");
                 Scanner scanner = new Scanner(System.in);
                 String response = scanner.nextLine().trim().toLowerCase();
@@ -103,8 +98,8 @@ public class ManagerConsoleApp {
         }
 
         try (Socket socket = new Socket(masterHost, masterPort);
-             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+             ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+             ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
              Scanner scanner = new Scanner(System.in)) {
             System.out.println("Connected to Master at " + masterHost + ":" + masterPort);
             while (true) {
@@ -157,7 +152,6 @@ public class ManagerConsoleApp {
 
                             data = data.replaceAll("\\s+", " ").trim();
                             System.out.println("Sending command: ADD_STORE with data: " + data);
-                            out.println("ADD_STORE " + data);  // This line was missing
                         } catch (IOException e) {
                             System.err.println("Error reading file: " + e.getMessage());
                             continue;
@@ -166,42 +160,42 @@ public class ManagerConsoleApp {
                     case "ADD_PRODUCT":
                         System.out.println("Enter store name, product name, type, amount, price (comma-separated):");
                         data = scanner.nextLine();
-                        out.println("ADD_PRODUCT " + data);
                         break;
                     case "REMOVE_PRODUCT":
                         System.out.println("Enter store name and product name (comma-separated):");
                         data = scanner.nextLine();
-                        out.println("REMOVE_PRODUCT " + data);
                         break;
                     case "GET_SALES_BY_STORE_TYPE_CATEGORY":
-                        System.out.println("Enter store type category :");
+                        System.out.println("Enter store type category:");
                         data = scanner.nextLine();
-                        out.println("GET_SALES_BY_STORE_TYPE_CATEGORY " + data);
                         break;
                     case "GET_SALES_BY_PRODUCT_CATEGORY":
                         System.out.println("Enter product category:");
                         data = scanner.nextLine();
-                        out.println("GET_SALES_BY_PRODUCT_CATEGORY " + data);
                         break;
                     case "GET_SALES_BY_PRODUCT":
                         System.out.println("Enter product name:");
                         data = scanner.nextLine();
-                        out.println("GET_SALES_BY_PRODUCT " + data);
                         break;
                     default:
                         System.out.println("Unknown command: " + command);
                         continue;
                 }
 
+                // Send the request as a ClientRequest object
+                ClientRequest request = new ClientRequest(command, data);
+                out.writeObject(request);
+                out.flush();
+
+                // Receive the response as a ClientResponse object
+                ClientResponse response = (ClientResponse) in.readObject();
                 System.out.println("Response:");
-                String line;
-                while ((line = in.readLine()) != null) {
-                    if (line.equals("END")) break;
-                    System.out.println(line);
-                }
+                System.out.println(response.getMessage());
             }
         } catch (IOException e) {
             System.err.println("Error connecting to Master: " + e.getMessage());
+        } catch (ClassNotFoundException e) {
+            System.err.println("Error reading response from Master: " + e.getMessage());
         }
     }
 }
