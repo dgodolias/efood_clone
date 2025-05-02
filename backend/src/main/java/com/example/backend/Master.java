@@ -720,6 +720,8 @@ class MasterThread extends Thread {
     private final int reducerPort;
     private Map<WorkerConnection, Boolean> workerHealth;
     private Map<String, List<String>> intermediateResults;
+    private ObjectInputStream in;
+    private ObjectOutputStream out;
 
     public MasterThread(Socket socket, List<WorkerConnection> workers,
                         Map<String, List<WorkerConnection>> storeToWorkers,
@@ -737,14 +739,22 @@ class MasterThread extends Thread {
 
     @Override
     public void run() {
-        try (BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-             PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
-            String request;
-            while ((request = in.readLine()) != null) {
-                System.out.println("Received command: " + request);
+        try {
+            // Initialize ObjectOutputStream first to avoid deadlock
+            out = new ObjectOutputStream(socket.getOutputStream());
+            out.flush(); // Important: flush the header information
+            in = new ObjectInputStream(socket.getInputStream());
+            
+            CommunicationClasses.Request clientRequest;
+            while ((clientRequest = (CommunicationClasses.Request) in.readObject()) != null) {
+                String command = clientRequest.getCommand();
+                String data = clientRequest.getData();
+                
+                System.out.println("Received command: " + command);
                 if (workers.isEmpty()) {
-                    out.println("No workers available to process request: " + request);
-                    out.println("END");
+                    CommunicationClasses.Response errorResponse = new CommunicationClasses.Response("No workers available to process request: " + command);
+                    out.writeObject(errorResponse);
+                    out.flush();
                     continue;
                 }
 
@@ -759,7 +769,9 @@ class MasterThread extends Thread {
                         retryCount++;
                         if (retryCount == 1) {
                             System.err.println("WARNING: Cannot connect to Reducer at " + reducerHost + ":" + reducerPort);
-                            out.println("WARNING: Waiting for Reducer to become available...");
+                            CommunicationClasses.Response warningResponse = new CommunicationClasses.Response("WARNING: Waiting for Reducer to become available...");
+                            out.writeObject(warningResponse);
+                            out.flush();
                         }
 
                         try {
@@ -772,28 +784,41 @@ class MasterThread extends Thread {
 
                 if (!reducerAvailable) {
                     System.err.println("ERROR: Cannot connect to Reducer at " + reducerHost + ":" + reducerPort + " after multiple attempts");
-                    out.println("ERROR: Reducer is unavailable. The system cannot process requests without a functioning Reducer.");
-                    out.println("END");
+                    CommunicationClasses.Response errorResponse = new CommunicationClasses.Response("ERROR: Reducer is unavailable. The system cannot process requests without a functioning Reducer.");
+                    out.writeObject(errorResponse);
+                    out.flush();
                     continue;
                 }
 
-                String[] parts = request.split(" ", 2);
-                String command = parts[0];
-                String data = parts.length > 1 ? parts[1] : "";
-
-                processCommandWithMapReduce(command, data, out);
+                String result = processCommandWithMapReduceObject(command, data);
+                CommunicationClasses.Response response = new CommunicationClasses.Response(result);
+                out.writeObject(response);
+                out.flush();
             }
-        } catch (IOException e) {
+        } catch (IOException | ClassNotFoundException e) {
             System.err.println("Error handling client: " + e.getMessage());
-        } catch (ClassNotFoundException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         } finally {
             try {
-                socket.close();
+                if (in != null) in.close();
+                if (out != null) out.close();
+                if (socket != null && !socket.isClosed()) socket.close();
             } catch (IOException e) {
-                System.err.println("Error closing socket: " + e.getMessage());
+                System.err.println("Error closing resources: " + e.getMessage());
             }
+        }
+    }
+
+    private String processCommandWithMapReduceObject(String command, String data) throws ClassNotFoundException {
+        executeMapPhase(command, data);
+
+        try {
+            String reducerResponse = sendIntermediateResultsToReducer(command);
+            System.out.println("Master received from Reducer for " + command + ":\n" + reducerResponse);
+            return reducerResponse;
+        } catch (IOException e) {
+            System.err.println("Master failed to communicate with Reducer: " + e.getMessage());
+            return "Error: Could not process " + command + " due to Reducer communication failure.";
         }
     }
 

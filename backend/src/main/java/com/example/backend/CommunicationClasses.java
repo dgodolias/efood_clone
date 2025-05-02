@@ -6,8 +6,17 @@ import java.util.List;
 public class CommunicationClasses {
 
     public static class Request implements Serializable {
+        // Use a specific serialVersionUID to ensure compatibility with client
+        private static final long serialVersionUID = 1234567890123456789L;
+        
         private String command;
         private String data;
+        
+        // Default constructor required for serialization
+        public Request() {
+            this.command = "";
+            this.data = "";
+        }
 
         public Request(String command, String data) {
             this.command = command;
@@ -21,17 +30,82 @@ public class CommunicationClasses {
         public String getData() {
             return data;
         }
+        
+        public void setCommand(String command) {
+            this.command = command;
+        }
+        
+        public void setData(String data) {
+            this.data = data;
+        }
+        
+        @Override
+        public String toString() {
+            return "Request{command='" + command + "', data='" + data + "'}";
+        }
     }
 
     public static class Response implements Serializable {
+        // Use a specific serialVersionUID to ensure compatibility with client
+        private static final long serialVersionUID = 1234567890123456789L;
+        
         private String message;
+        private boolean success;
+        private String errorDetails;
+        
+        // Default constructor required for serialization
+        public Response() {
+            this.message = "";
+            this.success = false;
+            this.errorDetails = null;
+        }
 
         public Response(String message) {
             this.message = message;
+            this.success = true;
+            this.errorDetails = null;
+        }
+        
+        public Response(String message, boolean success) {
+            this.message = message;
+            this.success = success;
+            this.errorDetails = null;
+        }
+        
+        public Response(String message, boolean success, String errorDetails) {
+            this.message = message;
+            this.success = success;
+            this.errorDetails = errorDetails;
         }
 
         public String getMessage() {
             return message;
+        }
+        
+        public boolean isSuccess() {
+            return success;
+        }
+        
+        public String getErrorDetails() {
+            return errorDetails;
+        }
+        
+        public void setMessage(String message) {
+            this.message = message;
+        }
+        
+        public void setSuccess(boolean success) {
+            this.success = success;
+        }
+        
+        public void setErrorDetails(String errorDetails) {
+            this.errorDetails = errorDetails;
+        }
+        
+        @Override
+        public String toString() {
+            return "Response{success=" + success + ", message='" + message + "', errorDetails='" 
+                    + (errorDetails != null ? errorDetails : "none") + "'}";
         }
     }
 

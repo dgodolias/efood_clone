@@ -14,7 +14,10 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
@@ -24,6 +27,7 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -196,17 +200,37 @@ public class TCPClient {
 
     public void getNearbyStores(double latitude, double longitude, StoreListCallback callback) {
         executor.execute(() -> {
+            Socket socket = null;
+            ObjectOutputStream out = null;
+            ObjectInputStream in = null;
+            
             try {
-                Socket socket = createAndConnectSocket();
-                ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
-                ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
+                // Create socket and establish connection
+                socket = createAndConnectSocket();
+                
+                // Important: Create and flush ObjectOutputStream FIRST to prevent deadlock
+                out = new ObjectOutputStream(socket.getOutputStream());
+                out.flush();
+                
+                // Then create ObjectInputStream
+                in = new ObjectInputStream(socket.getInputStream());
+                
+                // Prepare and send the request
                 String data = String.format("%f,%f", latitude, longitude);
                 ClientRequest request = new ClientRequest("FIND_STORES_WITHIN_RANGE", data);
                 out.writeObject(request);
                 out.flush();
-                ClientResponse response = (ClientResponse) in.readObject();
+                
+                // Read the response
+                Object responseObj = in.readObject();
+                if (!(responseObj instanceof ClientResponse)) {
+                    throw new ClassCastException("Unexpected response type: " + responseObj.getClass().getName());
+                }
+                
+                ClientResponse response = (ClientResponse) responseObj;
                 String responseData = response.getMessage();
                 List<Store> stores = new ArrayList<>();
+                
                 if (responseData.startsWith("[") && responseData.endsWith("]")) {
                     try {
                         JSONArray storesArray = new JSONArray(responseData);
@@ -221,17 +245,282 @@ public class TCPClient {
                         }
                     } catch (JSONException e) {
                         Log.e(TAG, "Error parsing JSON: " + e.getMessage(), e);
-                        mainHandler.post(() -> callback.onError("Error parsing store data"));
-                        socket.close();
+                        mainHandler.post(() -> callback.onError("Error parsing store data: " + e.getMessage()));
                         return;
                     }
                 }
+                
                 Collections.sort(stores, (s1, s2) -> Double.compare(s1.getDistance(), s2.getDistance()));
                 mainHandler.post(() -> callback.onStoresReceived(stores));
-                socket.close();
-            } catch (IOException | ClassNotFoundException e) {
+                
+            } catch (ClassNotFoundException e) {
+                Log.e(TAG, "Class not found during deserialization: " + e.getMessage(), e);
+                mainHandler.post(() -> callback.onError("Serialization error: " + e.getMessage()));
+            } catch (ClassCastException e) {
+                Log.e(TAG, "Unexpected response type: " + e.getMessage(), e);
+                mainHandler.post(() -> callback.onError("Protocol error: " + e.getMessage()));
+            } catch (IOException e) {
                 Log.e(TAG, "Error connecting to server: " + e.getMessage(), e);
                 mainHandler.post(() -> callback.onError("Network error: " + e.getMessage()));
+            } finally {
+                // Close resources in reverse order of creation
+                try {
+                    if (in != null) in.close();
+                    if (out != null) out.close();
+                    if (socket != null) socket.close();
+                } catch (IOException e) {
+                    Log.e(TAG, "Error closing resources: " + e.getMessage(), e);
+                }
+            }
+        });
+    }
+
+    public void getStoreDetails(String storeName, StoreDetailsCallback callback) {
+        executor.execute(() -> {
+            Socket socket = null;
+            ObjectOutputStream out = null;
+            ObjectInputStream in = null;
+            
+            try {
+                // Create socket and establish connection
+                socket = createAndConnectSocket();
+                
+                // Important: Create and flush ObjectOutputStream FIRST to prevent deadlock
+                out = new ObjectOutputStream(socket.getOutputStream());
+                out.flush();
+                
+                // Then create ObjectInputStream
+                in = new ObjectInputStream(socket.getInputStream());
+                
+                ClientRequest request = new ClientRequest("GET_STORE_DETAILS", storeName);
+                out.writeObject(request);
+                out.flush();
+                
+                Object responseObj = in.readObject();
+                if (!(responseObj instanceof ClientResponse)) {
+                    throw new ClassCastException("Unexpected response type: " + responseObj.getClass().getName());
+                }
+                
+                ClientResponse response = (ClientResponse) responseObj;
+                String responseData = response.getMessage();
+                
+                if (responseData != null && responseData.startsWith("ERROR")) {
+                    mainHandler.post(() -> callback.onError(responseData.substring(6)));
+                } else {
+                    try {
+                        JSONObject storeJson = new JSONObject(responseData);
+                        Store store = Store.JsonToStore(storeJson.toString());
+                        mainHandler.post(() -> callback.onStoreDetailsReceived(store));
+                    } catch (JSONException e) {
+                        Log.e(TAG, "Error parsing JSON: " + e.getMessage(), e);
+                        mainHandler.post(() -> callback.onError("Error parsing store data: " + e.getMessage()));
+                    }
+                }
+            } catch (ClassNotFoundException e) {
+                Log.e(TAG, "Class not found during deserialization: " + e.getMessage(), e);
+                mainHandler.post(() -> callback.onError("Serialization error: " + e.getMessage()));
+            } catch (ClassCastException e) {
+                Log.e(TAG, "Unexpected response type: " + e.getMessage(), e);
+                mainHandler.post(() -> callback.onError("Protocol error: " + e.getMessage()));
+            } catch (IOException e) {
+                Log.e(TAG, "Error connecting to server: " + e.getMessage(), e);
+                mainHandler.post(() -> callback.onError("Network error: " + e.getMessage()));
+            } finally {
+                // Close resources in reverse order of creation
+                try {
+                    if (in != null) in.close();
+                    if (out != null) out.close();
+                    if (socket != null) socket.close();
+                } catch (IOException e) {
+                    Log.e(TAG, "Error closing resources: " + e.getMessage(), e);
+                }
+            }
+        });
+    }
+    
+    public void getFilteredStores(Map<String, List<String>> filters, double latitude, double longitude, StoreListCallback callback) {
+        executor.execute(() -> {
+            Socket socket = null;
+            ObjectOutputStream out = null;
+            ObjectInputStream in = null;
+            
+            try {
+                // Create socket and establish connection
+                socket = createAndConnectSocket();
+                
+                // Important: Create and flush ObjectOutputStream FIRST to prevent deadlock
+                out = new ObjectOutputStream(socket.getOutputStream());
+                out.flush();
+                
+                // Then create ObjectInputStream
+                in = new ObjectInputStream(socket.getInputStream());
+                
+                // Convert filters to JSON format
+                JSONObject filtersJson = new JSONObject();
+                for (Map.Entry<String, List<String>> entry : filters.entrySet()) {
+                    JSONArray valuesArray = new JSONArray();
+                    for (String value : entry.getValue()) {
+                        valuesArray.put(value);
+                    }
+                    filtersJson.put(entry.getKey(), valuesArray);
+                }
+                
+                String data = filtersJson.toString() + "|" + String.format("%f,%f", latitude, longitude);
+                ClientRequest request = new ClientRequest("FILTER_STORES", data);
+                out.writeObject(request);
+                out.flush();
+                
+                Object responseObj = in.readObject();
+                if (!(responseObj instanceof ClientResponse)) {
+                    throw new ClassCastException("Unexpected response type: " + responseObj.getClass().getName());
+                }
+                
+                ClientResponse response = (ClientResponse) responseObj;
+                String responseData = response.getMessage();
+                List<Store> stores = new ArrayList<>();
+                
+                if (responseData.startsWith("[") && responseData.endsWith("]")) {
+                    try {
+                        JSONArray storesArray = new JSONArray(responseData);
+                        for (int i = 0; i < storesArray.length(); i++) {
+                            JSONObject storeJson = storesArray.getJSONObject(i);
+                            Store store = Store.JsonToStore(storeJson.toString());
+                            if (store.getDistance() == 0) {
+                                double distance = calculateDistance(latitude, longitude, store.getLatitude(), store.getLongitude());
+                                store.setDistance(distance);
+                            }
+                            stores.add(store);
+                        }
+                    } catch (JSONException e) {
+                        Log.e(TAG, "Error parsing JSON: " + e.getMessage(), e);
+                        mainHandler.post(() -> callback.onError("Error parsing store data: " + e.getMessage()));
+                        return;
+                    }
+                }
+                
+                Collections.sort(stores, (s1, s2) -> Double.compare(s1.getDistance(), s2.getDistance()));
+                mainHandler.post(() -> callback.onStoresReceived(stores));
+                
+            } catch (JSONException e) {
+                Log.e(TAG, "Error creating filters JSON: " + e.getMessage(), e);
+                mainHandler.post(() -> callback.onError("Error creating filters: " + e.getMessage()));
+            } catch (ClassNotFoundException e) {
+                Log.e(TAG, "Class not found during deserialization: " + e.getMessage(), e);
+                mainHandler.post(() -> callback.onError("Serialization error: " + e.getMessage()));
+            } catch (ClassCastException e) {
+                Log.e(TAG, "Unexpected response type: " + e.getMessage(), e);
+                mainHandler.post(() -> callback.onError("Protocol error: " + e.getMessage()));
+            } catch (IOException e) {
+                Log.e(TAG, "Error connecting to server: " + e.getMessage(), e);
+                mainHandler.post(() -> callback.onError("Network error: " + e.getMessage()));
+            } finally {
+                // Close resources in reverse order of creation
+                try {
+                    if (in != null) in.close();
+                    if (out != null) out.close();
+                    if (socket != null) socket.close();
+                } catch (IOException e) {
+                    Log.e(TAG, "Error closing resources: " + e.getMessage(), e);
+                }
+            }
+        });
+    }
+    
+    public void buy(String orderDetails) {
+        executor.execute(() -> {
+            Socket socket = null;
+            ObjectOutputStream out = null;
+            ObjectInputStream in = null;
+            
+            try {
+                // Create socket and establish connection
+                socket = createAndConnectSocket();
+                
+                // Important: Create and flush ObjectOutputStream FIRST to prevent deadlock
+                out = new ObjectOutputStream(socket.getOutputStream());
+                out.flush();
+                
+                // Then create ObjectInputStream
+                in = new ObjectInputStream(socket.getInputStream());
+                
+                ClientRequest request = new ClientRequest("BUY", orderDetails);
+                out.writeObject(request);
+                out.flush();
+                
+                Object responseObj = in.readObject();
+                if (!(responseObj instanceof ClientResponse)) {
+                    throw new ClassCastException("Unexpected response type: " + responseObj.getClass().getName());
+                }
+                
+                ClientResponse response = (ClientResponse) responseObj;
+                String responseData = response.getMessage();
+                Log.d(TAG, "Buy response: " + responseData);
+                
+            } catch (ClassNotFoundException e) {
+                Log.e(TAG, "Class not found during deserialization: " + e.getMessage(), e);
+            } catch (ClassCastException e) {
+                Log.e(TAG, "Unexpected response type: " + e.getMessage(), e);
+            } catch (IOException e) {
+                Log.e(TAG, "Error during buy operation: " + e.getMessage(), e);
+            } finally {
+                // Close resources in reverse order of creation
+                try {
+                    if (in != null) in.close();
+                    if (out != null) out.close();
+                    if (socket != null) socket.close();
+                } catch (IOException e) {
+                    Log.e(TAG, "Error closing resources: " + e.getMessage(), e);
+                }
+            }
+        });
+    }
+    
+    public void sendReview(String storeName, int rating) {
+        executor.execute(() -> {
+            Socket socket = null;
+            ObjectOutputStream out = null;
+            ObjectInputStream in = null;
+            
+            try {
+                // Create socket and establish connection
+                socket = createAndConnectSocket();
+                
+                // Important: Create and flush ObjectOutputStream FIRST to prevent deadlock
+                out = new ObjectOutputStream(socket.getOutputStream());
+                out.flush();
+                
+                // Then create ObjectInputStream
+                in = new ObjectInputStream(socket.getInputStream());
+                
+                String reviewData = storeName + "," + rating;
+                ClientRequest request = new ClientRequest("REVIEW", reviewData);
+                out.writeObject(request);
+                out.flush();
+                
+                Object responseObj = in.readObject();
+                if (!(responseObj instanceof ClientResponse)) {
+                    throw new ClassCastException("Unexpected response type: " + responseObj.getClass().getName());
+                }
+                
+                ClientResponse response = (ClientResponse) responseObj;
+                String responseData = response.getMessage();
+                Log.d(TAG, "Review response: " + responseData);
+                
+            } catch (ClassNotFoundException e) {
+                Log.e(TAG, "Class not found during deserialization: " + e.getMessage(), e);
+            } catch (ClassCastException e) {
+                Log.e(TAG, "Unexpected response type: " + e.getMessage(), e);
+            } catch (IOException e) {
+                Log.e(TAG, "Error sending review: " + e.getMessage(), e);
+            } finally {
+                // Close resources in reverse order of creation
+                try {
+                    if (in != null) in.close();
+                    if (out != null) out.close();
+                    if (socket != null) socket.close();
+                } catch (IOException e) {
+                    Log.e(TAG, "Error closing resources: " + e.getMessage(), e);
+                }
             }
         });
     }
