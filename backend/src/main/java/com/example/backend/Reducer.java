@@ -3,7 +3,6 @@ package com.example.backend;
 import java.io.*;
 import java.net.*;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class Reducer {
     private static final int DEFAULT_REDUCER_PORT = 8090; // Default port for Reducer
@@ -18,6 +17,8 @@ public class Reducer {
     public void start() {
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             System.out.println("Reducer Server running on " + reducerHostname + ":" + port);
+
+            System.out.println();
             while (true) {
                 Socket masterSocket = serverSocket.accept();
                 System.out.println("Master connected to Reducer from: " + masterSocket.getInetAddress());

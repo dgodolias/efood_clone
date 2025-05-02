@@ -26,6 +26,7 @@ public class Master {
     private PrintWriter out;
     private boolean isLocalMode = true;
     private InetAddress bindAddress;
+    private int expectedWorkerCount;
 
     // New fields for worker initialization synchronization
     private final Object initializationLock = new Object();
@@ -57,7 +58,7 @@ public class Master {
 
         if (isLocalMode) {
             int workerCount = Math.max(1, (int) Math.sqrt(storeCount));
-
+            expectedWorkerCount = workerCount; 
             System.out.println("Starting in LOCAL mode with " + workerCount + " workers for " + storeCount + " stores");
             for (int i = 0; i < workerCount; i++) {
                 int workerPort = startPort + i;
@@ -68,7 +69,6 @@ public class Master {
                 workerAddresses.add("localhost:" + workerPort);
                 System.out.println("Started and connected to worker at localhost:" + workerPort);
             }
-
             spawnReducer(workerAddresses);
         } else {
             System.out.println("Starting in DISTRIBUTED mode with " + remoteWorkerAddresses.size() + " remote workers");
@@ -609,11 +609,10 @@ public class Master {
         synchronized (initializationLock) {
             initializedWorkerCount++;
             System.out.println("Worker " + worker.getPort() + " marked as initialized. " +
-                    initializedWorkerCount + " of " + workers.size() + " workers initialized.");
-
-            if (initializedWorkerCount == workers.size()) {
+                    initializedWorkerCount + " of " + expectedWorkerCount + " workers initialized.");
+            if (initializedWorkerCount == expectedWorkerCount) {
                 allWorkersInitialized = true;
-                System.out.println("All " + workers.size() + " workers are now initialized!");
+                System.out.println("All " + expectedWorkerCount + " workers are now initialized!");
                 initializationLock.notifyAll();
             }
         }

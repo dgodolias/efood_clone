@@ -19,13 +19,13 @@
     "Latitude": 37.987654,
     "Longitude": 23.725678,
     "FoodCategory": "burger",
-    "Stars": 3.0,
-    "NoOfVotes": 18,
+    "Stars": 3.11,
+    "NoOfVotes": 19,
     "StoreLogo": "app/src/main/assets/logos/burger_bonanza.png",
     "PriceCategory": "$$",
     "Products": [
       {"ProductName": "Classic Burger", "ProductType": "burger", "Available Amount": 2000, "Price": 7.5},
-      {"ProductName": "Cheeseburger", "ProductType": "burger", "Available Amount": 1500, "Price": 8.5},
+      {"ProductName": "Cheeseburger", "ProductType": "burger", "Available Amount": 1496, "Price": 8.5},
       {"ProductName": "Fries", "ProductType": "side", "Available Amount": 1000, "Price": 3.0}
     ]
   },
@@ -181,6 +181,20 @@
     ]
   },
   {
+    "StoreName": "Dessert Delight",
+    "Latitude": 37.989012,
+    "Longitude": 23.731234,
+    "FoodCategory": "desserts",
+    "Stars": 4.0,
+    "NoOfVotes": 28,
+    "StoreLogo": "/usr/bin/images/dessert_delight.png",
+    "PriceCategory": "$",
+    "Products": [
+      {"ProductName": "Cheesecake", "ProductType": "dessert", "Available Amount": 400, "Price": 6.0},
+      {"ProductName": "Ice Cream", "ProductType": "dessert", "Available Amount": 600, "Price": 4.0}
+    ]
+  },
+  {
     "StoreName": "Pizza Planet",
     "Latitude": 37.981111,
     "Longitude": 23.721111,
@@ -245,14 +259,15 @@
     "Latitude": 37.992222,
     "Longitude": 23.732222,
     "FoodCategory": "burger",
-    "Stars": 4.0,
-    "NoOfVotes": 23,
+    "Stars": 4.08,
+    "NoOfVotes": 25,
     "StoreLogo": "app/src/main/assets/logos/burger_barn.png",
     "PriceCategory": "$$",
     "Products": [
       {"ProductName": "Bacon Cheeseburger", "ProductType": "burger", "Available Amount": 1800, "Price": 9.0},
-      {"ProductName": "Mushroom Swiss Burger", "ProductType": "burger", "Available Amount": 1200, "Price": 9.5},
-      {"ProductName": "Onion Rings", "ProductType": "side", "Available Amount": 800, "Price": 3.5}
+      {"ProductName": "Mushroom Swiss Burger", "ProductType": "burger", "Available Amount": 1199, "Price": 9.5},
+      {"ProductName": "Onion Rings", "ProductType": "side", "Available Amount": 800, "Price": 3.5},
+      {"ProductName": "Cheeseburger", "ProductType": "burger", "Available Amount": 0, "Price": 10.0}
     ]
   }
 ]
