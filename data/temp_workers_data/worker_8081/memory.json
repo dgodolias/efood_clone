@@ -4,14 +4,14 @@
     "Latitude": 37.985555,
     "Longitude": 23.731111,
     "FoodCategory": "indian",
-    "Stars": 4.03,
-    "NoOfVotes": 29,
+    "Stars": 4.0,
+    "NoOfVotes": 28,
     "StoreLogo": "app/src/main/assets/logos/indian_flavors.png",
     "PriceCategory": "$$",
     "Products": [
       {"ProductName": "Chicken Tikka Masala", "ProductType": "curry", "Available Amount": 1800, "Price": 12.5},
       {"ProductName": "Vegetable Samosa", "ProductType": "appetizer", "Available Amount": 1000, "Price": 5.0},
-      {"ProductName": "Naan Bread", "ProductType": "bread", "Available Amount": 1999, "Price": 2.5}
+      {"ProductName": "Naan Bread", "ProductType": "bread", "Available Amount": 2000, "Price": 2.5}
     ]
   },
   {
@@ -139,14 +139,14 @@
     "Latitude": 37.983456,
     "Longitude": 23.724567,
     "FoodCategory": "sandwich",
-    "Stars": 3.17,
-    "NoOfVotes": 12,
+    "Stars": 3.0,
+    "NoOfVotes": 11,
     "StoreLogo": "app/src/main/assets/logos/sandwich_stop.png",
     "PriceCategory": "$$",
     "Products": [
       {"ProductName": "Turkey Club", "ProductType": "sandwich", "Available Amount": 2000, "Price": 7.5},
       {"ProductName": "Ham and Cheese", "ProductType": "sandwich", "Available Amount": 2500, "Price": 6.5},
-      {"ProductName": "Potato Chips", "ProductType": "side", "Available Amount": 2999, "Price": 1.5}
+      {"ProductName": "Potato Chips", "ProductType": "side", "Available Amount": 3000, "Price": 1.5}
     ]
   },
   {
@@ -225,21 +225,6 @@
     ]
   },
   {
-    "StoreName": "Dessert Delight",
-    "Latitude": 37.989012,
-    "Longitude": 23.731234,
-    "FoodCategory": "desserts",
-    "Stars": 4.0,
-    "NoOfVotes": 28,
-    "StoreLogo": "/usr/bin/images/dessert_delight.png",
-    "PriceCategory": "$",
-    "Products": [
-      {"ProductName": "Chocolate Cake", "ProductType": "dessert", "Available Amount": 500, "Price": 5.0},
-      {"ProductName": "Cheesecake", "ProductType": "dessert", "Available Amount": 400, "Price": 6.0},
-      {"ProductName": "Ice Cream", "ProductType": "dessert", "Available Amount": 600, "Price": 4.0}
-    ]
-  },
-  {
     "StoreName": "Pizza Planet",
     "Latitude": 37.981111,
     "Longitude": 23.721111,
@@ -274,12 +259,12 @@
     "Latitude": 37.98,
     "Longitude": 23.72,
     "FoodCategory": "coffee",
-    "Stars": 4.9,
-    "NoOfVotes": 41,
+    "Stars": 5.0,
+    "NoOfVotes": 40,
     "StoreLogo": "app/src/main/assets/logos/coffee_corner.png",
     "PriceCategory": "$",
     "Products": [
-      {"ProductName": "Espresso", "ProductType": "coffee", "Available Amount": 4999, "Price": 2.5},
+      {"ProductName": "Espresso", "ProductType": "coffee", "Available Amount": 5000, "Price": 2.5},
       {"ProductName": "Cappuccino", "ProductType": "coffee", "Available Amount": 4500, "Price": 3.5},
       {"ProductName": "Croissant", "ProductType": "pastry", "Available Amount": 1000, "Price": 2.0}
     ]

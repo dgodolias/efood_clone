@@ -7,54 +7,52 @@ public class WorkerConnection {
     private String host;
     private int port;
     private Socket socket;
-    private PrintWriter out;
-    private BufferedReader in;
-    private Master master; // Reference to the Master for initialization notification
+    private ObjectOutputStream out;
+    private ObjectInputStream in;
+    private Master master;
 
     public WorkerConnection(String host, int port) throws IOException {
         this.host = host;
         this.port = port;
         connect();
     }
-    
-    // Alternative constructor that includes Master reference
-    public WorkerConnection(String host, int port, Master master) throws IOException {
+
+    public WorkerConnection(String host, int port, Master master) throws IOException, ClassNotFoundException {
         this.host = host;
         this.port = port;
         this.master = master;
         connect();
-        
-        // Attempt to ping the worker to verify it's ready
         try {
-            String response = sendRequest("PING");
-            if (response != null && response.equals("PONG")) {
-                // Worker is responsive, notify the master it's initialized
-                if (master != null) {
-                    master.markWorkerAsInitialized(this);
-                }
-            }
+            CommunicationClasses.WorkerRequest pingRequest = new CommunicationClasses.WorkerRequest("PING", "");
+            CommunicationClasses.WorkerResponse response = sendRequest(pingRequest);
+            if (response.getResult().equals("PONG") && master != null) master.markWorkerAsInitialized(this);
         } catch (IOException e) {
             System.err.println("Failed to verify worker initialization: " + e.getMessage());
-            // Don't mark as initialized yet
         }
     }
 
     private void connect() throws IOException {
         socket = new Socket(host, port);
-        out = new PrintWriter(socket.getOutputStream(), true);
-        in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+        out = new ObjectOutputStream(socket.getOutputStream());
+        in = new ObjectInputStream(socket.getInputStream());
     }
 
-    public String sendRequest(String request) throws IOException {
+    public CommunicationClasses.WorkerResponse sendRequest(CommunicationClasses.WorkerRequest request) throws IOException, ClassNotFoundException {
         try {
-            request = request.replace("\n", " ").replace("\r", "");
-            out.println(request);
-            return in.readLine();
+            out.writeObject(request);
+            out.flush();
+            return (CommunicationClasses.WorkerResponse) in.readObject();
         } catch (IOException e) {
-            connect(); // Reconnect on failure
-            request = request.replace("\n", " ").replace("\r", "");
-            out.println(request);
-            return in.readLine();
+            connect();
+            out.writeObject(request);
+            out.flush();
+            try {
+                return (CommunicationClasses.WorkerResponse) in.readObject();
+            } catch (ClassNotFoundException cnfe) {
+                throw cnfe;
+            }
+        } catch (ClassNotFoundException e) {
+            throw new IOException("Class not found: " + e.getMessage(), e);
         }
     }
 
@@ -67,7 +65,7 @@ public class WorkerConnection {
     public int getPort() {
         return port;
     }
-    
+
     public String getHost() {
         return host;
     }
