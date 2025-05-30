@@ -128,7 +128,7 @@ public class Store implements Serializable {
         return String.format("%.4f, %.4f", latitude, longitude);
     }
 
-    public boolean purchaseProduct(String productName, int quantity) {
+    public synchronized boolean purchaseProduct(String productName, int quantity) {
         for (Product product : products) {
             if (product.getProductName().equals(productName)) {
                 if (product.getAvailableAmount() >= quantity) {

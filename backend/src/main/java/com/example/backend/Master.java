@@ -41,9 +41,9 @@ public class Master {
                 InetAddress.getByName("localhost") :
                 null;
 
-        workers = new ArrayList<>();
+        workers = Collections.synchronizedList(new ArrayList<>());
         workerProcesses = new ArrayList<>();
-        storeToWorkers = new HashMap<>();
+        storeToWorkers = new ConcurrentHashMap<>();
         workerHealth = new ConcurrentHashMap<>();
 
         out = new PrintWriter(System.out, true);
@@ -232,7 +232,14 @@ public class Master {
 
                 for (String portStr : workerPortStrs) {
                     int port = Integer.parseInt(portStr);
-                    for (WorkerConnection worker : workers) {
+                    
+                    // Create a copy of the workers list to avoid ConcurrentModificationException
+                    List<WorkerConnection> workersCopy;
+                    synchronized(workers) {
+                        workersCopy = new ArrayList<>(workers);
+                    }
+                    
+                    for (WorkerConnection worker : workersCopy) {
                         if (worker.getPort() == port) {
                             assignedWorkers.add(worker);
                             break;
@@ -509,7 +516,13 @@ public class Master {
     private void startHeartbeat() throws IOException {
         heartbeatScheduler = Executors.newScheduledThreadPool(1);
         heartbeatScheduler.scheduleAtFixedRate(() -> {
-            for (WorkerConnection w : workers) {
+            // Create a copy of the workers list to avoid ConcurrentModificationException
+            List<WorkerConnection> workersCopy;
+            synchronized(workers) {
+                workersCopy = new ArrayList<>(workers);
+            }
+            
+            for (WorkerConnection w : workersCopy) {
                 try {
                     CommunicationClasses.WorkerRequest pingRequest = new CommunicationClasses.WorkerRequest("PING", "");
                     CommunicationClasses.WorkerResponse response = w.sendRequest(pingRequest);
@@ -569,7 +582,13 @@ public class Master {
             }
 
             if (currentWorkers.size() < REPLICATION_FACTOR) {
-                for (WorkerConnection w : workers) {
+                // Create a copy of the workers list to avoid ConcurrentModificationException
+                List<WorkerConnection> workersCopy;
+                synchronized(workers) {
+                    workersCopy = new ArrayList<>(workers);
+                }
+                
+                for (WorkerConnection w : workersCopy) {
                     if (!currentWorkers.contains(w) && workerHealth.getOrDefault(w, false)) {
                         currentWorkers.add(w);
                         System.out.println("WORKER FAILOVER: Added worker " + w.getPort() +

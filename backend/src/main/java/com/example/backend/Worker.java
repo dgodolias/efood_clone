@@ -120,39 +120,50 @@ class WorkerThread extends Thread {
     }
 
     private String processCommand(String command, String data) {
-        synchronized (stores) {
-            try {
-                switch (command) {
-                    case "ADD_STORE":
+        try {
+            switch (command) {
+                // Write operations - require synchronization
+                case "ADD_STORE":
+                    synchronized (stores) {
                         return processAddStore(data);
-                    case "ADD_PRODUCT":
+                    }
+                case "ADD_PRODUCT":
+                    synchronized (stores) {
                         return processAddProduct(data);
-                    case "REMOVE_PRODUCT":
+                    }
+                case "REMOVE_PRODUCT":
+                    synchronized (stores) {
                         return processRemoveProduct(data);
-                    case "GET_SALES_BY_STORE_TYPE_CATEGORY":
-                        return processSalesByStoreCategory(data);
-                    case "GET_SALES_BY_PRODUCT_CATEGORY":
-                        return processSalesByProductCategory(data);
-                    case "GET_SALES_BY_PRODUCT":
-                        return processSalesByProduct(data);
-                    case "BUY":
+                    }
+                case "BUY":
+                    synchronized (stores) {
                         return processPurchase(data);
-                    case "FILTER_STORES":
-                        return processFilterStores(data);
-                    case "FIND_STORES_WITHIN_RANGE":
-                        return processFindStoresWithinRange(data);
-                    case "GET_STORE_DETAILS":
-                        return processGetStoreDetails(data);
-                    case "REVIEW":
+                    }
+                case "REVIEW":
+                    synchronized (stores) {
                         return processReview(data);
-                    case "PING":
-                        return "PONG";
-                    default:
-                        return "ERROR|Unknown command: " + command;
-                }
-            } catch (IOException e) {
-                return "ERROR|" + e.getMessage();
+                    }
+                
+                // Read operations - no synchronization needed (stores map is thread-safe for reads)
+                case "GET_SALES_BY_STORE_TYPE_CATEGORY":
+                    return processSalesByStoreCategory(data);
+                case "GET_SALES_BY_PRODUCT_CATEGORY":
+                    return processSalesByProductCategory(data);
+                case "GET_SALES_BY_PRODUCT":
+                    return processSalesByProduct(data);
+                case "FILTER_STORES":
+                    return processFilterStores(data);
+                case "FIND_STORES_WITHIN_RANGE":
+                    return processFindStoresWithinRange(data);
+                case "GET_STORE_DETAILS":
+                    return processGetStoreDetails(data);
+                case "PING":
+                    return "PONG";
+                default:
+                    return "ERROR|Unknown command: " + command;
             }
+        } catch (IOException e) {
+            return "ERROR|" + e.getMessage();
         }
     }
 
