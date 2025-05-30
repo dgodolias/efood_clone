@@ -1,10 +1,26 @@
 package com.example.backend;
 
-import java.io.*;
-import java.net.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -23,7 +39,6 @@ public class Master {
     private Map<String, List<WorkerConnection>> storeToWorkers;
     private Map<WorkerConnection, Boolean> workerHealth;
     private ScheduledExecutorService heartbeatScheduler;
-    private PrintWriter out;
     private boolean isLocalMode = true;
     private InetAddress bindAddress;
     private int expectedWorkerCount;
@@ -45,8 +60,6 @@ public class Master {
         workerProcesses = new ArrayList<>();
         storeToWorkers = new ConcurrentHashMap<>();
         workerHealth = new ConcurrentHashMap<>();
-
-        out = new PrintWriter(System.out, true);
 
         if (isLocalMode) {
             deleteDirectory(new File("data/temp_workers_data"));
@@ -234,10 +247,7 @@ public class Master {
                     int port = Integer.parseInt(portStr);
                     
                     // Create a copy of the workers list to avoid ConcurrentModificationException
-                    List<WorkerConnection> workersCopy;
-                    synchronized(workers) {
-                        workersCopy = new ArrayList<>(workers);
-                    }
+                    List<WorkerConnection> workersCopy = new ArrayList<>(workers);
                     
                     for (WorkerConnection worker : workersCopy) {
                         if (worker.getPort() == port) {
@@ -517,10 +527,7 @@ public class Master {
         heartbeatScheduler = Executors.newScheduledThreadPool(1);
         heartbeatScheduler.scheduleAtFixedRate(() -> {
             // Create a copy of the workers list to avoid ConcurrentModificationException
-            List<WorkerConnection> workersCopy;
-            synchronized(workers) {
-                workersCopy = new ArrayList<>(workers);
-            }
+            List<WorkerConnection> workersCopy = new ArrayList<>(workers);
             
             for (WorkerConnection w : workersCopy) {
                 try {
@@ -569,7 +576,8 @@ public class Master {
             currentWorkers.remove(failedWorker);
 
             if (currentWorkers.isEmpty()) {
-                List<WorkerConnection> newWorkers = getWorkersForStore(storeName);
+                currentWorkers = getWorkersForStore(storeName);
+                storeToWorkers.put(storeName, currentWorkers);
                 System.out.println("WORKER FAILOVER: All workers for store '" + storeName +
                         "' have failed. Assigned completely new workers.");
                 continue;
@@ -583,10 +591,7 @@ public class Master {
 
             if (currentWorkers.size() < REPLICATION_FACTOR) {
                 // Create a copy of the workers list to avoid ConcurrentModificationException
-                List<WorkerConnection> workersCopy;
-                synchronized(workers) {
-                    workersCopy = new ArrayList<>(workers);
-                }
+                List<WorkerConnection> workersCopy = new ArrayList<>(workers);
                 
                 for (WorkerConnection w : workersCopy) {
                     if (!currentWorkers.contains(w) && workerHealth.getOrDefault(w, false)) {
@@ -730,14 +735,14 @@ public class Master {
 }
 
 class MasterThread extends Thread {
-    private Socket socket;
-    private List<WorkerConnection> workers;
-    private Map<String, List<WorkerConnection>> storeToWorkers;
+    private final Socket socket;
+    private final List<WorkerConnection> workers;
+    private final Map<String, List<WorkerConnection>> storeToWorkers;
     private final int replicationFactor;
     private final String reducerHost;
     private final int reducerPort;
-    private Map<WorkerConnection, Boolean> workerHealth;
-    private Map<String, List<String>> intermediateResults;
+    private final Map<WorkerConnection, Boolean> workerHealth;
+    private final Map<String, List<String>> intermediateResults;
 
     public MasterThread(Socket socket, List<WorkerConnection> workers,
                         Map<String, List<WorkerConnection>> storeToWorkers,
@@ -804,7 +809,7 @@ class MasterThread extends Thread {
         } catch (IOException e) {
             System.err.println("Error handling client: " + e.getMessage());
         } catch (ClassNotFoundException e) {
-            // TODO Auto-generated catch block
+            System.err.println("Class not found error in MasterThread: " + e.getMessage());
             e.printStackTrace();
         } finally {
             try {

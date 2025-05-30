@@ -49,13 +49,13 @@
     "Latitude": 37.975432,
     "Longitude": 23.718901,
     "FoodCategory": "souvlaki",
-    "Stars": 4.0,
-    "NoOfVotes": 20,
+    "Stars": 4.05,
+    "NoOfVotes": 21,
     "StoreLogo": "app/src/main/assets/logos/gyro_grill.png",
     "PriceCategory": "$",
     "Products": [
       {"ProductName": "Chicken Gyro", "ProductType": "gyro", "Available Amount": 4000, "Price": 6.0},
-      {"ProductName": "Pork Gyro", "ProductType": "gyro", "Available Amount": 3500, "Price": 6.5},
+      {"ProductName": "Pork Gyro", "ProductType": "gyro", "Available Amount": 3499, "Price": 6.5},
       {"ProductName": "Tzatziki", "ProductType": "side", "Available Amount": 500, "Price": 2.5}
     ]
   },
@@ -139,14 +139,14 @@
     "Latitude": 37.983456,
     "Longitude": 23.724567,
     "FoodCategory": "sandwich",
-    "Stars": 3.17,
-    "NoOfVotes": 12,
+    "Stars": 3.31,
+    "NoOfVotes": 13,
     "StoreLogo": "app/src/main/assets/logos/sandwich_stop.png",
     "PriceCategory": "$$",
     "Products": [
-      {"ProductName": "Turkey Club", "ProductType": "sandwich", "Available Amount": 2000, "Price": 7.5},
-      {"ProductName": "Ham and Cheese", "ProductType": "sandwich", "Available Amount": 2498, "Price": 6.5},
-      {"ProductName": "Potato Chips", "ProductType": "side", "Available Amount": 3000, "Price": 1.5}
+      {"ProductName": "Turkey Club", "ProductType": "sandwich", "Available Amount": 1997, "Price": 7.5},
+      {"ProductName": "Ham and Cheese", "ProductType": "sandwich", "Available Amount": 2500, "Price": 6.5},
+      {"ProductName": "Potato Chips", "ProductType": "side", "Available Amount": 2997, "Price": 1.5}
     ]
   },
   {

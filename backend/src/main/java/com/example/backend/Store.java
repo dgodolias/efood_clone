@@ -1,16 +1,14 @@
 package com.example.backend;
 
-import com.example.backend.Product;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 public class Store implements Serializable {
     private String storeName;
@@ -20,8 +18,8 @@ public class Store implements Serializable {
     private float stars;
     private int noOfVotes;
     private String storeLogo;
-    private List<Product> products;
-    private Map<String, Integer> sales;
+    private final List<Product> products;
+    private final Map<String, Integer> sales;
     private double distance;
 
 

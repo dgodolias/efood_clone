@@ -109,13 +109,13 @@
     "Latitude": 37.975432,
     "Longitude": 23.718901,
     "FoodCategory": "souvlaki",
-    "Stars": 4.0,
-    "NoOfVotes": 20,
+    "Stars": 4.05,
+    "NoOfVotes": 21,
     "StoreLogo": "app/src/main/assets/logos/gyro_grill.png",
     "PriceCategory": "$",
     "Products": [
       {"ProductName": "Chicken Gyro", "ProductType": "gyro", "Available Amount": 4000, "Price": 6.0},
-      {"ProductName": "Pork Gyro", "ProductType": "gyro", "Available Amount": 3500, "Price": 6.5},
+      {"ProductName": "Pork Gyro", "ProductType": "gyro", "Available Amount": 3499, "Price": 6.5},
       {"ProductName": "Tzatziki", "ProductType": "side", "Available Amount": 500, "Price": 2.5}
     ]
   },

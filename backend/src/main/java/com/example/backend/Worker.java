@@ -1,15 +1,31 @@
 package com.example.backend;
 
-import java.io.*;
-import java.net.*;
-import java.util.*;
+import java.io.EOFException;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.PrintWriter;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketException;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Worker {
-    private Map<String, Store> stores;
-    private String tempDir;
+    private final Map<String, Store> stores;
+    private final String tempDir;
 
     public Worker(int port) {
-        this.stores = new HashMap<>();
+        this.stores = new ConcurrentHashMap<>();
         this.tempDir = "data/temp_workers_data/worker_" + port;
         new File(tempDir).mkdirs();
         initializeStoresFile();
@@ -78,9 +94,9 @@ public class Worker {
 }
 
 class WorkerThread extends Thread {
-    private Socket socket;
-    private Map<String, Store> stores;
-    private String tempDir;
+    private final Socket socket;
+    private final Map<String, Store> stores;
+    private final String tempDir;
 
     public WorkerThread(Socket socket, Map<String, Store> stores, String tempDir) {
         this.socket = socket;
@@ -122,29 +138,19 @@ class WorkerThread extends Thread {
     private String processCommand(String command, String data) {
         try {
             switch (command) {
-                // Write operations - require synchronization
+                // Write operations - ConcurrentHashMap handles thread safety
                 case "ADD_STORE":
-                    synchronized (stores) {
-                        return processAddStore(data);
-                    }
+                    return processAddStore(data);
                 case "ADD_PRODUCT":
-                    synchronized (stores) {
-                        return processAddProduct(data);
-                    }
+                    return processAddProduct(data);
                 case "REMOVE_PRODUCT":
-                    synchronized (stores) {
-                        return processRemoveProduct(data);
-                    }
+                    return processRemoveProduct(data);
                 case "BUY":
-                    synchronized (stores) {
-                        return processPurchase(data);
-                    }
+                    return processPurchase(data);
                 case "REVIEW":
-                    synchronized (stores) {
-                        return processReview(data);
-                    }
+                    return processReview(data);
                 
-                // Read operations - no synchronization needed (stores map is thread-safe for reads)
+                // Read operations
                 case "GET_SALES_BY_STORE_TYPE_CATEGORY":
                     return processSalesByStoreCategory(data);
                 case "GET_SALES_BY_PRODUCT_CATEGORY":
