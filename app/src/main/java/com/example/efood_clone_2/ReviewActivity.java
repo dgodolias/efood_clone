@@ -49,6 +49,7 @@ public class ReviewActivity extends AppCompatActivity {
             });
         }
 
+        
         btnSubmitReview.setOnClickListener(v -> {
 
             TCPClient client = TCPClient.getInstance();
