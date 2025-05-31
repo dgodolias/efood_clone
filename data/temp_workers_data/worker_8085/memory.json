@@ -109,13 +109,13 @@
     "Latitude": 37.975432,
     "Longitude": 23.718901,
     "FoodCategory": "souvlaki",
-    "Stars": 4.05,
-    "NoOfVotes": 21,
+    "Stars": 4.0,
+    "NoOfVotes": 20,
     "StoreLogo": "app/src/main/assets/logos/gyro_grill.png",
     "PriceCategory": "$",
     "Products": [
       {"ProductName": "Chicken Gyro", "ProductType": "gyro", "Available Amount": 4000, "Price": 6.0},
-      {"ProductName": "Pork Gyro", "ProductType": "gyro", "Available Amount": 3499, "Price": 6.5},
+      {"ProductName": "Pork Gyro", "ProductType": "gyro", "Available Amount": 3500, "Price": 6.5},
       {"ProductName": "Tzatziki", "ProductType": "side", "Available Amount": 500, "Price": 2.5}
     ]
   },
@@ -132,6 +132,21 @@
       {"ProductName": "Green Detox Juice", "ProductType": "juice", "Available Amount": 800, "Price": 5.5},
       {"ProductName": "Berry Blast Smoothie", "ProductType": "smoothie", "Available Amount": 700, "Price": 6.0},
       {"ProductName": "Acai Bowl", "ProductType": "bowl", "Available Amount": 500, "Price": 8.0}
+    ]
+  },
+  {
+    "StoreName": "Dessert Delight",
+    "Latitude": 37.989012,
+    "Longitude": 23.731234,
+    "FoodCategory": "desserts",
+    "Stars": 4.0,
+    "NoOfVotes": 28,
+    "StoreLogo": "/usr/bin/images/dessert_delight.png",
+    "PriceCategory": "$",
+    "Products": [
+      {"ProductName": "Chocolate Cake", "ProductType": "dessert", "Available Amount": 500, "Price": 5.0},
+      {"ProductName": "Cheesecake", "ProductType": "dessert", "Available Amount": 400, "Price": 6.0},
+      {"ProductName": "Ice Cream", "ProductType": "dessert", "Available Amount": 600, "Price": 4.0}
     ]
   },
   {

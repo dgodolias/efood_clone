@@ -1,13 +1,27 @@
 package com.example.backend;
 
-import java.io.*;
-import java.net.*;
-import java.util.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketException;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class Reducer {
     private static final int DEFAULT_REDUCER_PORT = 8090; // Default port for Reducer
-    private String reducerHostname; // For displaying in logs
-    private int port; // The port Reducer will listen on
+    private final String reducerHostname; // For displaying in logs
+    private final int port; // The port Reducer will listen on
 
     public Reducer(String hostname, int port) {
         this.reducerHostname = hostname;
@@ -87,7 +101,7 @@ public class Reducer {
                 while (addresses.hasMoreElements()) {
                     InetAddress addr = addresses.nextElement();
                     // Skip IPv6 addresses and loopback addresses
-                    if (addr instanceof Inet6Address || addr.isLoopbackAddress()) {
+                    if (addr != null && (addr instanceof Inet6Address || addr.isLoopbackAddress())) {
                         continue;
                     }
                     availableIPs.add(addr.getHostAddress());
@@ -122,7 +136,7 @@ public class Reducer {
 }
 
 class ReducerThread extends Thread {
-    private Socket masterSocket;
+    private final Socket masterSocket;
     
     // Wait-notify synchronization for MapReduce coordination
     private final Object mapReduceLock = new Object();

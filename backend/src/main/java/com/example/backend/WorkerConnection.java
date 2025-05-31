@@ -1,7 +1,9 @@
 package com.example.backend;
 
-import java.io.*;
-import java.net.*;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.Socket;
 
 public class WorkerConnection {
     private String host;
@@ -22,10 +24,17 @@ public class WorkerConnection {
         this.port = port;
         this.master = master;
         connect();
+        // Initialize worker after construction is complete to avoid leaking 'this'
+        initializeWorker();
+    }
+    
+    private void initializeWorker() throws IOException, ClassNotFoundException {
         try {
             CommunicationClasses.WorkerRequest pingRequest = new CommunicationClasses.WorkerRequest("PING", "");
             CommunicationClasses.WorkerResponse response = sendRequest(pingRequest);
-            if (response.getResult().equals("PONG") && master != null) master.markWorkerAsInitialized(this);
+            if (response.getResult().equals("PONG") && master != null) {
+                master.markWorkerAsInitialized(this);
+            }
         } catch (IOException e) {
             System.err.println("Failed to verify worker initialization: " + e.getMessage());
         }

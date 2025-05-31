@@ -2,10 +2,10 @@
 "Pasta Place":8081,8082,8083
 "Salad Sensations":8083,8084,8085
 "Juice Junction":8083,8084,8085
-"Pizza Palace":8082,8083,8084
-"Gyro Grill":8084,8085,8081
-"Sandwich Stop":8081,8082,8083
 "Pizza Planet":8081,8082,8083
+"Sandwich Stop":8081,8082,8083
+"Gyro Grill":8084,8085,8081
+"Pizza Palace":8082,8083,8084
 "Indian Flavors":8081,8082,8083
 "Coffee Corner":8081,8082,8083
 "Daily Grind Coffee":8085,8081,8082

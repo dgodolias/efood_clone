@@ -6,8 +6,8 @@ import java.util.List;
 public class CommunicationClasses {
 
     public static class Request implements Serializable {
-        private String command;
-        private String data;
+        private final String command;
+        private final String data;
 
         public Request(String command, String data) {
             this.command = command;
@@ -24,7 +24,7 @@ public class CommunicationClasses {
     }
 
     public static class Response implements Serializable {
-        private String message;
+        private final String message;
 
         public Response(String message) {
             this.message = message;
@@ -36,8 +36,8 @@ public class CommunicationClasses {
     }
 
     public static class WorkerRequest implements Serializable {
-        private String command;
-        private String data;
+        private final String command;
+        private final String data;
 
         public WorkerRequest(String command, String data) {
             this.command = command;
@@ -54,7 +54,7 @@ public class CommunicationClasses {
     }
 
     public static class WorkerResponse implements Serializable {
-        private String result;
+        private final String result;
 
         public WorkerResponse(String result) {
             this.result = result;
@@ -66,8 +66,8 @@ public class CommunicationClasses {
     }
 
     public static class ReduceRequest implements Serializable {
-        private String command;
-        private List<String> mapResults;
+        private final String command;
+        private final List<String> mapResults;
 
         public ReduceRequest(String command, List<String> mapResults) {
             this.command = command;
@@ -84,7 +84,7 @@ public class CommunicationClasses {
     }
 
     public static class ReduceResponse implements Serializable {
-        private String result;
+        private final String result;
 
         public ReduceResponse(String result) {
             this.result = result;
